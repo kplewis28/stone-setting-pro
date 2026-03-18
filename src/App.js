@@ -147,17 +147,16 @@ export default function App() {
     const iv = setInterval(()=>{ i=(i+1)%MSGS.length; setAiMsg(MSGS[i]); },1400);
     try {
       const b64 = imgData.split(",")[1];
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800,
           messages:[{ role:"user", content:[
             { type:"image", source:{ type:"base64", media_type: imgFile.type||"image/jpeg", data:b64 }},
-            { type:"text", text:You are reading a jewelry delivery note sent TO a stone setter in Switzerland. The CLIENT is the jewelry company that SENT this document (look for company name, letterhead, or signature at the bottom - NOT the recipient address at top). Extract: client=sending jewelry company, field1=type of jewelry piece or metal, field2=type of work requested, pieces=number of pieces, notes=special instructions. Return ONLY valid JSON, no backticks:\n{"client":"sending jewelry company name","orderRef":"order/reference number","field1":"jewelry piece or metal type","field2":"type of work or setting","pieces":"number","notes":"special instructions","summary":"1 sentence in English"}\n{"client":"","orderRef":"","field1":"${C.fieldLabel} value or empty","field2":"${C.subFieldLabel} value or empty","pieces":"","notes":"","summary":"1 sentence"}` }
+            { type:"text", text:`Extract order info from this delivery document. Return ONLY valid JSON, no backticks:\n{"client":"","orderRef":"","field1":"${C.fieldLabel} value or empty","field2":"${C.subFieldLabel} value or empty","pieces":"","notes":"","summary":"1 sentence"}` }
           ]}]
         })
       });
-      const data = await response.json();
+      const data = await res.json();
       const clean = data.content.map(x=>x.text||"").join("").replace(/```json|```/g,"").trim();
       clearInterval(iv);
       setExtracted(JSON.parse(clean));
