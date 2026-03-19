@@ -388,7 +388,7 @@ export default function App() {
                 {/* Status filter pills */}
                 <div style={{ display:"flex", gap:8, overflowX:"auto", marginBottom:20, paddingBottom:2 }}>
                   {[["all","All",orders.length], ...Object.entries(C.statuses).map(([k,v])=>[k,v.label,counts[k]])].map(([key,label,cnt])=>(
-                    <button key={key} style={{ padding:"7px 16px", borderRadius:100, border:"1.5px solid #E5E5EA", background:"white", fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", color:"#1C1C1E", flexShrink:0 }}>
+                    <button key={key} style={{ padding:"7px 16px", borderRadius:100, border:"1.5px solid #E5E5EA", background:"white", fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", color: filterStatus===key ? ACCENT : "#1C1C1E", flexShrink:0 }} onClick={()=>setFilterStatus(key)}>
                       {label}&nbsp;<span style={{ color:"#C7C7CC", fontWeight:400 }}>{cnt}</span>
                     </button>
                   ))}
