@@ -147,7 +147,7 @@ export default function App() {
     const iv = setInterval(()=>{ i=(i+1)%MSGS.length; setAiMsg(MSGS[i]); },1400);
     try {
       const b64 = imgData.split(",")[1];
-      const res = await fetch("/api/analyze",{
+      const response = await fetch("/api/analyze",{
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800,
           messages:[{ role:"user", content:[
