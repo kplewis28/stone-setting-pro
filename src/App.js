@@ -152,7 +152,7 @@ export default function App() {
         body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800,
           messages:[{ role:"user", content:[
             { type:"image", source:{ type:"base64", media_type: imgFile.type||"image/jpeg", data:b64 }},
-            { type:"text", text:`Extract order info from this delivery document. Return ONLY valid JSON, no backticks:\n{"client":"","orderRef":"","field1":"${C.fieldLabel} value or empty","field2":"${C.subFieldLabel} value or empty","pieces":"","notes":"","summary":"1 sentence"}` }
+            { type:"text", text:`You are reading a jewelry delivery note sent TO a stone setter in Switzerland. The CLIENT is the jewelry company that SENT this document - look for the company name in the letterhead or signature, NOT the recipient address at top. Return ONLY valid JSON no backticks: {"client":"name of jewelry company that sent document","orderRef":"order reference number","field1":"type of jewelry piece or metal","field2":"type of work requested","pieces":"number of pieces","notes":"special instructions","summary":"1 sentence in English"}` }
           ]}]
         })
       });
