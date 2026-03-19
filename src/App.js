@@ -117,6 +117,8 @@ const SectionTitle = ({ children }) => (
 // ─── MAIN APP ────────────────────────────────────────────
 export default function App() {
   const [tab, setTab]           = useState("home");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterDate, setFilterDate]   = useState("");
   const [orders, setOrders]     = useState(SAMPLE_ORDERS);
   const [view, setView]         = useState("list");
   const [selectedId, setSelectedId] = useState(null);
@@ -136,6 +138,7 @@ export default function App() {
   const subtotal = items.reduce((s,it) => s + (parseFloat(it.qty)||0)*(parseFloat(it.price)||0), 0);
   const tax      = subtotal * C.taxRate;
   const total    = subtotal + tax;
+  const filteredOrders = orders.filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; return statusOk && dateOk; });
   const counts   = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
   const pending  = orders.filter(o=>o.status==="done").reduce((s,o)=>s+(o.amount||0),0);
 
@@ -147,16 +150,16 @@ export default function App() {
     const iv = setInterval(()=>{ i=(i+1)%MSGS.length; setAiMsg(MSGS[i]); },1400);
     try {
       const b64 = imgData.split(",")[1];
-      const response = await fetch("/api/analyze",{
+      const res = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800,
           messages:[{ role:"user", content:[
             { type:"image", source:{ type:"base64", media_type: imgFile.type||"image/jpeg", data:b64 }},
-            { type:"text", text:`You are reading a jewelry delivery note sent TO a stone setter in Switzerland. The CLIENT is the jewelry company that SENT this document - look for the company name in the letterhead or signature, NOT the recipient address at top. Return ONLY valid JSON no backticks: {"client":"name of jewelry company that sent document","orderRef":"order reference number","field1":"type of jewelry piece or metal","field2":"type of work requested","pieces":"number of pieces","notes":"special instructions","summary":"1 sentence in English"}` }
+            { type:"text", text:`Extract order info from this delivery document. Return ONLY valid JSON, no backticks:\n{"client":"","orderRef":"","field1":"${C.fieldLabel} value or empty","field2":"${C.subFieldLabel} value or empty","pieces":"","notes":"","summary":"1 sentence"}` }
           ]}]
         })
       });
-      const data = await response.json();
+      const data = await res.json();
       const clean = data.content.map(x=>x.text||"").join("").replace(/```json|```/g,"").trim();
       clearInterval(iv);
       setExtracted(JSON.parse(clean));
@@ -391,8 +394,14 @@ export default function App() {
                   ))}
                 </div>
 
+                
+                {/* Date filter */}
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+                  <input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ flex:1, padding:"9px 12px", border:"1.5px solid #E5E5EA", borderRadius:10, fontFamily:"DM Sans,sans-serif", fontSize:13, color:"#1C1C1E", background:"white", outline:"none" }}/>
+                  {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"9px 14px", border:"1.5px solid #E5E5EA", borderRadius:10, background:"white", fontSize:12, color:"#8E8E93", cursor:"pointer" }}>Clear</button>}
+                </div>
                 {/* Order rows — minimal: client + status + one line of meta */}
-                {orders.map(o => (
+                {filteredOrders.map(o => (
                   <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); }} style={{ width:"100%", background:"white", border:"1.5px solid #F2F2F7", borderRadius:16, padding:"16px 18px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", textAlign:"left" }}>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:15, fontWeight:700, color:"#1C1C1E", marginBottom:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{o.client}</div>
