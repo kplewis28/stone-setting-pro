@@ -176,7 +176,8 @@ export default function App() {
     setPhotoStep("done");
   };
 
-  const resetPhoto = () => { setPhotoStep("capture"); setImgData(null); setImgFile(null); setExtracted(null); };
+  const resetPhoto = () => { alert("Error: " + e.message);
+setPhotoStep("capture"); setImgData(null); setImgFile(null); setExtracted(null); };
 
   const goHome = () => { setTab("home"); setView("list"); setPhotoStep("capture"); setInvView("form"); };
 
