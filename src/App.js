@@ -1,16 +1,21 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import * as XLSX from "xlsx";
 
 // ─── CLIENT CONFIG — only this changes per client ───────
 const CONFIG = {
   ownerName: "Marco",
   businessName: "Stone Setting Pro",
   businessType: "Stone Setting",
+  address: "Musterstrasse 1\n8000 Zürich",
+  phone: "+41 (0)78 000 00 00",
   location: "Zürich, Switzerland",
   currency: "CHF",
-  taxLabel: "MwSt.",
+  taxLabel: "MWST.",
   taxRate: 0.081,
-  paymentTerms: "Payable within 30 days",
+  vatId: "CHE-000.000.000 MWST",
+  paymentTerms: "Betrag zahlbar innerhalb von 10 Tagen.",
   bankDetails: "IBAN CH00 0000 0000 0000 0000 0",
+  porto: 0,
   accentColor: "#FF6B2B",
   serviceTypes: ["Pavé", "Bezel", "Prong", "Channel", "Flush", "Invisible"],
   itemCategories: ["Diamond", "Ruby", "Emerald", "Sapphire", "Amethyst", "Other"],
@@ -119,7 +124,7 @@ export default function App() {
   const [tab, setTab]           = useState("home");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDate, setFilterDate]   = useState("");
-  const [orders, setOrders]     = useState(SAMPLE_ORDERS);
+  const [orders, setOrders]     = useState(() => { try { const s = localStorage.getItem("ssp_orders"); return s ? JSON.parse(s) : SAMPLE_ORDERS; } catch { return SAMPLE_ORDERS; } });
   const [view, setView]         = useState("list");
   const [selectedId, setSelectedId] = useState(null);
   const [draft, setDraft]       = useState(newOrder());
@@ -127,6 +132,7 @@ export default function App() {
   const [invClient, setInvClient] = useState("");
   const [invDate, setInvDate]   = useState(new Date().toISOString().split("T")[0]);
   const [invView, setInvView]   = useState("form");
+  const [rechnungData, setRechnungData] = useState(null);
   const [photoStep, setPhotoStep] = useState("capture");
   const [imgData, setImgData]   = useState(null);
   const [imgFile, setImgFile]   = useState(null);
@@ -134,6 +140,8 @@ export default function App() {
   const [aiMsg, setAiMsg]       = useState("");
   const [extracted, setExtracted] = useState(null);
   const fileRef = useRef();
+
+  useEffect(() => { localStorage.setItem("ssp_orders", JSON.stringify(orders)); }, [orders]);
 
   const subtotal = items.reduce((s,it) => s + (parseFloat(it.qty)||0)*(parseFloat(it.price)||0), 0);
   const tax      = subtotal * C.taxRate;
@@ -176,10 +184,138 @@ export default function App() {
     setPhotoStep("done");
   };
 
-  const resetPhoto = () => { alert("Error: " + e.message);
-setPhotoStep("capture"); setImgData(null); setImgFile(null); setExtracted(null); };
+  const resetPhoto = () => { setPhotoStep("capture"); setImgData(null); setImgFile(null); setExtracted(null); };
 
   const goHome = () => { setTab("home"); setView("list"); setPhotoStep("capture"); setInvView("form"); };
+
+  // ── EXCEL EXPORT ──
+  const orderToRow = o => ({
+    "Order #":         o.id,
+    "Client":          o.client,
+    "Received":        o.received,
+    [C.fieldLabel]:    o.field1,
+    [C.subFieldLabel]: o.field2,
+    [C.piecesLabel]:   o.pieces,
+    "Status":          C.statuses[o.status]?.label || o.status,
+    "Amount":          o.amount || 0,
+    "Notes":           o.notes,
+  });
+
+  const exportToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredOrders.map(orderToRow));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Orders");
+    XLSX.writeFile(wb, `orders-${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
+
+  // ── RECHNUNG PRINT ──
+  const printRechnung = (order, unitPrice) => {
+    const qty      = parseFloat(order.pieces) || 1;
+    const price    = parseFloat(unitPrice)    || 0;
+    const subtotal = qty * price;
+    const porto    = C.porto || 0;
+    const mwst     = subtotal * C.taxRate;
+    const total    = subtotal + porto + mwst;
+    const fmtCHF   = n => `CHF ${Number(n).toFixed(2).replace(".", ",")}`;
+    const invNr    = `RS-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,"0")}-${order.id}`;
+    const desc     = [order.field1, order.field2].filter(Boolean).join(" · ");
+
+    const html = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
+<title>Rechnung ${invNr}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #222; padding: 40px 50px; max-width: 800px; margin: 0 auto; }
+  .logo-row { display:flex; align-items:center; gap:16px; margin-bottom:32px; }
+  .logo-box { width:60px; height:60px; background:#f5f0e8; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:28px; }
+  .biz-name { font-size:18pt; font-weight:bold; line-height:1.2; }
+  .address { font-size:9pt; color:#444; margin-bottom:28px; line-height:1.7; }
+  .rechnung-title { font-size:20pt; font-weight:bold; letter-spacing:4px; color:#c0392b; border:3px solid #c0392b; display:inline-block; padding:4px 14px; margin-bottom:6px; text-transform:uppercase; }
+  .datum { font-size:10pt; font-weight:bold; margin-bottom:28px; }
+  .recipient-block { float:right; text-align:left; font-size:10pt; line-height:1.8; margin-top:-80px; margin-bottom:32px; }
+  .clearfix::after { content:""; display:table; clear:both; }
+  table { width:100%; border-collapse:collapse; margin-top:40px; margin-bottom:0; }
+  thead tr { background:#1a1a1a; color:white; }
+  thead th { padding:8px 10px; font-size:10pt; text-align:left; }
+  thead th.right { text-align:right; }
+  tbody tr td { padding:8px 10px; border-bottom:1px solid #e0e0e0; font-size:10pt; }
+  tbody tr td.right { text-align:right; }
+  .totals { margin-top:0; width:100%; }
+  .totals td { padding:5px 10px; font-size:10pt; }
+  .totals td.right { text-align:right; }
+  .totals .porto td { color:#555; }
+  .totals .mwst td { color:#555; }
+  .totals .total-row td { font-weight:bold; font-size:12pt; border-top:2px solid #222; padding-top:8px; }
+  .total-row td.big { font-size:13pt; text-decoration:underline; }
+  .footer { margin-top:40px; font-size:9.5pt; line-height:1.9; color:#333; }
+  .footer strong { color:#111; }
+  .thanks { margin-top:24px; font-size:10pt; }
+  @media print { body { padding:20px 30px; } }
+</style></head>
+<body>
+  <div class="logo-row">
+    <div class="logo-box">💎</div>
+    <div><div class="biz-name">${C.businessName}</div></div>
+  </div>
+
+  <div class="address">${C.address.replace(/\n/g,"<br>")}<br>Telefon ${C.phone}</div>
+
+  <div class="clearfix">
+    <div>
+      <div class="rechnung-title">RECHNUNG</div>
+      <div class="datum">DATUM: ${new Date(order.received || Date.now()).toLocaleDateString("de-CH")}</div>
+    </div>
+    <div class="recipient-block">
+      ${order.client}<br>
+      ${invNr}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:55%">BESCHREIBUNG</th>
+        <th class="right" style="width:15%">Anzahl</th>
+        <th class="right" style="width:15%">Stückpreis</th>
+        <th class="right" style="width:15%"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>${desc || order.notes || "—"}</td>
+        <td class="right">${Number(qty).toFixed(2)}</td>
+        <td class="right">${fmtCHF(price)}</td>
+        <td class="right">${fmtCHF(subtotal)}</td>
+      </tr>
+    </tbody>
+  </table>
+  <table class="totals">
+    <tbody>
+      <tr class="porto"><td colspan="3" class="right">Total ohne ${C.taxLabel}</td><td class="right" style="width:22%">${fmtCHF(subtotal)}</td></tr>
+      <tr class="porto"><td colspan="3" class="right">Porto</td><td class="right">${fmtCHF(porto)}</td></tr>
+      <tr class="mwst"><td colspan="3" class="right">${(C.taxRate*100).toFixed(1).replace(".",",")}% ${C.taxLabel}</td><td class="right">CHF &nbsp;${Number(mwst).toFixed(2).replace(".",",")}</td></tr>
+      <tr class="total-row"><td colspan="3" class="right"><strong>RECHNUNGSBETRAG</strong></td><td class="right big">CHF ${Number(total).toFixed(2).replace(".",",")}</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    Zahlungsempfänger: <strong>${C.ownerName}</strong><br>
+    ${C.businessName}<br>
+    ${C.bankDetails}<br>
+    ${C.paymentTerms}<br>
+    MWST-Nr. ${C.vatId}
+  </div>
+  <div class="thanks">
+    <br>Danke für Ihren geschätzten Auftrag.<br><br>
+    Freundliche Grüsse<br><br>
+    ${C.ownerName}
+  </div>
+  <script>window.onload=()=>{ window.print(); }</script>
+</body></html>`;
+
+    const w = window.open("", "_blank");
+    w.document.write(html);
+    w.document.close();
+  };
 
   // ── DETAIL ORDER ──
   const selectedOrder = orders.find(o=>o.id===selectedId);
@@ -396,10 +532,11 @@ setPhotoStep("capture"); setImgData(null); setImgFile(null); setExtracted(null);
                 </div>
 
                 
-                {/* Date filter */}
+                {/* Date filter + Export */}
                 <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
                   <input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ flex:1, padding:"9px 12px", border:"1.5px solid #E5E5EA", borderRadius:10, fontFamily:"DM Sans,sans-serif", fontSize:13, color:"#1C1C1E", background:"white", outline:"none" }}/>
                   {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"9px 14px", border:"1.5px solid #E5E5EA", borderRadius:10, background:"white", fontSize:12, color:"#8E8E93", cursor:"pointer" }}>Clear</button>}
+                  <button onClick={exportToExcel} style={{ padding:"9px 14px", border:"1.5px solid #E5E5EA", borderRadius:10, background:"white", fontSize:12, fontWeight:600, color:ACCENT, cursor:"pointer", whiteSpace:"nowrap" }}>↓ Excel</button>
                 </div>
                 {/* Order rows — minimal: client + status + one line of meta */}
                 {filteredOrders.map(o => (
@@ -494,22 +631,24 @@ setPhotoStep("capture"); setImgData(null); setImgFile(null); setExtracted(null);
                   )}
                 </Card>
 
-                {/* Amount + invoice — only when done */}
+                {/* Rechnung — only when done */}
                 {selectedOrder.status==="done" && (
                   <Card>
-                    <Field label={`Amount to charge (${C.currency})`}>
+                    <Field label={`Stückpreis (${C.currency})`}>
                       <Input
                         type="number" placeholder="0.00"
                         value={selectedOrder.amount||""}
                         onChange={e=>setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,amount:parseFloat(e.target.value)||0}:o))}
                       />
                     </Field>
-                    <BtnPrimary onClick={()=>{
-                      setInvClient(selectedOrder.client);
-                      setItems([{ ...newItem(), desc:`${selectedOrder.field1} · ${selectedOrder.field2}`, field1:selectedOrder.field1, field2:selectedOrder.field2, qty:selectedOrder.pieces||1, price:selectedOrder.amount||"" }]);
-                      setTab("invoice"); setInvView("form");
-                    }}>
-                      <Icon name="invoice" size={18} color="white"/> Create Invoice
+                    {selectedOrder.amount>0 && (
+                      <div style={{ fontSize:12, color:"#8E8E93", marginBottom:14, lineHeight:1.6 }}>
+                        {selectedOrder.pieces} × {C.currency} {fmt(selectedOrder.amount)} = <strong style={{color:"#1C1C1E"}}>{C.currency} {fmt((parseFloat(selectedOrder.pieces)||1)*selectedOrder.amount)}</strong>
+                        &nbsp;+ {(C.taxRate*100).toFixed(1)}% MWST = <strong style={{color:ACCENT}}>{C.currency} {fmt(((parseFloat(selectedOrder.pieces)||1)*selectedOrder.amount)*(1+C.taxRate))}</strong>
+                      </div>
+                    )}
+                    <BtnPrimary disabled={!selectedOrder.amount} onClick={()=>setRechnungData({order:selectedOrder, unitPrice:selectedOrder.amount})}>
+                      <Icon name="invoice" size={18} color="white"/> Rechnung erstellen
                     </BtnPrimary>
                   </Card>
                 )}
@@ -641,6 +780,120 @@ setPhotoStep("capture"); setImgData(null); setImgFile(null); setExtracted(null);
           </div>
         </div>
       )}
+
+      {/* ── RECHNUNG PREVIEW OVERLAY ── */}
+      {rechnungData && (() => {
+        const { order, unitPrice } = rechnungData;
+        const qty      = parseFloat(order.pieces) || 1;
+        const price    = parseFloat(unitPrice) || 0;
+        const sub      = qty * price;
+        const porto    = C.porto || 0;
+        const mwst     = sub * C.taxRate;
+        const total    = sub + porto + mwst;
+        const fC       = n => `CHF ${Number(n).toFixed(2).replace(".", ",")}`;
+        const invNr    = `RS-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,"0")}-${order.id}`;
+        const desc     = [order.field1, order.field2].filter(Boolean).join(" · ");
+        const dateStr  = order.received ? new Date(order.received+"T12:00:00").toLocaleDateString("de-CH") : new Date().toLocaleDateString("de-CH");
+
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1000, overflowY:"auto", display:"flex", flexDirection:"column" }}>
+            {/* top bar */}
+            <div style={{ position:"sticky", top:0, background:"white", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", borderBottom:"1px solid #E5E5EA", zIndex:10, flexShrink:0 }}>
+              <button onClick={()=>setRechnungData(null)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#1C1C1E", padding:"0 4px" }}>×</button>
+              <span style={{ fontWeight:700, fontSize:15, fontFamily:"'DM Sans',sans-serif" }}>Rechnung Vorschau</span>
+              <button onClick={()=>printRechnung(order, unitPrice)} style={{ background:ACCENT, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>⎙ Drucken / PDF</button>
+            </div>
+
+            {/* invoice paper */}
+            <div style={{ background:"#F2F2F7", flex:1, padding:"24px 16px 40px" }}>
+              <div style={{ background:"white", maxWidth:640, margin:"0 auto", padding:"40px 44px", boxShadow:"0 4px 24px rgba(0,0,0,0.12)", borderRadius:4, fontFamily:"Arial, Helvetica, sans-serif" }}>
+
+                {/* LOGO + BUSINESS NAME */}
+                <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:28 }}>
+                  <div style={{ width:56, height:56, flexShrink:0 }}>
+                    <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="56" height="56">
+                      <circle cx="28" cy="28" r="28" fill="#FDF6E3"/>
+                      {[0,45,90,135,180,225,270,315].map(a=>(
+                        <ellipse key={a} cx="28" cy="28" rx="5" ry="12"
+                          transform={`rotate(${a} 28 28)`}
+                          fill="#C9A84C" opacity="0.85"/>
+                      ))}
+                      <circle cx="28" cy="28" r="7" fill="#C9A84C"/>
+                      <circle cx="28" cy="28" r="4" fill="#FDF6E3"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:17, fontWeight:700, color:"#1a1a1a", lineHeight:1.25 }}>{C.businessName.includes(" ") ? C.businessName.split(" ").slice(0,-1).join(" ") : C.businessName}</div>
+                    <div style={{ fontSize:17, fontWeight:700, color:"#1a1a1a" }}>{C.businessName.includes(" ") ? C.businessName.split(" ").slice(-1)[0] : ""}</div>
+                  </div>
+                </div>
+
+                {/* ADDRESS */}
+                <div style={{ fontSize:10, color:"#444", lineHeight:1.8, marginBottom:30 }}>
+                  {C.address.split("\n").map((l,i)=><span key={i}>{l}<br/></span>)}
+                  Telefon {C.phone}
+                </div>
+
+                {/* RECHNUNG title + date + recipient row */}
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:32 }}>
+                  <div>
+                    <div style={{ fontFamily:"'Arial Black',Arial,sans-serif", fontSize:20, fontWeight:900, letterSpacing:"0.18em", color:"#8B1A1A", textTransform:"uppercase", marginBottom:8 }}>RECHNUNG</div>
+                    <div style={{ fontSize:10, fontWeight:700, color:"#1a1a1a" }}>DATUM: {dateStr}</div>
+                  </div>
+                  <div style={{ textAlign:"left", fontSize:10, lineHeight:1.9, color:"#1a1a1a", paddingTop:4 }}>
+                    <div style={{ fontWeight:600 }}>{order.client}</div>
+                    <div style={{ color:"#555" }}>{invNr}</div>
+                    <div style={{ color:"#555" }}>{C.bankDetails}</div>
+                  </div>
+                </div>
+
+                {/* TABLE */}
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:10, marginBottom:0 }}>
+                  <thead>
+                    <tr style={{ background:"#1a1a1a", color:"white" }}>
+                      <th style={{ padding:"7px 10px", textAlign:"left", fontWeight:700, letterSpacing:"0.04em" }}>BESCHREIBUNG</th>
+                      <th style={{ padding:"7px 10px", textAlign:"right", fontWeight:700, letterSpacing:"0.04em" }}>Anzahl</th>
+                      <th style={{ padding:"7px 10px", textAlign:"right", fontWeight:700, letterSpacing:"0.04em" }}>Stückpreis</th>
+                      <th style={{ padding:"7px 10px", textAlign:"right", fontWeight:700 }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", fontSize:10 }}>{desc || order.notes || "—"}</td>
+                      <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", textAlign:"right" }}>{Number(qty).toFixed(2)}</td>
+                      <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", textAlign:"right" }}>{fC(price)}</td>
+                      <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", textAlign:"right" }}>{fC(sub)}</td>
+                    </tr>
+                    {/* totals rows */}
+                    <tr><td colSpan={3} style={{ padding:"6px 10px", textAlign:"right", fontSize:10, color:"#333" }}>Total ohne {C.taxLabel}</td><td style={{ padding:"6px 10px", textAlign:"right", fontSize:10 }}>{fC(sub)}</td></tr>
+                    <tr><td colSpan={3} style={{ padding:"4px 10px", textAlign:"right", fontSize:10, color:"#333" }}>Porto</td><td style={{ padding:"4px 10px", textAlign:"right", fontSize:10 }}>{fC(porto)}</td></tr>
+                    <tr><td colSpan={3} style={{ padding:"4px 10px", textAlign:"right", fontSize:10, color:"#333" }}>{(C.taxRate*100).toFixed(1).replace(".",",")}% {C.taxLabel}</td>
+                      <td style={{ padding:"4px 10px", textAlign:"right", fontSize:10 }}>CHF &nbsp;{Number(mwst).toFixed(2).replace(".",",")}</td></tr>
+                    <tr style={{ borderTop:"2px solid #1a1a1a" }}>
+                      <td colSpan={3} style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, fontSize:11, letterSpacing:"0.06em" }}>RECHNUNGSBETRAG</td>
+                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, fontSize:12, textDecoration:"underline", borderLeft:"1px solid #1a1a1a" }}>CHF {Number(total).toFixed(2).replace(".",",")}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* FOOTER */}
+                <div style={{ marginTop:32, fontSize:9.5, color:"#333", lineHeight:2 }}>
+                  Zahlungsempfänger: <strong>{C.ownerName}</strong><br/>
+                  {C.businessName}<br/>
+                  {C.bankDetails}<br/>
+                  {C.paymentTerms}<br/>
+                  MWST-Nr. {C.vatId}
+                </div>
+                <div style={{ marginTop:20, fontSize:10, color:"#333", lineHeight:2 }}>
+                  Danke für Ihren geschätzten Auftrag.<br/><br/>
+                  Freundliche Grüsse<br/><br/>
+                  {C.ownerName}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── BOTTOM NAV ── */}
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:430, background:"white", borderTop:"1px solid #F2F2F7", display:"flex", padding:"10px 0 24px", zIndex:100 }}>
