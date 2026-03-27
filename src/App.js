@@ -3,18 +3,18 @@ import * as XLSX from "xlsx";
 
 // ─── CLIENT CONFIG — only this changes per client ───────
 const CONFIG = {
-  ownerName: "Marco",
-  businessName: "Stone Setting Pro",
+  ownerName: "David Baer",
+  businessName: "Stone Art Precision GmbH",
   businessType: "Stone Setting",
-  address: "Musterstrasse 1\n8000 Zürich",
-  phone: "+41 (0)78 000 00 00",
-  location: "Zürich, Switzerland",
+  address: "Eichweid 1\n6203 Sempach Station",
+  phone: "+41 (0)78 839 73 23",
+  location: "Sempach Station, Switzerland",
   currency: "CHF",
   taxLabel: "MWST.",
   taxRate: 0.081,
-  vatId: "CHE-000.000.000 MWST",
+  vatId: "CHE-137.031.745 MWST",
   paymentTerms: "Betrag zahlbar innerhalb von 10 Tagen.",
-  bankDetails: "IBAN CH00 0000 0000 0000 0000 0",
+  bankDetails: "CH 40 0900 0000 1674 9039 3",
   porto: 0,
   accentColor: "#FF6B2B",
   serviceTypes: ["Pavé", "Bezel", "Prong", "Channel", "Flush", "Invisible"],
@@ -133,6 +133,7 @@ export default function App() {
   const [invDate, setInvDate]   = useState(new Date().toISOString().split("T")[0]);
   const [invView, setInvView]   = useState("form");
   const [rechnungData, setRechnungData] = useState(null);
+  const [rechnungPorto, setRechnungPorto] = useState("");
   const [photoStep, setPhotoStep] = useState("capture");
   const [imgData, setImgData]   = useState(null);
   const [imgFile, setImgFile]   = useState(null);
@@ -220,11 +221,10 @@ export default function App() {
   };
 
   // ── RECHNUNG PRINT ──
-  const printRechnung = (order, unitPrice) => {
+  const printRechnung = (order, unitPrice, porto = 0) => {
     const qty      = parseFloat(order.pieces) || 1;
     const price    = parseFloat(unitPrice)    || 0;
     const subtotal = qty * price;
-    const porto    = C.porto || 0;
     const mwst     = subtotal * C.taxRate;
     const total    = subtotal + porto + mwst;
     const fmtCHF   = n => `CHF ${Number(n).toFixed(2).replace(".", ",")}`;
@@ -264,8 +264,7 @@ export default function App() {
 </style></head>
 <body>
   <div class="logo-row">
-    <div class="logo-box">💎</div>
-    <div><div class="biz-name">${C.businessName}</div></div>
+    <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:56px;object-fit:contain;">
   </div>
 
   <div class="address">${C.address.replace(/\n/g,"<br>")}<br>Telefon ${C.phone}</div>
@@ -652,13 +651,20 @@ export default function App() {
                         onChange={e=>setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,amount:parseFloat(e.target.value)||0}:o))}
                       />
                     </Field>
+                    <Field label={`Porto (${C.currency})`}>
+                      <Input
+                        type="number" placeholder="0.00"
+                        value={rechnungPorto}
+                        onChange={e=>setRechnungPorto(e.target.value)}
+                      />
+                    </Field>
                     {selectedOrder.amount>0 && (
                       <div style={{ fontSize:12, color:"#8E8E93", marginBottom:14, lineHeight:1.6 }}>
                         {selectedOrder.pieces} × {C.currency} {fmt(selectedOrder.amount)} = <strong style={{color:"#1C1C1E"}}>{C.currency} {fmt((parseFloat(selectedOrder.pieces)||1)*selectedOrder.amount)}</strong>
                         &nbsp;+ {(C.taxRate*100).toFixed(1)}% MWST = <strong style={{color:ACCENT}}>{C.currency} {fmt(((parseFloat(selectedOrder.pieces)||1)*selectedOrder.amount)*(1+C.taxRate))}</strong>
                       </div>
                     )}
-                    <BtnPrimary disabled={!selectedOrder.amount} onClick={()=>setRechnungData({order:selectedOrder, unitPrice:selectedOrder.amount})}>
+                    <BtnPrimary disabled={!selectedOrder.amount} onClick={()=>{ setRechnungData({order:selectedOrder, unitPrice:selectedOrder.amount, porto:parseFloat(rechnungPorto)||0}); setRechnungPorto(""); }}>
                       <Icon name="invoice" size={18} color="white"/> Rechnung erstellen
                     </BtnPrimary>
                   </Card>
@@ -794,11 +800,10 @@ export default function App() {
 
       {/* ── RECHNUNG PREVIEW OVERLAY ── */}
       {rechnungData && (() => {
-        const { order, unitPrice } = rechnungData;
+        const { order, unitPrice, porto = 0 } = rechnungData;
         const qty      = parseFloat(order.pieces) || 1;
         const price    = parseFloat(unitPrice) || 0;
         const sub      = qty * price;
-        const porto    = C.porto || 0;
         const mwst     = sub * C.taxRate;
         const total    = sub + porto + mwst;
         const fC       = n => `CHF ${Number(n).toFixed(2).replace(".", ",")}`;
@@ -812,31 +817,16 @@ export default function App() {
             <div style={{ position:"sticky", top:0, background:"white", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", borderBottom:"1px solid #E5E5EA", zIndex:10, flexShrink:0 }}>
               <button onClick={()=>setRechnungData(null)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#1C1C1E", padding:"0 4px" }}>×</button>
               <span style={{ fontWeight:700, fontSize:15, fontFamily:"'DM Sans',sans-serif" }}>Rechnung Vorschau</span>
-              <button onClick={()=>printRechnung(order, unitPrice)} style={{ background:ACCENT, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>⎙ Drucken / PDF</button>
+              <button onClick={()=>printRechnung(order, unitPrice, porto)} style={{ background:ACCENT, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>⎙ Drucken / PDF</button>
             </div>
 
             {/* invoice paper */}
             <div style={{ background:"#F2F2F7", flex:1, padding:"24px 16px 40px" }}>
               <div style={{ background:"white", maxWidth:640, margin:"0 auto", padding:"40px 44px", boxShadow:"0 4px 24px rgba(0,0,0,0.12)", borderRadius:4, fontFamily:"Arial, Helvetica, sans-serif" }}>
 
-                {/* LOGO + BUSINESS NAME */}
-                <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:28 }}>
-                  <div style={{ width:56, height:56, flexShrink:0 }}>
-                    <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="56" height="56">
-                      <circle cx="28" cy="28" r="28" fill="#FDF6E3"/>
-                      {[0,45,90,135,180,225,270,315].map(a=>(
-                        <ellipse key={a} cx="28" cy="28" rx="5" ry="12"
-                          transform={`rotate(${a} 28 28)`}
-                          fill="#C9A84C" opacity="0.85"/>
-                      ))}
-                      <circle cx="28" cy="28" r="7" fill="#C9A84C"/>
-                      <circle cx="28" cy="28" r="4" fill="#FDF6E3"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <div style={{ fontSize:17, fontWeight:700, color:"#1a1a1a", lineHeight:1.25 }}>{C.businessName.includes(" ") ? C.businessName.split(" ").slice(0,-1).join(" ") : C.businessName}</div>
-                    <div style={{ fontSize:17, fontWeight:700, color:"#1a1a1a" }}>{C.businessName.includes(" ") ? C.businessName.split(" ").slice(-1)[0] : ""}</div>
-                  </div>
+                {/* LOGO */}
+                <div style={{ marginBottom:28 }}>
+                  <img src="/logo.png" alt={C.businessName} style={{ height:56, objectFit:"contain" }} />
                 </div>
 
                 {/* ADDRESS */}
