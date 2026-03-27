@@ -150,6 +150,15 @@ export default function App() {
   const counts   = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
   const pending  = orders.filter(o=>o.status==="done").reduce((s,o)=>s+(o.amount||0),0);
 
+  // ── GOOGLE SHEETS SYNC ──
+  const syncToSheets = (order) => {
+    fetch("/api/sheets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(order),
+    }).catch(e => console.error("Sheets sync failed:", e));
+  };
+
   // ── PHOTO AI ──
   const analyzePhoto = async () => {
     setAiLoading(true);
@@ -158,8 +167,8 @@ export default function App() {
     const iv = setInterval(()=>{ i=(i+1)%MSGS.length; setAiMsg(MSGS[i]); },1400);
     try {
       const b64 = imgData.split(",")[1];
-      const response = await fetch("/api/analyze",{
-        method:"POST", headers:{"Content-Type":"application/json"},
+      const response = await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST", headers:{"Content-Type":"application/json","x-api-key":process.env.REACT_APP_ANTHROPIC_KEY,"anthropic-version":"2023-06-01"},
         body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800,
           messages:[{ role:"user", content:[
             { type:"image", source:{ type:"base64", media_type: imgFile.type||"image/jpeg", data:b64 }},
@@ -180,7 +189,9 @@ export default function App() {
   };
 
   const confirmOrder = () => {
-    setOrders([{ ...newOrder(), client:extracted.client||"", field1:extracted.field1||"", field2:extracted.field2||"", pieces:extracted.pieces||"", notes:extracted.notes||"" }, ...orders]);
+    const order = { ...newOrder(), client:extracted.client||"", field1:extracted.field1||"", field2:extracted.field2||"", pieces:extracted.pieces||"", notes:extracted.notes||"" };
+    setOrders([order, ...orders]);
+    syncToSheets(order);
     setPhotoStep("done");
   };
 
@@ -586,7 +597,7 @@ export default function App() {
                 <Field label="Notes">
                   <Textarea value={draft.notes} onChange={e=>setDraft({...draft,notes:e.target.value})} placeholder="Special instructions…"/>
                 </Field>
-                <BtnPrimary disabled={!draft.client} onClick={()=>{ if(draft.client){ setOrders([{...draft},...orders]); setDraft(newOrder()); setView("list"); } }}>
+                <BtnPrimary disabled={!draft.client} onClick={()=>{ if(draft.client){ setOrders([{...draft},...orders]); syncToSheets(draft); setDraft(newOrder()); setView("list"); } }}>
                   Save Order
                 </BtnPrimary>
               </Card>
