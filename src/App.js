@@ -235,36 +235,40 @@ export default function App() {
 <title>Rechnung ${invNr}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #222; padding: 40px 50px; max-width: 800px; margin: 0 auto; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #222; padding: 40px 50px; max-width: 800px; margin: 0 auto; }
   .logo-row { display:flex; align-items:center; gap:16px; margin-bottom:32px; }
   .logo-box { width:60px; height:60px; background:#f5f0e8; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:28px; }
-  .biz-name { font-size:18pt; font-weight:bold; line-height:1.2; }
-  .address { font-size:9pt; color:#444; margin-bottom:28px; line-height:1.7; }
-  .rechnung-title { font-size:20pt; font-weight:bold; letter-spacing:4px; color:${ACCENT}; border:3px solid ${ACCENT}; display:inline-block; padding:4px 14px; margin-bottom:6px; text-transform:uppercase; }
-  .datum { font-size:10pt; font-weight:bold; margin-bottom:28px; }
-  .recipient-block { float:right; text-align:left; font-size:10pt; line-height:1.8; margin-top:-80px; margin-bottom:32px; }
+  .biz-name { font-size:19pt; font-weight:bold; line-height:1.2; }
+  .address { font-size:10pt; color:#444; margin-bottom:28px; line-height:1.7; }
+  .rechnung-title { font-size:21pt; font-weight:bold; letter-spacing:4px; color:${ACCENT}; border:3px solid ${ACCENT}; display:inline-block; padding:4px 14px; margin-bottom:6px; text-transform:uppercase; }
+  .datum { font-size:11pt; font-weight:bold; margin-bottom:28px; }
+  .recipient-block { float:right; text-align:left; font-size:11pt; line-height:1.8; margin-top:-80px; margin-bottom:32px; }
   .clearfix::after { content:""; display:table; clear:both; }
   table { width:100%; border-collapse:collapse; margin-top:40px; margin-bottom:0; }
   thead tr { background:#e8edf2; color:#1a1a1a; }
-  thead th { padding:8px 10px; font-size:10pt; text-align:left; }
+  thead th { padding:8px 10px; font-size:11pt; text-align:left; }
   thead th.right { text-align:right; }
-  tbody tr td { padding:8px 10px; border-bottom:1px solid #e0e0e0; font-size:10pt; }
+  tbody tr td { padding:8px 10px; border-bottom:1px solid #e0e0e0; font-size:11pt; }
   tbody tr td.right { text-align:right; }
   .totals { margin-top:0; width:100%; }
-  .totals td { padding:5px 10px; font-size:10pt; }
+  .totals td { padding:5px 10px; font-size:11pt; }
   .totals td.right { text-align:right; }
   .totals .porto td { color:#555; }
   .totals .mwst td { color:#555; }
-  .totals .total-row td { font-weight:bold; font-size:12pt; border-top:2px solid #222; padding-top:8px; }
-  .total-row td.big { font-size:13pt; text-decoration:underline; }
-  .footer { margin-top:40px; font-size:9.5pt; line-height:1.9; color:#333; }
+  .totals .total-row td { font-weight:bold; font-size:13pt; border-top:2px solid #222; padding-top:8px; }
+  .total-row td.big { font-size:14pt; text-decoration:underline; }
+  .footer { margin-top:40px; font-size:10.5pt; line-height:1.9; color:#333; }
   .footer strong { color:#111; }
-  .thanks { margin-top:24px; font-size:10pt; }
-  @media print { body { padding:20px 30px; } }
+  .thanks { margin-top:24px; font-size:11pt; }
+  @media print {
+    @page { size: A4; margin: 12mm 14mm; }
+    html, body { height: 100%; padding: 0; margin: 0; }
+    body { transform-origin: top left; transform: scale(0.82); width: 122%; }
+  }
 </style></head>
 <body>
   <div class="logo-row">
-    <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:56px;object-fit:contain;">
+    <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:90px;object-fit:contain;">
   </div>
 
   <div class="address">${C.address.replace(/\n/g,"<br>")}<br>Telefon ${C.phone}</div>
@@ -307,6 +311,9 @@ export default function App() {
     </tbody>
   </table>
 
+  <div style="margin-top:24px;text-align:left;">
+    <img src="${window.location.origin}/qr.png" alt="QR Zahlung" style="width:120px;height:120px;object-fit:contain;">
+  </div>
   <div class="footer">
     Zahlungsempfänger: <strong>${C.businessName}</strong><br>
     ${C.bankDetails}<br>
@@ -317,9 +324,6 @@ export default function App() {
     <br>Danke für Ihren geschätzten Auftrag.<br><br>
     Freundliche Grüsse<br><br>
     ${C.ownerName}
-  </div>
-  <div style="margin-top:24px;text-align:center;">
-    <img src="${window.location.origin}/qr.png" alt="QR Zahlung" style="width:120px;height:120px;object-fit:contain;">
   </div>
   <script>window.onload=()=>{ window.print(); }</script>
 </body></html>`;
@@ -828,11 +832,11 @@ export default function App() {
 
                 {/* LOGO */}
                 <div style={{ marginBottom:28 }}>
-                  <img src="/logo.png" alt={C.businessName} style={{ height:56, objectFit:"contain" }} />
+                  <img src="/logo.png" alt={C.businessName} style={{ height:90, objectFit:"contain" }} />
                 </div>
 
                 {/* ADDRESS */}
-                <div style={{ fontSize:10, color:"#444", lineHeight:1.8, marginBottom:30 }}>
+                <div style={{ fontSize:11, color:"#444", lineHeight:1.8, marginBottom:30 }}>
                   {C.address.split("\n").map((l,i)=><span key={i}>{l}<br/></span>)}
                   Telefon {C.phone}
                 </div>
@@ -840,10 +844,10 @@ export default function App() {
                 {/* RECHNUNG title + date + recipient row */}
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:32 }}>
                   <div>
-                    <div style={{ fontFamily:"'Arial Black',Arial,sans-serif", fontSize:20, fontWeight:900, letterSpacing:"0.18em", color:ACCENT, textTransform:"uppercase", marginBottom:8 }}>RECHNUNG</div>
-                    <div style={{ fontSize:10, fontWeight:700, color:"#1a1a1a" }}>DATUM: {dateStr}</div>
+                    <div style={{ fontFamily:"'Arial Black',Arial,sans-serif", fontSize:21, fontWeight:900, letterSpacing:"0.18em", color:"#555", textTransform:"uppercase", marginBottom:8 }}>RECHNUNG</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#1a1a1a" }}>DATUM: {dateStr}</div>
                   </div>
-                  <div style={{ textAlign:"left", fontSize:10, lineHeight:1.9, color:"#1a1a1a", paddingTop:4 }}>
+                  <div style={{ textAlign:"left", fontSize:11, lineHeight:1.9, color:"#1a1a1a", paddingTop:4 }}>
                     <div style={{ fontWeight:600 }}>{order.client}</div>
                     <div style={{ color:"#555" }}>{invNr}</div>
                     <div style={{ color:"#555" }}>{C.bankDetails}</div>
@@ -851,7 +855,7 @@ export default function App() {
                 </div>
 
                 {/* TABLE */}
-                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:10, marginBottom:0 }}>
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11, marginBottom:0 }}>
                   <thead>
                     <tr style={{ background:"#e8edf2", color:"#1a1a1a" }}>
                       <th style={{ padding:"7px 10px", textAlign:"left", fontWeight:700, letterSpacing:"0.04em" }}>BESCHREIBUNG</th>
@@ -862,37 +866,37 @@ export default function App() {
                   </thead>
                   <tbody>
                     <tr>
-                      <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", fontSize:10 }}>{desc || order.notes || "—"}</td>
+                      <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", fontSize:11 }}>{desc || order.notes || "—"}</td>
                       <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", textAlign:"right" }}>{Number(qty).toFixed(2)}</td>
                       <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", textAlign:"right" }}>{fC(price)}</td>
                       <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", textAlign:"right" }}>{fC(sub)}</td>
                     </tr>
                     {/* totals rows */}
-                    <tr><td colSpan={3} style={{ padding:"6px 10px", textAlign:"right", fontSize:10, color:"#333" }}>Total ohne {C.taxLabel}</td><td style={{ padding:"6px 10px", textAlign:"right", fontSize:10 }}>{fC(sub)}</td></tr>
-                    <tr><td colSpan={3} style={{ padding:"4px 10px", textAlign:"right", fontSize:10, color:"#333" }}>Porto</td><td style={{ padding:"4px 10px", textAlign:"right", fontSize:10 }}>{fC(porto)}</td></tr>
-                    <tr><td colSpan={3} style={{ padding:"4px 10px", textAlign:"right", fontSize:10, color:"#333" }}>{(C.taxRate*100).toFixed(1).replace(".",",")}% {C.taxLabel}</td>
-                      <td style={{ padding:"4px 10px", textAlign:"right", fontSize:10 }}>CHF &nbsp;{Number(mwst).toFixed(2).replace(".",",")}</td></tr>
+                    <tr><td colSpan={3} style={{ padding:"6px 10px", textAlign:"right", fontSize:11, color:"#333" }}>Total ohne {C.taxLabel}</td><td style={{ padding:"6px 10px", textAlign:"right", fontSize:11 }}>{fC(sub)}</td></tr>
+                    <tr><td colSpan={3} style={{ padding:"4px 10px", textAlign:"right", fontSize:11, color:"#333" }}>Porto</td><td style={{ padding:"4px 10px", textAlign:"right", fontSize:11 }}>{fC(porto)}</td></tr>
+                    <tr><td colSpan={3} style={{ padding:"4px 10px", textAlign:"right", fontSize:11, color:"#333" }}>{(C.taxRate*100).toFixed(1).replace(".",",")}% {C.taxLabel}</td>
+                      <td style={{ padding:"4px 10px", textAlign:"right", fontSize:11 }}>CHF &nbsp;{Number(mwst).toFixed(2).replace(".",",")}</td></tr>
                     <tr style={{ borderTop:"2px solid #1a1a1a" }}>
-                      <td colSpan={3} style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, fontSize:11, letterSpacing:"0.06em" }}>RECHNUNGSBETRAG</td>
-                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, fontSize:12, textDecoration:"underline", borderLeft:"1px solid #1a1a1a" }}>CHF {Number(total).toFixed(2).replace(".",",")}</td>
+                      <td colSpan={3} style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, fontSize:12, letterSpacing:"0.06em" }}>RECHNUNGSBETRAG</td>
+                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, fontSize:13, textDecoration:"underline", borderLeft:"1px solid #1a1a1a" }}>CHF {Number(total).toFixed(2).replace(".",",")}</td>
                     </tr>
                   </tbody>
                 </table>
 
                 {/* FOOTER */}
-                <div style={{ marginTop:32, fontSize:9.5, color:"#333", lineHeight:2 }}>
+                <div style={{ marginTop:24, textAlign:"left" }}>
+                  <img src="/qr.png" alt="QR Zahlung" style={{ width:120, height:120, objectFit:"contain" }} />
+                </div>
+                <div style={{ marginTop:16, fontSize:10.5, color:"#333", lineHeight:2 }}>
                   Zahlungsempfänger: <strong>{C.businessName}</strong><br/>
                   {C.bankDetails}<br/>
                   {C.paymentTerms}<br/>
                   MWST-Nr. {C.vatId}
                 </div>
-                <div style={{ marginTop:20, fontSize:10, color:"#333", lineHeight:2 }}>
+                <div style={{ marginTop:20, fontSize:11, color:"#333", lineHeight:2 }}>
                   Danke für Ihren geschätzten Auftrag.<br/><br/>
                   Freundliche Grüsse<br/><br/>
                   {C.ownerName}
-                </div>
-                <div style={{ marginTop:24, textAlign:"center" }}>
-                  <img src="/qr.png" alt="QR Zahlung" style={{ width:120, height:120, objectFit:"contain" }} />
                 </div>
               </div>
             </div>
