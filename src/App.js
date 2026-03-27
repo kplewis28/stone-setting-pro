@@ -240,12 +240,12 @@ export default function App() {
   .logo-box { width:60px; height:60px; background:#f5f0e8; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:28px; }
   .biz-name { font-size:18pt; font-weight:bold; line-height:1.2; }
   .address { font-size:9pt; color:#444; margin-bottom:28px; line-height:1.7; }
-  .rechnung-title { font-size:20pt; font-weight:bold; letter-spacing:4px; color:#c0392b; border:3px solid #c0392b; display:inline-block; padding:4px 14px; margin-bottom:6px; text-transform:uppercase; }
+  .rechnung-title { font-size:20pt; font-weight:bold; letter-spacing:4px; color:${ACCENT}; border:3px solid ${ACCENT}; display:inline-block; padding:4px 14px; margin-bottom:6px; text-transform:uppercase; }
   .datum { font-size:10pt; font-weight:bold; margin-bottom:28px; }
   .recipient-block { float:right; text-align:left; font-size:10pt; line-height:1.8; margin-top:-80px; margin-bottom:32px; }
   .clearfix::after { content:""; display:table; clear:both; }
   table { width:100%; border-collapse:collapse; margin-top:40px; margin-bottom:0; }
-  thead tr { background:#1a1a1a; color:white; }
+  thead tr { background:#e8edf2; color:#1a1a1a; }
   thead th { padding:8px 10px; font-size:10pt; text-align:left; }
   thead th.right { text-align:right; }
   tbody tr td { padding:8px 10px; border-bottom:1px solid #e0e0e0; font-size:10pt; }
@@ -308,8 +308,7 @@ export default function App() {
   </table>
 
   <div class="footer">
-    Zahlungsempfänger: <strong>${C.ownerName}</strong><br>
-    ${C.businessName}<br>
+    Zahlungsempfänger: <strong>${C.businessName}</strong><br>
     ${C.bankDetails}<br>
     ${C.paymentTerms}<br>
     MWST-Nr. ${C.vatId}
@@ -318,6 +317,9 @@ export default function App() {
     <br>Danke für Ihren geschätzten Auftrag.<br><br>
     Freundliche Grüsse<br><br>
     ${C.ownerName}
+  </div>
+  <div style="margin-top:24px;text-align:center;">
+    <img src="${window.location.origin}/qr.png" alt="QR Zahlung" style="width:120px;height:120px;object-fit:contain;">
   </div>
   <script>window.onload=()=>{ window.print(); }</script>
 </body></html>`;
@@ -838,7 +840,7 @@ export default function App() {
                 {/* RECHNUNG title + date + recipient row */}
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:32 }}>
                   <div>
-                    <div style={{ fontFamily:"'Arial Black',Arial,sans-serif", fontSize:20, fontWeight:900, letterSpacing:"0.18em", color:"#8B1A1A", textTransform:"uppercase", marginBottom:8 }}>RECHNUNG</div>
+                    <div style={{ fontFamily:"'Arial Black',Arial,sans-serif", fontSize:20, fontWeight:900, letterSpacing:"0.18em", color:ACCENT, textTransform:"uppercase", marginBottom:8 }}>RECHNUNG</div>
                     <div style={{ fontSize:10, fontWeight:700, color:"#1a1a1a" }}>DATUM: {dateStr}</div>
                   </div>
                   <div style={{ textAlign:"left", fontSize:10, lineHeight:1.9, color:"#1a1a1a", paddingTop:4 }}>
@@ -851,7 +853,7 @@ export default function App() {
                 {/* TABLE */}
                 <table style={{ width:"100%", borderCollapse:"collapse", fontSize:10, marginBottom:0 }}>
                   <thead>
-                    <tr style={{ background:"#1a1a1a", color:"white" }}>
+                    <tr style={{ background:"#e8edf2", color:"#1a1a1a" }}>
                       <th style={{ padding:"7px 10px", textAlign:"left", fontWeight:700, letterSpacing:"0.04em" }}>BESCHREIBUNG</th>
                       <th style={{ padding:"7px 10px", textAlign:"right", fontWeight:700, letterSpacing:"0.04em" }}>Anzahl</th>
                       <th style={{ padding:"7px 10px", textAlign:"right", fontWeight:700, letterSpacing:"0.04em" }}>Stückpreis</th>
@@ -879,8 +881,7 @@ export default function App() {
 
                 {/* FOOTER */}
                 <div style={{ marginTop:32, fontSize:9.5, color:"#333", lineHeight:2 }}>
-                  Zahlungsempfänger: <strong>{C.ownerName}</strong><br/>
-                  {C.businessName}<br/>
+                  Zahlungsempfänger: <strong>{C.businessName}</strong><br/>
                   {C.bankDetails}<br/>
                   {C.paymentTerms}<br/>
                   MWST-Nr. {C.vatId}
@@ -889,6 +890,9 @@ export default function App() {
                   Danke für Ihren geschätzten Auftrag.<br/><br/>
                   Freundliche Grüsse<br/><br/>
                   {C.ownerName}
+                </div>
+                <div style={{ marginTop:24, textAlign:"center" }}>
+                  <img src="/qr.png" alt="QR Zahlung" style={{ width:120, height:120, objectFit:"contain" }} />
                 </div>
               </div>
             </div>
