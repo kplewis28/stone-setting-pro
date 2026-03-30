@@ -904,48 +904,66 @@ export default function App() {
                   </div>
                 </div>
                 <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
-                  <Card>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                      <span style={{ fontSize:12, color:"#8E8E93" }}>Client</span>
-                      <span style={{ fontSize:14, fontWeight:600, color:"#1C1C1E" }}>{inv.client}</span>
-                    </div>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                      <span style={{ fontSize:12, color:"#8E8E93" }}>Date</span>
-                      <span style={{ fontSize:14, color:"#1C1C1E" }}>{new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</span>
-                    </div>
-                    <div style={{ display:"flex", justifyContent:"space-between" }}>
-                      <span style={{ fontSize:12, color:"#8E8E93" }}>Status</span>
-                      <span style={{ fontSize:13, padding:"2px 10px", borderRadius:8, background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:600 }}>{inv.printed?"Printed":"Draft"}</span>
-                    </div>
-                  </Card>
 
-                  <SectionTitle>Items</SectionTitle>
-                  {inv.items.map((it,i)=>(
-                    <Card key={i}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <div>
-                          <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E" }}>{it.desc||"—"}</div>
-                          {it.orderRef && <div style={{ fontSize:11, color:"#8E8E93", marginTop:2 }}>Order #{it.orderRef}</div>}
-                        </div>
-                        <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E" }}>{C.currency} {fmt(parseFloat(it.price)||0)}</div>
+                  {/* ── INVOICE PREVIEW CARD ── */}
+                  <div style={{ background:"white", border:"1.5px solid #E5E5EA", borderRadius:16, padding:"28px 24px", marginBottom:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+                    {/* Header */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
+                      <img src="/logo.png" alt={C.businessName} style={{ height:52, objectFit:"contain" }}/>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700 }}>Rechnung</div>
+                        <div style={{ fontSize:13, fontFamily:"monospace", fontWeight:700, color:"#1C1C1E", marginTop:2 }}>{inv.number}</div>
+                        <div style={{ fontSize:11, color:"#8E8E93" }}>{new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
+                        <div style={{ fontSize:11, marginTop:6, padding:"2px 8px", borderRadius:6, display:"inline-block", background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:700 }}>{inv.printed?"Impresa":"Borrador"}</div>
                       </div>
-                    </Card>
-                  ))}
-
-                  <Card style={{ background:"#1C1C1E" }}>
-                    {[[`Subtotal`,invSub],[`Porto`,invPortoVal],[`${C.taxLabel} ${(C.taxRate*100).toFixed(1)}%`,invMwst]].map(([l,v])=>(
-                      <div key={l} style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}>
-                        <span>{l}</span><span>{C.currency} {fmt(v)}</span>
-                      </div>
-                    ))}
-                    <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:12, marginTop:6 }}>
-                      <span style={{ fontSize:15, color:"rgba(255,255,255,0.7)" }}>Total</span>
-                      <span style={{ fontSize:22, fontWeight:700, color:"white" }}>{C.currency} {fmt(invTotal)}</span>
                     </div>
-                  </Card>
+
+                    {/* To */}
+                    <div style={{ background:"#F2F2F7", borderRadius:10, padding:"10px 14px", marginBottom:18 }}>
+                      <div style={{ fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:700, marginBottom:3 }}>Para</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E" }}>{inv.client}</div>
+                    </div>
+
+                    {/* Items table */}
+                    <table style={{ width:"100%", borderCollapse:"collapse", marginBottom:12 }}>
+                      <thead>
+                        <tr style={{ borderBottom:"1.5px solid #E5E5EA" }}>
+                          <th style={{ textAlign:"left", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Descripción</th>
+                          <th style={{ textAlign:"right", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Importe</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {inv.items.map((it,i)=>(
+                          <tr key={i} style={{ borderBottom:"1px solid #F2F2F7" }}>
+                            <td style={{ padding:"9px 0", verticalAlign:"top" }}>
+                              <div style={{ fontSize:13, fontWeight:600, color:"#1C1C1E" }}>{it.desc||"—"}</div>
+                              {it.orderRef && <div style={{ fontSize:10, color:"#8E8E93" }}>Auftrag #{it.orderRef}</div>}
+                            </td>
+                            <td style={{ padding:"9px 0", textAlign:"right", fontSize:13, fontWeight:600, color:"#1C1C1E" }}>{C.currency} {fmt(parseFloat(it.price)||0)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {/* Totals */}
+                    <div style={{ borderTop:"1px solid #E5E5EA", paddingTop:10 }}>
+                      {invPortoVal>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#8E8E93", marginBottom:4 }}><span>Porto</span><span>{C.currency} {fmt(invPortoVal)}</span></div>}
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#8E8E93", marginBottom:4 }}><span>Subtotal</span><span>{C.currency} {fmt(invSub)}</span></div>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#8E8E93", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(invMwst)}</span></div>
+                      <div style={{ display:"flex", justifyContent:"space-between", borderTop:"2px solid #1C1C1E", paddingTop:10 }}>
+                        <span style={{ fontSize:15, fontWeight:700, color:"#1C1C1E" }}>Total</span>
+                        <span style={{ fontSize:18, fontWeight:800, color:ACCENT }}>{C.currency} {fmt(invTotal)}</span>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F2F2F7", fontSize:10, color:"#8E8E93", lineHeight:1.7 }}>
+                      {C.paymentTerms}<br/>{C.bankDetails}<br/>MWST-Nr. {C.vatId}
+                    </div>
+                  </div>
 
                   <BtnPrimary onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}>
-                    <Icon name="invoice" size={18} color="white"/> Print / Save as PDF
+                    <Icon name="invoice" size={18} color="white"/> Imprimir / Guardar PDF
                   </BtnPrimary>
                 </div>
               </>
@@ -964,7 +982,7 @@ export default function App() {
             { key:"orders",  icon:"gem",     label:"Orders"  },
             { key:"invoice", icon:"invoice", label:"Invoice" },
           ].map(({ key, icon, label }) => (
-            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice")setInvView("form"); }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 0" }}>
+            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice"){ setInvView("list"); setSelectedInvoice(null); } }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 0" }}>
               <div style={{ width:44, height:44, borderRadius:14, background: tab===key ? `${ACCENT}15` : "transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}>
                 <Icon name={icon} size={22} color={tab===key ? ACCENT : "#8E8E93"}/>
               </div>
