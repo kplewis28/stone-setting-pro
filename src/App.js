@@ -777,7 +777,7 @@ export default function App() {
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
                     <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Invoices</div>
-                    {invoices.length > 0 && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>{invoices.length} factura{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} pendiente{invoices.filter(i=>!i.printed).length!==1?"s":""}</div>}
+                    {invoices.length > 0 && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>{invoices.length} factura{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} sin imprimir</div>}
                   </div>
                   <button onClick={()=>{ setInvClient(""); setInvDate(new Date().toISOString().split("T")[0]); setInvSelectedOrders([]); setInvPorto(""); setItems([newItem()]); setInvView("new"); }}
                     style={{ background:ACCENT, color:"white", border:"none", borderRadius:12, padding:"10px 18px", fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
@@ -806,7 +806,7 @@ export default function App() {
                         </div>
                         <div style={{ textAlign:"right" }}>
                           <div style={{ fontSize:15, fontWeight:700, color:ACCENT }}>{C.currency} {fmt(invTotal)}</div>
-                          <div style={{ fontSize:11, marginTop:4, padding:"3px 8px", borderRadius:8, background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:600 }}>{inv.printed?"Printed":"Draft"}</div>
+                          <div style={{ fontSize:11, marginTop:4, padding:"3px 8px", borderRadius:8, background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:600 }}>{inv.printed?"Impresa":"Guardada"}</div>
                         </div>
                       </div>
                     </Card>
@@ -955,7 +955,7 @@ export default function App() {
                         <div style={{ fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700 }}>Rechnung</div>
                         <div style={{ fontSize:13, fontFamily:"monospace", fontWeight:700, color:"#1C1C1E", marginTop:2 }}>{inv.number}</div>
                         <div style={{ fontSize:11, color:"#8E8E93" }}>{new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
-                        <div style={{ fontSize:11, marginTop:6, padding:"2px 8px", borderRadius:6, display:"inline-block", background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:700 }}>{inv.printed?"Impresa":"Borrador"}</div>
+                        <div style={{ fontSize:11, marginTop:6, padding:"2px 8px", borderRadius:6, display:"inline-block", background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:700 }}>{inv.printed?"Impresa":"Guardada"}</div>
                       </div>
                     </div>
 
