@@ -142,6 +142,13 @@ export default function App() {
   const [extracted, setExtracted] = useState(null);
   const fileRef = useRef();
 
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   useEffect(() => { localStorage.setItem("ssp_orders", JSON.stringify(orders)); }, [orders]);
 
   const subtotal = items.reduce((s,it) => s + (parseFloat(it.qty)||0)*(parseFloat(it.price)||0), 0);
@@ -340,7 +347,7 @@ export default function App() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <div style={{ fontFamily:"'DM Sans','Helvetica',sans-serif", background:"#F2F2F7", minHeight:"100vh", maxWidth:430, margin:"0 auto" }}>
+    <div style={{ fontFamily:"'DM Sans','Helvetica',sans-serif", background:"#F2F2F7", minHeight:"100vh" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes spin { to { transform:rotate(360deg); } }
@@ -349,11 +356,36 @@ export default function App() {
         input:focus, select:focus, textarea:focus { border-color: ${ACCENT} !important; background:white !important; }
       `}</style>
 
+      {/* ── DESKTOP SIDEBAR ── */}
+      {isDesktop && (
+        <div style={{ width:220, minHeight:"100vh", background:"white", borderRight:"1.5px solid #E5E5EA", position:"fixed", top:0, left:0, display:"flex", flexDirection:"column", paddingTop:36, zIndex:50 }}>
+          <div style={{ padding:"0 24px 36px" }}>
+            <div style={{ fontSize:17, fontWeight:800, color:"#1C1C1E", letterSpacing:"-0.01em" }}>Stone Art</div>
+            <div style={{ fontSize:11, color:"#8E8E93", fontWeight:500, marginTop:3 }}>Precision GmbH</div>
+          </div>
+          {[
+            { key:"home",    icon:"orders",  label:"Home"    },
+            { key:"scan",    icon:"scan",    label:"Scan"    },
+            { key:"orders",  icon:"gem",     label:"Orders"  },
+            { key:"invoice", icon:"invoice", label:"Invoice" },
+          ].map(({ key, icon, label }) => (
+            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("form"); }}
+              style={{ width:"100%", background: tab===key ? `${ACCENT}12` : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:14, padding:"13px 24px", borderLeft: tab===key ? `3px solid ${ACCENT}` : "3px solid transparent", transition:"all 0.15s" }}>
+              <Icon name={icon} size={20} color={tab===key ? ACCENT : "#8E8E93"}/>
+              <span style={{ fontSize:14, fontWeight: tab===key ? 700 : 500, color: tab===key ? ACCENT : "#8E8E93" }}>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── CONTENT WRAPPER ── */}
+      <div style={ isDesktop ? { marginLeft:220, minHeight:"100vh" } : { maxWidth:430, margin:"0 auto" } }>
+
       {/* ── HOME TAB ── */}
       {tab==="home" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* TOP BAR */}
-          <div style={{ padding:"56px 24px 0", background:"white" }}>
+          <div style={{ padding: isDesktop ? "32px 40px 0" : "56px 24px 0", background:"white" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:28 }}>
               <button style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="help" size={22} color="#8E8E93"/></button>
               <div style={{ position:"relative" }}>
@@ -367,9 +399,9 @@ export default function App() {
             </div>
           </div>
 
-          <div style={{ padding:"20px 16px 100px" }}>
+          <div style={{ padding: isDesktop ? "28px 40px 60px" : "20px 16px 100px" }}>
             {/* QUICK ACTIONS */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:24 }}>
+            <div style={{ display:"grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "1fr 1fr", gap:12, marginBottom:24 }}>
               {[
                 { icon:"scan",    title:"Scan Order",   sub:"Photo → order auto",   action:()=>{ setTab("scan"); resetPhoto(); } },
                 { icon:"orders",  title:"My Orders",    sub:"Track & update status", action:()=>setTab("orders") },
@@ -804,6 +836,26 @@ export default function App() {
         </div>
       )}
 
+      {/* ── BOTTOM NAV (mobile only) ── */}
+      {!isDesktop && (
+        <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:430, background:"white", borderTop:"1px solid #F2F2F7", display:"flex", padding:"10px 0 24px", zIndex:100 }}>
+          {[
+            { key:"home",    icon:"orders",  label:"Home"    },
+            { key:"scan",    icon:"scan",    label:"Scan"    },
+            { key:"orders",  icon:"gem",     label:"Orders"  },
+            { key:"invoice", icon:"invoice", label:"Invoice" },
+          ].map(({ key, icon, label }) => (
+            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice")setInvView("form"); }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 0" }}>
+              <div style={{ width:44, height:44, borderRadius:14, background: tab===key ? `${ACCENT}15` : "transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}>
+                <Icon name={icon} size={22} color={tab===key ? ACCENT : "#8E8E93"}/>
+              </div>
+              <span style={{ fontSize:10, fontWeight: tab===key ? 700 : 500, color: tab===key ? ACCENT : "#8E8E93", letterSpacing:"0.02em" }}>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      </div>{/* end content wrapper */}
+
       {/* ── RECHNUNG PREVIEW OVERLAY ── */}
       {rechnungData && (() => {
         const { order, unitPrice, porto = 0 } = rechnungData;
@@ -903,23 +955,6 @@ export default function App() {
           </div>
         );
       })()}
-
-      {/* ── BOTTOM NAV ── */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:430, background:"white", borderTop:"1px solid #F2F2F7", display:"flex", padding:"10px 0 24px", zIndex:100 }}>
-        {[
-          { key:"home",    icon:"orders",  label:"Home"    },
-          { key:"scan",    icon:"scan",    label:"Scan"    },
-          { key:"orders",  icon:"gem",     label:"Orders"  },
-          { key:"invoice", icon:"invoice", label:"Invoice" },
-        ].map(({ key, icon, label }) => (
-          <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice")setInvView("form"); }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 0" }}>
-            <div style={{ width:44, height:44, borderRadius:14, background: tab===key ? `${ACCENT}15` : "transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}>
-              <Icon name={icon} size={22} color={tab===key ? ACCENT : "#8E8E93"}/>
-            </div>
-            <span style={{ fontSize:10, fontWeight: tab===key ? 700 : 500, color: tab===key ? ACCENT : "#8E8E93", letterSpacing:"0.02em" }}>{label}</span>
-          </button>
-        ))}
-      </div>
 
     </div>
   );
