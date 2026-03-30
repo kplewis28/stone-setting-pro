@@ -41,9 +41,14 @@ const SAMPLE_ORDERS = [
 ];
 
 const newOrder = () => ({ id: String(Date.now()).slice(-4), client:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", pieces:"", status:"received", notes:"", amount:0 });
-const newItem  = () => ({ id: Date.now()+Math.random(), desc:"", field1:"", field2:"", qty:"", price:"" });
+const newItem  = () => ({ id: Date.now()+Math.random(), desc:"", price:"" });
 const fmt      = n => Number(n||0).toFixed(2);
-const INV_NR   = `RS-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,"0")}-${String(Math.floor(Math.random()*900+100))}`;
+const genInvNumber = (existing) => {
+  const y = new Date().getFullYear();
+  const m = String(new Date().getMonth()+1).padStart(2,"0");
+  const seq = String(existing.length + 1).padStart(3,"0");
+  return `RS-${y}${m}-${seq}`;
+};
 
 // ─── ICONS ──────────────────────────────────────────────
 const Icon = ({ name, size=22, color="#1C1C1E" }) => {
@@ -131,7 +136,11 @@ export default function App() {
   const [items, setItems]       = useState([newItem()]);
   const [invClient, setInvClient] = useState("");
   const [invDate, setInvDate]   = useState(new Date().toISOString().split("T")[0]);
-  const [invView, setInvView]   = useState("form");
+  const [invView, setInvView]   = useState("list");
+  const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
+  const [invSelectedOrders, setInvSelectedOrders] = useState([]);
+  const [invPorto, setInvPorto] = useState("");
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [rechnungData, setRechnungData] = useState(null);
   const [rechnungPorto, setRechnungPorto] = useState("");
   const [photoStep, setPhotoStep] = useState("capture");
@@ -150,10 +159,8 @@ export default function App() {
   }, []);
 
   useEffect(() => { localStorage.setItem("ssp_orders", JSON.stringify(orders)); }, [orders]);
+  useEffect(() => { localStorage.setItem("ssp_invoices", JSON.stringify(invoices)); }, [invoices]);
 
-  const subtotal = items.reduce((s,it) => s + (parseFloat(it.qty)||0)*(parseFloat(it.price)||0), 0);
-  const tax      = subtotal * C.taxRate;
-  const total    = subtotal + tax;
   const filteredOrders = orders.filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; return statusOk && dateOk; });
   const counts   = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
   const pending  = orders.filter(o=>o.status==="done").reduce((s,o)=>s+(o.amount||0),0);
@@ -205,7 +212,7 @@ export default function App() {
 
   const resetPhoto = () => { setPhotoStep("capture"); setImgData(null); setImgFile(null); setExtracted(null); };
 
-  const goHome = () => { setTab("home"); setView("list"); setPhotoStep("capture"); setInvView("form"); };
+  const goHome = () => { setTab("home"); setView("list"); setPhotoStep("capture"); setInvView("list"); };
 
   // ── EXCEL EXPORT ──
   const orderToRow = o => ({
@@ -227,25 +234,22 @@ export default function App() {
     XLSX.writeFile(wb, `orders-${new Date().toISOString().split("T")[0]}.xlsx`);
   };
 
-  // ── RECHNUNG PRINT ──
-  const printRechnung = (order, unitPrice, porto = 0) => {
-    const qty      = parseFloat(order.pieces) || 1;
-    const price    = parseFloat(unitPrice)    || 0;
-    const subtotal = qty * price;
-    const mwst     = subtotal * C.taxRate;
-    const total    = subtotal + porto + mwst;
-    const fmtCHF   = n => `CHF ${Number(n).toFixed(2).replace(".", ",")}`;
-    const invNr    = `RS-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,"0")}-${order.id}`;
-    const desc     = [order.field1, order.field2].filter(Boolean).join(" · ");
+  // ── PRINT INVOICE (shared by order-level and invoice tab) ──
+  const printInvoiceDoc = (inv, autoprint = true) => {
+    const fmtCHF = n => `CHF ${Number(n).toFixed(2).replace(".", ",")}`;
+    const sub    = inv.items.reduce((s,it) => s + (parseFloat(it.price)||0), 0);
+    const porto  = parseFloat(inv.porto) || 0;
+    const mwst   = sub * C.taxRate;
+    const total  = sub + porto + mwst;
+    const rowsHtml = inv.items.map(it =>
+      `<tr><td>${it.desc || "—"}${it.orderRef ? `<br><span style="font-size:9.5pt;color:#777">Auftrag #${it.orderRef}</span>` : ""}</td><td class="right">${fmtCHF(parseFloat(it.price)||0)}</td></tr>`
+    ).join("");
 
     const html = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
-<title>Rechnung ${invNr}</title>
+<title>Rechnung ${inv.number}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #222; padding: 40px 50px; max-width: 800px; margin: 0 auto; }
-  .logo-row { display:flex; align-items:center; gap:16px; margin-bottom:32px; }
-  .logo-box { width:60px; height:60px; background:#f5f0e8; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:28px; }
-  .biz-name { font-size:19pt; font-weight:bold; line-height:1.2; }
   .address { font-size:10pt; color:#444; margin-bottom:28px; line-height:1.7; }
   .rechnung-title { font-size:21pt; font-weight:bold; letter-spacing:4px; color:${ACCENT}; border:3px solid ${ACCENT}; display:inline-block; padding:4px 14px; margin-bottom:6px; text-transform:uppercase; }
   .datum { font-size:11pt; font-weight:bold; margin-bottom:28px; }
@@ -257,11 +261,8 @@ export default function App() {
   thead th.right { text-align:right; }
   tbody tr td { padding:8px 10px; border-bottom:1px solid #e0e0e0; font-size:11pt; }
   tbody tr td.right { text-align:right; }
-  .totals { margin-top:0; width:100%; }
   .totals td { padding:5px 10px; font-size:11pt; }
   .totals td.right { text-align:right; }
-  .totals .porto td { color:#555; }
-  .totals .mwst td { color:#555; }
   .totals .total-row td { font-weight:bold; font-size:13pt; border-top:2px solid #222; padding-top:8px; }
   .total-row td.big { font-size:14pt; text-decoration:underline; }
   .footer { margin-top:40px; font-size:10.5pt; line-height:1.9; color:#333; }
@@ -274,50 +275,32 @@ export default function App() {
   }
 </style></head>
 <body>
-  <div class="logo-row">
+  <div style="margin-bottom:24px;">
     <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:90px;object-fit:contain;">
   </div>
-
   <div class="address">${C.address.replace(/\n/g,"<br>")}<br>Telefon ${C.phone}</div>
-
   <div class="clearfix">
     <div>
       <div class="rechnung-title">RECHNUNG</div>
-      <div class="datum">DATUM: ${new Date(order.received || Date.now()).toLocaleDateString("de-CH")}</div>
+      <div class="datum">DATUM: ${new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
     </div>
     <div class="recipient-block">
-      ${order.client}<br>
-      ${invNr}
+      ${inv.client}<br>
+      ${inv.number}
     </div>
   </div>
-
   <table>
-    <thead>
-      <tr>
-        <th style="width:55%">BESCHREIBUNG</th>
-        <th class="right" style="width:15%">Anzahl</th>
-        <th class="right" style="width:15%">Stückpreis</th>
-        <th class="right" style="width:15%"></th>
-      </tr>
-    </thead>
+    <thead><tr><th style="width:80%">BESCHREIBUNG</th><th class="right" style="width:20%">BETRAG</th></tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <table class="totals" style="margin-top:0;">
     <tbody>
-      <tr>
-        <td>${desc || order.notes || "—"}</td>
-        <td class="right">${Number(qty).toFixed(2)}</td>
-        <td class="right">${fmtCHF(price)}</td>
-        <td class="right">${fmtCHF(subtotal)}</td>
-      </tr>
+      <tr><td colspan="1" class="right" style="color:#555;padding:5px 10px;">Total ohne ${C.taxLabel}</td><td class="right" style="width:22%;padding:5px 10px;">${fmtCHF(sub)}</td></tr>
+      ${porto > 0 ? `<tr><td class="right" style="color:#555;padding:5px 10px;">Porto</td><td class="right" style="padding:5px 10px;">${fmtCHF(porto)}</td></tr>` : ""}
+      <tr><td class="right" style="color:#555;padding:5px 10px;">${(C.taxRate*100).toFixed(1).replace(".",",")}% ${C.taxLabel}</td><td class="right" style="padding:5px 10px;">${fmtCHF(mwst)}</td></tr>
+      <tr class="total-row"><td class="right" style="padding:8px 10px;"><strong>RECHNUNGSBETRAG</strong></td><td class="right big" style="padding:8px 10px;">CHF ${Number(total).toFixed(2).replace(".",",")}</td></tr>
     </tbody>
   </table>
-  <table class="totals">
-    <tbody>
-      <tr class="porto"><td colspan="3" class="right">Total ohne ${C.taxLabel}</td><td class="right" style="width:22%">${fmtCHF(subtotal)}</td></tr>
-      <tr class="porto"><td colspan="3" class="right">Porto</td><td class="right">${fmtCHF(porto)}</td></tr>
-      <tr class="mwst"><td colspan="3" class="right">${(C.taxRate*100).toFixed(1).replace(".",",")}% ${C.taxLabel}</td><td class="right">CHF &nbsp;${Number(mwst).toFixed(2).replace(".",",")}</td></tr>
-      <tr class="total-row"><td colspan="3" class="right"><strong>RECHNUNGSBETRAG</strong></td><td class="right big">CHF ${Number(total).toFixed(2).replace(".",",")}</td></tr>
-    </tbody>
-  </table>
-
   <div style="margin-top:24px;text-align:left;">
     <img src="${window.location.origin}/qr.png" alt="QR Zahlung" style="width:120px;height:120px;object-fit:contain;">
   </div>
@@ -332,12 +315,25 @@ export default function App() {
     Freundliche Grüsse<br><br>
     ${C.ownerName}
   </div>
-  <script>window.onload=()=>{ window.print(); }</script>
+  ${autoprint ? "<script>window.onload=()=>{ window.print(); }<\/script>" : ""}
 </body></html>`;
-
     const w = window.open("", "_blank");
     w.document.write(html);
     w.document.close();
+  };
+
+  // ── RECHNUNG from order detail (single order, global amount) ──
+  const printRechnung = (order, unitPrice, porto = 0) => {
+    const price = parseFloat(unitPrice) || 0;
+    const desc  = [order.field1, order.field2].filter(Boolean).join(" · ") || order.notes || order.client;
+    const invNr = `RS-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,"0")}-${order.id}`;
+    printInvoiceDoc({
+      number: invNr,
+      client: order.client,
+      date: order.received || new Date().toISOString().split("T")[0],
+      porto,
+      items: [{ desc, price, orderRef: order.id }],
+    });
   };
 
   // ── DETAIL ORDER ──
@@ -716,123 +712,220 @@ export default function App() {
       {/* ── INVOICE TAB ── */}
       {tab==="invoice" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
-          <div style={{ padding:"56px 20px 16px", background:"white", display:"flex", alignItems:"center", gap:12, borderBottom:"1px solid #F2F2F7" }}>
-            <button onClick={()=>{ invView==="preview"?setInvView("form"):goHome(); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="back" size={22} color="#1C1C1E"/></button>
-            <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>{invView==="preview"?"Invoice Preview":"New Invoice"}</div>
-            {invView==="form" && <div style={{ marginLeft:"auto", fontFamily:"monospace", fontSize:12, color:"#8E8E93" }}>{INV_NR}</div>}
-          </div>
 
-          <div style={{ padding:"20px 16px 100px" }}>
-            {invView==="form" && (
+          {/* ── LIST VIEW ── */}
+          {invView==="list" && (
+            <>
+              <div style={{ padding: isDesktop?"32px 40px 0":"56px 20px 0", background:"white", borderBottom:"1px solid #F2F2F7", paddingBottom:16 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Invoices</div>
+                  <BtnPrimary onClick={()=>{ setInvClient(""); setInvDate(new Date().toISOString().split("T")[0]); setInvSelectedOrders([]); setInvPorto(""); setItems([newItem()]); setInvView("new"); }} style={{ padding:"10px 18px", margin:0, width:"auto" }}>+ New</BtnPrimary>
+                </div>
+              </div>
+              <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
+                {invoices.length === 0 && (
+                  <div style={{ textAlign:"center", color:"#8E8E93", padding:"48px 0", fontSize:14 }}>No invoices yet.<br/>Tap + New to create one.</div>
+                )}
+                {[...invoices].reverse().map(inv => {
+                  const invSub = inv.items.reduce((s,it)=>s+(parseFloat(it.price)||0),0);
+                  const invTotal = invSub*(1+C.taxRate) + (parseFloat(inv.porto)||0);
+                  return (
+                    <Card key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                        <div>
+                          <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:2 }}>{inv.client}</div>
+                          <div style={{ fontSize:12, color:"#8E8E93" }}>{inv.number} · {new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
+                          <div style={{ fontSize:11, color:"#8E8E93", marginTop:2 }}>{inv.items.length} item{inv.items.length!==1?"s":""}</div>
+                        </div>
+                        <div style={{ textAlign:"right" }}>
+                          <div style={{ fontSize:15, fontWeight:700, color:ACCENT }}>{C.currency} {fmt(invTotal)}</div>
+                          <div style={{ fontSize:11, marginTop:4, padding:"3px 8px", borderRadius:8, background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:600 }}>{inv.printed?"Printed":"Draft"}</div>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* ── NEW INVOICE VIEW ── */}
+          {invView==="new" && (()=>{
+            const draftSub   = items.reduce((s,it)=>s+(parseFloat(it.price)||0),0);
+            const draftPorto = parseFloat(invPorto)||0;
+            const draftTax   = draftSub * C.taxRate;
+            const draftTotal = draftSub + draftPorto + draftTax;
+            const clientOrders = orders.filter(o => invClient && o.client.toLowerCase().includes(invClient.toLowerCase()) && o.status !== "invoiced");
+            const saveInvoice = (print) => {
+              const inv = {
+                id: Date.now(),
+                number: genInvNumber(invoices),
+                client: invClient,
+                date: invDate,
+                porto: invPorto,
+                items: items.filter(it=>it.desc||it.price),
+                printed: print,
+                createdAt: new Date().toISOString(),
+              };
+              setInvoices([...invoices, inv]);
+              if (print) printInvoiceDoc(inv);
+              setInvView("list");
+            };
+            return (
               <>
-                <Card>
-                  <Field label="Client *"><Input placeholder="Company name" value={invClient} onChange={e=>setInvClient(e.target.value)}/></Field>
-                  <Field label="Date"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
-                </Card>
-
-                <SectionTitle>Line Items</SectionTitle>
-                {items.map((it,idx)=>(
-                  <Card key={it.id} style={{ position:"relative" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:ACCENT, letterSpacing:"0.1em", textTransform:"uppercase" }}>Item {idx+1}</div>
-                      {items.length>1 && <button onClick={()=>setItems(items.filter(i=>i.id!==it.id))} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#8E8E93"/></button>}
-                    </div>
-                    <Field label="Description"><Input placeholder={`e.g. ${C.serviceTypes[0]} setting`} value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                      <Field label={C.fieldLabel}>
-                        <Select value={it.field1} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,field1:e.target.value}:i))}>
-                          <option value="">—</option>{C.itemCategories.map(o=><option key={o}>{o}</option>)}
-                        </Select>
-                      </Field>
-                      <Field label={C.subFieldLabel}>
-                        <Select value={it.field2} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,field2:e.target.value}:i))}>
-                          <option value="">—</option>{C.serviceTypes.map(o=><option key={o}>{o}</option>)}
-                        </Select>
-                      </Field>
-                    </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                      <Field label="Qty"><Input type="number" placeholder="0" value={it.qty} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,qty:e.target.value}:i))}/></Field>
-                      <Field label={`Price (${C.currency})`}><Input type="number" placeholder="0.00" value={it.price} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,price:e.target.value}:i))}/></Field>
-                    </div>
-                    {it.qty&&it.price&&<div style={{ textAlign:"right", fontSize:14, fontWeight:700, color:ACCENT }}>= {C.currency} {fmt((parseFloat(it.qty)||0)*(parseFloat(it.price)||0))}</div>}
+                <div style={{ padding: isDesktop?"32px 40px 0":"56px 20px 0", background:"white", borderBottom:"1px solid #F2F2F7", paddingBottom:16 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                    <button onClick={()=>setInvView("list")} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="back" size={22} color="#1C1C1E"/></button>
+                    <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>New Invoice</div>
+                  </div>
+                </div>
+                <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
+                  <Card>
+                    <Field label="Client *"><Input placeholder="Company name" value={invClient} onChange={e=>setInvClient(e.target.value)}/></Field>
+                    <Field label="Date"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
+                    <Field label={`Porto (${C.currency})`}><Input type="number" placeholder="0.00" value={invPorto} onChange={e=>setInvPorto(e.target.value)}/></Field>
                   </Card>
-                ))}
 
-                <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"14px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:16 }}>+ Add Item</button>
-
-                <Card style={{ background:"#1C1C1E" }}>
-                  {[[`Subtotal`,fmt(subtotal)],[`${C.taxLabel} ${(C.taxRate*100).toFixed(1)}%`,fmt(tax)]].map(([l,v])=>(
-                    <div key={l} style={{ display:"flex", justifyContent:"space-between", fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:14, color:"rgba(255,255,255,0.5)", marginBottom:8 }}>
-                      <span>{l}</span><span>{C.currency} {v}</span>
-                    </div>
-                  ))}
-                  <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:12, marginTop:4 }}>
-                    <span style={{ fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color:"rgba(255,255,255,0.7)" }}>Total</span>
-                    <span style={{ fontSize:22, fontWeight:700, color:"white" }}>{C.currency} {fmt(total)}</span>
-                  </div>
-                </Card>
-
-                <BtnPrimary disabled={!invClient} onClick={()=>invClient&&setInvView("preview")}>Preview Invoice →</BtnPrimary>
-              </>
-            )}
-
-            {invView==="preview" && (
-              <>
-                <Card style={{ padding:"28px 24px" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:24 }}>
-                    <div>
-                      <div style={{ fontSize:20, fontWeight:800, color:"#1C1C1E", letterSpacing:"-0.02em" }}>{C.businessName}</div>
-                      <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>{C.location}</div>
-                    </div>
-                    <div style={{ width:40, height:40, background:`${ACCENT}15`, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      <Icon name="gem" size={20} color={ACCENT}/>
-                    </div>
-                  </div>
-
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:24, padding:"16px", background:"#F2F2F7", borderRadius:12 }}>
-                    <div><div style={{ fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:700, marginBottom:4 }}>To</div><div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E" }}>{invClient}</div></div>
-                    <div style={{ textAlign:"right" }}><div style={{ fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:700, marginBottom:4 }}>Invoice</div><div style={{ fontSize:12, fontFamily:"monospace", color:"#1C1C1E", fontWeight:600 }}>{INV_NR}</div><div style={{ fontSize:11, color:"#8E8E93" }}>{invDate}</div></div>
-                  </div>
-
-                  <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:13, marginBottom:20 }}>
-                    <thead><tr>{["Description","Qty","Price","Total"].map(h=><th key={h} style={{ textAlign:h==="Description"?"left":"right", padding:"6px 4px", color:"#8E8E93", fontSize:10, textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700, borderBottom:"1px solid #F2F2F7" }}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {items.filter(it=>it.desc||it.price).map((it,i)=>{
-                        const line=(parseFloat(it.qty)||0)*(parseFloat(it.price)||0);
-                        return <tr key={i}>
-                          <td style={{ padding:"10px 4px", borderBottom:"1px solid #F2F2F7", verticalAlign:"top" }}>
-                            <div style={{ fontWeight:700, color:"#1C1C1E" }}>{it.desc||"—"}</div>
-                            {(it.field1||it.field2)&&<div style={{ fontSize:11, color:"#8E8E93", marginTop:2 }}>{[it.field1,it.field2].filter(Boolean).join(" · ")}</div>}
-                          </td>
-                          <td style={{ padding:"10px 4px", textAlign:"right", borderBottom:"1px solid #F2F2F7", color:"#3C3C43" }}>{it.qty}</td>
-                          <td style={{ padding:"10px 4px", textAlign:"right", borderBottom:"1px solid #F2F2F7", color:"#3C3C43" }}>{C.currency} {fmt(parseFloat(it.price)||0)}</td>
-                          <td style={{ padding:"10px 4px", textAlign:"right", borderBottom:"1px solid #F2F2F7", fontWeight:700, color:"#1C1C1E" }}>{C.currency} {fmt(line)}</td>
-                        </tr>;
+                  {/* Import from orders */}
+                  {clientOrders.length > 0 && (
+                    <>
+                      <SectionTitle>Import from orders — {invClient}</SectionTitle>
+                      {clientOrders.map(o=>{
+                        const alreadyLinked = invSelectedOrders.includes(o.id);
+                        return (
+                          <Card key={o.id} onClick={()=>{
+                            if (alreadyLinked) {
+                              setInvSelectedOrders(invSelectedOrders.filter(id=>id!==o.id));
+                              setItems(items.filter(it=>it.orderRef!==o.id));
+                            } else {
+                              setInvSelectedOrders([...invSelectedOrders, o.id]);
+                              const desc = [o.field1, o.field2].filter(Boolean).join(" · ") || o.notes || `Order #${o.id}`;
+                              setItems([...items.filter(it=>it.desc||it.price), { id:Date.now()+Math.random(), desc, price: o.amount||"", orderRef: o.id }]);
+                            }
+                          }} style={{ border: alreadyLinked?`2px solid ${ACCENT}`:"1.5px solid #F2F2F7", cursor:"pointer" }}>
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                              <div>
+                                <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E" }}>#{o.id} · {o.field1}{o.field2?` · ${o.field2}`:""}</div>
+                                <div style={{ fontSize:12, color:"#8E8E93" }}>{o.received} · {o.pieces} pcs</div>
+                              </div>
+                              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                {o.amount>0 && <span style={{ fontSize:13, fontWeight:700, color:"#1C1C1E" }}>{C.currency} {fmt(o.amount)}</span>}
+                                <div style={{ width:20, height:20, borderRadius:6, border:`2px solid ${alreadyLinked?ACCENT:"#C7C7CC"}`, background:alreadyLinked?ACCENT:"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                  {alreadyLinked && <span style={{ color:"white", fontSize:13, fontWeight:700 }}>✓</span>}
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        );
                       })}
-                    </tbody>
-                  </table>
+                    </>
+                  )}
 
-                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, marginBottom:20 }}>
-                    {[[`Subtotal`,subtotal],[`${C.taxLabel} ${(C.taxRate*100).toFixed(1)}%`,tax]].map(([l,v])=>(
-                      <div key={l} style={{ display:"flex", gap:32, fontSize:13, color:"#8E8E93" }}><span>{l}</span><span style={{ minWidth:80, textAlign:"right" }}>{C.currency} {fmt(v)}</span></div>
+                  <SectionTitle>Line Items</SectionTitle>
+                  {items.map((it,idx)=>(
+                    <Card key={it.id} style={{ position:"relative" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:ACCENT, letterSpacing:"0.1em", textTransform:"uppercase" }}>
+                          Item {idx+1}{it.orderRef?` · Order #${it.orderRef}`:""}
+                        </div>
+                        {items.length>1 && <button onClick={()=>{ setItems(items.filter(i=>i.id!==it.id)); if(it.orderRef) setInvSelectedOrders(invSelectedOrders.filter(id=>id!==it.orderRef)); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#8E8E93"/></button>}
+                      </div>
+                      <Field label="Description"><Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
+                      <Field label={`Amount (${C.currency})`}><Input type="number" placeholder="0.00" value={it.price} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,price:e.target.value}:i))}/></Field>
+                    </Card>
+                  ))}
+
+                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"14px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:16 }}>+ Add Item</button>
+
+                  <Card style={{ background:"#1C1C1E" }}>
+                    {[[`Subtotal`,draftSub],[`Porto`,draftPorto],[`${C.taxLabel} ${(C.taxRate*100).toFixed(1)}%`,draftTax]].map(([l,v])=>(
+                      <div key={l} style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}>
+                        <span>{l}</span><span>{C.currency} {fmt(v)}</span>
+                      </div>
                     ))}
-                    <div style={{ display:"flex", gap:32, borderTop:"2px solid #1C1C1E", paddingTop:10, marginTop:4 }}>
-                      <span style={{ fontSize:15, fontWeight:700, color:"#1C1C1E" }}>Total</span>
-                      <span style={{ fontSize:18, fontWeight:800, color:ACCENT, minWidth:80, textAlign:"right" }}>{C.currency} {fmt(total)}</span>
+                    <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:12, marginTop:6 }}>
+                      <span style={{ fontSize:15, color:"rgba(255,255,255,0.7)" }}>Total</span>
+                      <span style={{ fontSize:22, fontWeight:700, color:"white" }}>{C.currency} {fmt(draftTotal)}</span>
                     </div>
-                  </div>
+                  </Card>
 
-                  <div style={{ borderTop:"1px solid #F2F2F7", paddingTop:16, fontSize:11, color:"#8E8E93", lineHeight:1.8 }}>
-                    {C.paymentTerms}<br/>{C.bankDetails}
-                  </div>
-                </Card>
-
-                <BtnPrimary onClick={()=>window.print()}><Icon name="invoice" size={18} color="white"/> Print / Save as PDF</BtnPrimary>
-                <div style={{ height:10 }}/>
-                <BtnGhost onClick={()=>{ const t=`Invoice ${INV_NR}\nClient: ${invClient}\nTotal: ${C.currency} ${fmt(total)}`; navigator.share?navigator.share({title:`Invoice ${INV_NR}`,text:t}):navigator.clipboard?.writeText(t); }}>↗ Share via WhatsApp</BtnGhost>
+                  <BtnPrimary disabled={!invClient||items.every(it=>!it.desc&&!it.price)} onClick={()=>saveInvoice(false)}>
+                    <Icon name="invoice" size={18} color="white"/> Save Invoice
+                  </BtnPrimary>
+                  <div style={{ height:10 }}/>
+                  <BtnGhost disabled={!invClient||items.every(it=>!it.desc&&!it.price)} onClick={()=>saveInvoice(true)}>
+                    ⎙ Save & Print now
+                  </BtnGhost>
+                </div>
               </>
-            )}
-          </div>
+            );
+          })()}
+
+          {/* ── DETAIL VIEW ── */}
+          {invView==="detail" && selectedInvoice && (()=>{
+            const inv = selectedInvoice;
+            const invSub   = inv.items.reduce((s,it)=>s+(parseFloat(it.price)||0),0);
+            const invPortoVal = parseFloat(inv.porto)||0;
+            const invMwst  = invSub * C.taxRate;
+            const invTotal = invSub + invPortoVal + invMwst;
+            return (
+              <>
+                <div style={{ padding: isDesktop?"32px 40px 0":"56px 20px 0", background:"white", borderBottom:"1px solid #F2F2F7", paddingBottom:16 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                    <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="back" size={22} color="#1C1C1E"/></button>
+                    <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>{inv.number}</div>
+                    <button onClick={()=>setInvoices(invoices.filter(i=>i.id!==inv.id))||setInvView("list")} style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={18} color="#FF3B30"/></button>
+                  </div>
+                </div>
+                <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
+                  <Card>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                      <span style={{ fontSize:12, color:"#8E8E93" }}>Client</span>
+                      <span style={{ fontSize:14, fontWeight:600, color:"#1C1C1E" }}>{inv.client}</span>
+                    </div>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                      <span style={{ fontSize:12, color:"#8E8E93" }}>Date</span>
+                      <span style={{ fontSize:14, color:"#1C1C1E" }}>{new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</span>
+                    </div>
+                    <div style={{ display:"flex", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:12, color:"#8E8E93" }}>Status</span>
+                      <span style={{ fontSize:13, padding:"2px 10px", borderRadius:8, background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:600 }}>{inv.printed?"Printed":"Draft"}</span>
+                    </div>
+                  </Card>
+
+                  <SectionTitle>Items</SectionTitle>
+                  {inv.items.map((it,i)=>(
+                    <Card key={i}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                        <div>
+                          <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E" }}>{it.desc||"—"}</div>
+                          {it.orderRef && <div style={{ fontSize:11, color:"#8E8E93", marginTop:2 }}>Order #{it.orderRef}</div>}
+                        </div>
+                        <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E" }}>{C.currency} {fmt(parseFloat(it.price)||0)}</div>
+                      </div>
+                    </Card>
+                  ))}
+
+                  <Card style={{ background:"#1C1C1E" }}>
+                    {[[`Subtotal`,invSub],[`Porto`,invPortoVal],[`${C.taxLabel} ${(C.taxRate*100).toFixed(1)}%`,invMwst]].map(([l,v])=>(
+                      <div key={l} style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}>
+                        <span>{l}</span><span>{C.currency} {fmt(v)}</span>
+                      </div>
+                    ))}
+                    <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:12, marginTop:6 }}>
+                      <span style={{ fontSize:15, color:"rgba(255,255,255,0.7)" }}>Total</span>
+                      <span style={{ fontSize:22, fontWeight:700, color:"white" }}>{C.currency} {fmt(invTotal)}</span>
+                    </div>
+                  </Card>
+
+                  <BtnPrimary onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}>
+                    <Icon name="invoice" size={18} color="white"/> Print / Save as PDF
+                  </BtnPrimary>
+                </div>
+              </>
+            );
+          })()}
+
         </div>
       )}
 
