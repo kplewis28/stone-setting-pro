@@ -142,6 +142,8 @@ export default function App() {
   const [invPorto, setInvPorto] = useState("");
   const [invDraft, setInvDraft] = useState(null); // factura en construcción desde órdenes
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, color="#34C759") => { setToast({msg,color}); setTimeout(()=>setToast(null), 2000); };
   const [rechnungData, setRechnungData] = useState(null);
   const [rechnungPorto, setRechnungPorto] = useState("");
   const [photoStep, setPhotoStep] = useState("capture");
@@ -653,24 +655,6 @@ export default function App() {
             {/* ── DETAIL ── */}
             {view==="detail" && selectedOrder && (
               <>
-                {/* Status selector */}
-                <div style={{ marginBottom:20 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Estado de la orden</div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                    {Object.entries(C.statuses).map(([key,val])=>{
-                      const active = selectedOrder.status===key;
-                      return (
-                        <button key={key} onClick={()=>setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:key}:o))}
-                          style={{ width:"100%", padding:"14px 16px", borderRadius:14, border:`1.5px solid ${active?val.color:"#E5E5EA"}`, background: active?`${val.color}12`:"white", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
-                          <div style={{ width:12, height:12, borderRadius:"50%", background: active?val.color:"#C7C7CC", flexShrink:0 }}/>
-                          <span style={{ fontSize:14, fontWeight: active?700:500, color: active?val.color:"#8E8E93", fontFamily:"'DM Sans','Helvetica',sans-serif", flex:1 }}>{val.label}</span>
-                          {active && <span style={{ fontSize:18 }}>✓</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
                 {/* Photo */}
                 {selectedOrder.photo && (
                   <img src={selectedOrder.photo} alt="order" style={{ width:"100%", borderRadius:16, objectFit:"cover", maxHeight:240, marginBottom:16, border:"1.5px solid #E5E5EA", display:"block" }}/>
@@ -698,6 +682,27 @@ export default function App() {
                     </div>
                   )}
                 </Card>
+
+                {/* Status selector */}
+                <SectionTitle>Cambiar estado</SectionTitle>
+                <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+                  {Object.entries(C.statuses).map(([key,val])=>{
+                    const active = selectedOrder.status===key;
+                    return (
+                      <button key={key} onClick={()=>{
+                        if(!active){
+                          setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:key}:o));
+                          showToast(`Estado actualizado: ${val.label}`, val.color);
+                        }
+                      }}
+                        style={{ width:"100%", padding:"14px 16px", borderRadius:14, border:`1.5px solid ${active?val.color:"#E5E5EA"}`, background: active?`${val.color}12`:"white", cursor: active?"default":"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }}>
+                        <div style={{ width:12, height:12, borderRadius:"50%", background: active?val.color:"#C7C7CC", flexShrink:0 }}/>
+                        <span style={{ fontSize:14, fontWeight: active?700:500, color: active?val.color:"#8E8E93", fontFamily:"'DM Sans','Helvetica',sans-serif", flex:1 }}>{val.label}</span>
+                        {active && <span style={{ fontSize:16, color:val.color }}>✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
 
                 {/* Rechnung — only when done */}
                 {selectedOrder.status==="done" && (
@@ -1056,6 +1061,13 @@ export default function App() {
         </div>
       )}
       </div>{/* end content wrapper */}
+
+      {/* ── TOAST ── */}
+      {toast && (
+        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease" }}>
+          ✓ {toast.msg}
+        </div>
+      )}
 
       {/* ── RECHNUNG PREVIEW OVERLAY ── */}
       {rechnungData && (() => {
