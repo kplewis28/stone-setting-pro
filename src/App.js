@@ -365,7 +365,7 @@ export default function App() {
             { key:"orders",  icon:"gem",     label:"Orders"  },
             { key:"invoice", icon:"invoice", label:"Invoice" },
           ].map(({ key, icon, label }) => (
-            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("form"); }}
+            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); }}
               style={{ width:"100%", background: tab===key ? `${ACCENT}12` : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:14, padding:"13px 24px", borderLeft: tab===key ? `3px solid ${ACCENT}` : "3px solid transparent", transition:"all 0.15s" }}>
               <Icon name={icon} size={20} color={tab===key ? ACCENT : "#8E8E93"}/>
               <span style={{ fontSize:14, fontWeight: tab===key ? 700 : 500, color: tab===key ? ACCENT : "#8E8E93" }}>{label}</span>
@@ -678,7 +678,7 @@ export default function App() {
                 {/* Rechnung — only when done */}
                 {selectedOrder.status==="done" && (
                   <Card>
-                    <Field label={`Stückpreis (${C.currency})`}>
+                    <Field label={`Monto (${C.currency})`}>
                       <Input
                         type="number" placeholder="0.00"
                         value={selectedOrder.amount||""}
@@ -694,12 +694,30 @@ export default function App() {
                     </Field>
                     {selectedOrder.amount>0 && (
                       <div style={{ fontSize:12, color:"#8E8E93", marginBottom:14, lineHeight:1.6 }}>
-                        {selectedOrder.pieces} × {C.currency} {fmt(selectedOrder.amount)} = <strong style={{color:"#1C1C1E"}}>{C.currency} {fmt((parseFloat(selectedOrder.pieces)||1)*selectedOrder.amount)}</strong>
-                        &nbsp;+ {(C.taxRate*100).toFixed(1)}% MWST = <strong style={{color:ACCENT}}>{C.currency} {fmt(((parseFloat(selectedOrder.pieces)||1)*selectedOrder.amount)*(1+C.taxRate))}</strong>
+                        {C.currency} {fmt(selectedOrder.amount)} + {(C.taxRate*100).toFixed(1)}% MWST = <strong style={{color:ACCENT}}>{C.currency} {fmt(selectedOrder.amount*(1+C.taxRate))}</strong>
                       </div>
                     )}
-                    <BtnPrimary disabled={!selectedOrder.amount} onClick={()=>{ setRechnungData({order:selectedOrder, unitPrice:selectedOrder.amount, porto:parseFloat(rechnungPorto)||0}); setRechnungPorto(""); }}>
-                      <Icon name="invoice" size={18} color="white"/> Rechnung erstellen
+                    <BtnPrimary disabled={!selectedOrder.amount} onClick={()=>{
+                      const desc = [selectedOrder.field1, selectedOrder.field2].filter(Boolean).join(" · ") || selectedOrder.notes || `Auftrag #${selectedOrder.id}`;
+                      const porto = parseFloat(rechnungPorto)||0;
+                      const inv = {
+                        id: Date.now(),
+                        number: genInvNumber(invoices),
+                        client: selectedOrder.client,
+                        date: selectedOrder.received || new Date().toISOString().split("T")[0],
+                        porto,
+                        items: [{ id: Date.now(), desc, price: selectedOrder.amount, orderRef: selectedOrder.id }],
+                        printed: false,
+                        createdAt: new Date().toISOString(),
+                      };
+                      setInvoices([...invoices, inv]);
+                      setRechnungPorto("");
+                      setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:"invoiced"}:o));
+                      setTab("invoice");
+                      setSelectedInvoice(inv);
+                      setInvView("detail");
+                    }}>
+                      <Icon name="invoice" size={18} color="white"/> Crear y guardar factura
                     </BtnPrimary>
                   </Card>
                 )}
