@@ -315,7 +315,7 @@ export default function App() {
     Freundliche Grüsse<br><br>
     ${C.ownerName}
   </div>
-  ${autoprint ? "<script>window.onload=()=>{ window.print(); }<\/script>" : ""}
+  ${autoprint ? ["<script>window.onload=()=>{ window.print(); }</","script>"].join("") : ""}
 </body></html>`;
     const w = window.open("", "_blank");
     w.document.write(html);
