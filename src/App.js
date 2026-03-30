@@ -205,7 +205,7 @@ export default function App() {
   };
 
   const confirmOrder = () => {
-    const order = { ...newOrder(), client:extracted.client||"", field1:extracted.field1||"", field2:extracted.field2||"", pieces:extracted.pieces||"", notes:extracted.notes||"" };
+    const order = { ...newOrder(), client:extracted.client||"", field1:extracted.field1||"", field2:extracted.field2||"", pieces:extracted.pieces||"", notes:extracted.notes||"", photo: imgData||null };
     setOrders([order, ...orders]);
     syncToSheets(order);
     setPhotoStep("done");
@@ -586,10 +586,10 @@ export default function App() {
                 {/* Order rows — minimal: client + status + one line of meta */}
                 {filteredOrders.map(o => (
                   <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); }} style={{ width:"100%", background:"white", border:"1.5px solid #F2F2F7", borderRadius:16, padding:"16px 18px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", textAlign:"left" }}>
+                    {o.photo && <img src={o.photo} alt="order" style={{ width:44, height:44, borderRadius:10, objectFit:"cover", marginRight:14, flexShrink:0, border:"1px solid #E5E5EA" }}/>}
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:15, fontWeight:700, color:"#1C1C1E", marginBottom:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{o.client}</div>
                       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        {/* colored dot + meta in one clean line */}
                         <div style={{ width:6, height:6, borderRadius:"50%", background:C.statuses[o.status].color, flexShrink:0 }}/>
                         <span style={{ fontSize:12, color:"#8E8E93" }}>
                           {[o.field1, o.field2, o.pieces && `${o.pieces} ${C.piecesLabel}`].filter(Boolean).join(" · ")}
@@ -652,6 +652,11 @@ export default function App() {
                     );
                   })}
                 </div>
+
+                {/* Photo */}
+                {selectedOrder.photo && (
+                  <img src={selectedOrder.photo} alt="order" style={{ width:"100%", borderRadius:16, objectFit:"cover", maxHeight:240, marginBottom:16, border:"1.5px solid #E5E5EA", display:"block" }}/>
+                )}
 
                 {/* Order info */}
                 <Card>
