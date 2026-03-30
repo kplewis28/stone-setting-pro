@@ -713,9 +713,7 @@ export default function App() {
                       setInvoices([...invoices, inv]);
                       setRechnungPorto("");
                       setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:"invoiced"}:o));
-                      setTab("invoice");
-                      setSelectedInvoice(inv);
-                      setInvView("detail");
+                      setView("list");
                     }}>
                       <Icon name="invoice" size={18} color="white"/> Crear y guardar factura
                     </BtnPrimary>
