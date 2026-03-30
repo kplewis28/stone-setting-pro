@@ -144,6 +144,7 @@ export default function App() {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [toast, setToast] = useState(null);
   const showToast = (msg, color="#34C759") => { setToast({msg,color}); setTimeout(()=>setToast(null), 2000); };
+  const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
   const [rechnungPorto, setRechnungPorto] = useState("");
   const [photoStep, setPhotoStep] = useState("capture");
@@ -683,22 +684,23 @@ export default function App() {
                   )}
                 </Card>
 
-                {/* Status selector */}
-                <SectionTitle>Cambiar estado</SectionTitle>
-                <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
-                  {Object.entries(C.statuses).map(([key,val])=>{
-                    const active = selectedOrder.status===key;
+                {/* Status selector — compact horizontal, only 3 main statuses */}
+                <div style={{ display:"flex", gap:8, marginBottom:20 }}>
+                  {[["received","Received","#FF9500"],["inprogress","In Progress","#007AFF"],["done","Done","#34C759"]].map(([key,label,color])=>{
+                    const active = selectedOrder.status===key || (selectedOrder.status==="invoiced" && key==="done");
                     return (
                       <button key={key} onClick={()=>{
-                        if(!active){
-                          setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:key}:o));
-                          showToast(`Estado actualizado: ${val.label}`, val.color);
+                        if(active) return;
+                        setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:key}:o));
+                        if(key==="done") {
+                          setDoneModal(selectedOrder.id);
+                        } else {
+                          showToast(`${label}`, color);
                         }
                       }}
-                        style={{ width:"100%", padding:"14px 16px", borderRadius:14, border:`1.5px solid ${active?val.color:"#E5E5EA"}`, background: active?`${val.color}12`:"white", cursor: active?"default":"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }}>
-                        <div style={{ width:12, height:12, borderRadius:"50%", background: active?val.color:"#C7C7CC", flexShrink:0 }}/>
-                        <span style={{ fontSize:14, fontWeight: active?700:500, color: active?val.color:"#8E8E93", fontFamily:"'DM Sans','Helvetica',sans-serif", flex:1 }}>{val.label}</span>
-                        {active && <span style={{ fontSize:16, color:val.color }}>✓</span>}
+                        style={{ flex:1, padding:"10px 6px", borderRadius:12, border:`1.5px solid ${active?color:"#E5E5EA"}`, background: active?`${color}18`:"white", cursor: active?"default":"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:5, transition:"all 0.15s" }}>
+                        <div style={{ width:8, height:8, borderRadius:"50%", background: active?color:"#C7C7CC" }}/>
+                        <span style={{ fontSize:11, fontWeight: active?700:500, color: active?color:"#8E8E93", fontFamily:"'DM Sans',sans-serif" }}>{label}</span>
                       </button>
                     );
                   })}
@@ -706,7 +708,7 @@ export default function App() {
 
                 {/* Rechnung — only when done */}
                 {selectedOrder.status==="done" && (
-                  <Card>
+                  <Card id="invoice-section">
                     <Field label={`Monto (${C.currency})`}>
                       <Input
                         type="number" placeholder="0.00"
@@ -1061,6 +1063,32 @@ export default function App() {
         </div>
       )}
       </div>{/* end content wrapper */}
+
+      {/* ── DONE MODAL ── */}
+      {doneModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <div style={{ background:"white", borderRadius:"24px 24px 0 0", padding:"28px 24px 40px", width:"100%", maxWidth:430, animation:"fadeUp 0.2s ease" }}>
+            <div style={{ width:40, height:4, background:"#E5E5EA", borderRadius:2, margin:"0 auto 24px" }}/>
+            <div style={{ fontSize:22, marginBottom:8, textAlign:"center" }}>✅</div>
+            <div style={{ fontSize:17, fontWeight:700, color:"#1C1C1E", textAlign:"center", marginBottom:8 }}>¡Orden completada!</div>
+            <div style={{ fontSize:14, color:"#8E8E93", textAlign:"center", marginBottom:28, lineHeight:1.5 }}>¿Quieres crear la factura para esta orden ahora?</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <button onClick={()=>{ setDoneModal(null); setView("detail"); showToast("Marcada como Done","#34C759"); }}
+                style={{ width:"100%", padding:"15px", background:"#F2F2F7", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:600, color:"#1C1C1E", cursor:"pointer" }}>
+                Ahora no
+              </button>
+              <button onClick={()=>{
+                setDoneModal(null);
+                showToast("Marcada como Done — añade el monto abajo","#34C759");
+                setTimeout(()=>document.getElementById("invoice-section")?.scrollIntoView({behavior:"smooth"}),300);
+              }}
+                style={{ width:"100%", padding:"15px", background:ACCENT, border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, color:"white", cursor:"pointer" }}>
+                Sí, crear factura
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── TOAST ── */}
       {toast && (
