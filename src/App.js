@@ -734,13 +734,23 @@ export default function App() {
             <>
               <div style={{ padding: isDesktop?"32px 40px 0":"56px 20px 0", background:"white", borderBottom:"1px solid #F2F2F7", paddingBottom:16 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Invoices</div>
-                  <BtnPrimary onClick={()=>{ setInvClient(""); setInvDate(new Date().toISOString().split("T")[0]); setInvSelectedOrders([]); setInvPorto(""); setItems([newItem()]); setInvView("new"); }} style={{ padding:"10px 18px", margin:0, width:"auto" }}>+ New</BtnPrimary>
+                  <div>
+                    <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Invoices</div>
+                    {invoices.length > 0 && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>{invoices.length} factura{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} pendiente{invoices.filter(i=>!i.printed).length!==1?"s":""}</div>}
+                  </div>
+                  <button onClick={()=>{ setInvClient(""); setInvDate(new Date().toISOString().split("T")[0]); setInvSelectedOrders([]); setInvPorto(""); setItems([newItem()]); setInvView("new"); }}
+                    style={{ background:ACCENT, color:"white", border:"none", borderRadius:12, padding:"10px 18px", fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                    + Nueva factura
+                  </button>
                 </div>
               </div>
               <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
                 {invoices.length === 0 && (
-                  <div style={{ textAlign:"center", color:"#8E8E93", padding:"48px 0", fontSize:14 }}>No invoices yet.<br/>Tap + New to create one.</div>
+                  <div style={{ textAlign:"center", padding:"48px 24px" }}>
+                    <div style={{ fontSize:40, marginBottom:12 }}>🧾</div>
+                    <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:6 }}>No hay facturas aún</div>
+                    <div style={{ fontSize:13, color:"#8E8E93", lineHeight:1.6 }}>Las facturas creadas desde órdenes aparecen aquí.<br/>También puedes crear una manualmente.</div>
+                  </div>
                 )}
                 {[...invoices].reverse().map(inv => {
                   const invSub = inv.items.reduce((s,it)=>s+(parseFloat(it.price)||0),0);
@@ -890,7 +900,7 @@ export default function App() {
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="back" size={22} color="#1C1C1E"/></button>
                     <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>{inv.number}</div>
-                    <button onClick={()=>setInvoices(invoices.filter(i=>i.id!==inv.id))||setInvView("list")} style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={18} color="#FF3B30"/></button>
+                    <button onClick={()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); }} style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={18} color="#FF3B30"/></button>
                   </div>
                 </div>
                 <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
