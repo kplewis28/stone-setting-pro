@@ -653,17 +653,22 @@ export default function App() {
             {/* ── DETAIL ── */}
             {view==="detail" && selectedOrder && (
               <>
-                {/* Status bar — tap to change */}
-                <div style={{ display:"flex", gap:8, marginBottom:20 }}>
-                  {Object.entries(C.statuses).map(([key,val])=>{
-                    const active = selectedOrder.status===key;
-                    return (
-                      <button key={key} onClick={()=>setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:key}:o))} style={{ flex:1, padding:"10px 4px", borderRadius:12, border:`1.5px solid ${active?val.color:"#E5E5EA"}`, background: active?`${val.color}12`:"white", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:5 }}>
-                        <div style={{ width:8, height:8, borderRadius:"50%", background: active?val.color:"#C7C7CC" }}/>
-                        <span style={{ fontSize:10, fontWeight:active?700:500, color:active?val.color:"#8E8E93", fontFamily:"'DM Sans','Helvetica',sans-serif", whiteSpace:"nowrap" }}>{val.label}</span>
-                      </button>
-                    );
-                  })}
+                {/* Status selector */}
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Estado de la orden</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {Object.entries(C.statuses).map(([key,val])=>{
+                      const active = selectedOrder.status===key;
+                      return (
+                        <button key={key} onClick={()=>setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:key}:o))}
+                          style={{ width:"100%", padding:"14px 16px", borderRadius:14, border:`1.5px solid ${active?val.color:"#E5E5EA"}`, background: active?`${val.color}12`:"white", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
+                          <div style={{ width:12, height:12, borderRadius:"50%", background: active?val.color:"#C7C7CC", flexShrink:0 }}/>
+                          <span style={{ fontSize:14, fontWeight: active?700:500, color: active?val.color:"#8E8E93", fontFamily:"'DM Sans','Helvetica',sans-serif", flex:1 }}>{val.label}</span>
+                          {active && <span style={{ fontSize:18 }}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Photo */}
