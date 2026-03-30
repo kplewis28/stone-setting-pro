@@ -151,6 +151,7 @@ export default function App() {
   const [aiMsg, setAiMsg]       = useState("");
   const [extracted, setExtracted] = useState(null);
   const fileRef = useRef();
+  const draftPhotoRef = useRef();
 
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
   useEffect(() => {
@@ -608,6 +609,18 @@ export default function App() {
             {/* ── NEW ORDER ── */}
             {view==="new" && (
               <Card>
+                {/* Photo */}
+                <input ref={draftPhotoRef} type="file" accept="image/*" capture="environment" style={{ display:"none" }}
+                  onChange={e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>setDraft(d=>({...d,photo:ev.target.result})); r.readAsDataURL(f); }}/>
+                {draft.photo
+                  ? <div style={{ position:"relative", marginBottom:14 }}>
+                      <img src={draft.photo} alt="product" style={{ width:"100%", borderRadius:12, objectFit:"cover", maxHeight:200, display:"block" }}/>
+                      <button onClick={()=>setDraft(d=>({...d,photo:null}))} style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:28, height:28, color:"white", fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+                    </div>
+                  : <button onClick={()=>draftPhotoRef.current.click()} style={{ width:"100%", padding:"14px", background:"#F2F2F7", border:"2px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:14 }}>
+                      📷 Añadir foto del producto
+                    </button>
+                }
                 <Field label="Client *">
                   <Input placeholder="Client or company" value={draft.client} onChange={e=>setDraft({...draft,client:e.target.value})}/>
                 </Field>
