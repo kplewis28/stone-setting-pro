@@ -42,6 +42,19 @@ const SAMPLE_ORDERS = [
 
 const newOrder = () => ({ id: String(Date.now()).slice(-4), client:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", pieces:"", status:"received", notes:"", amount:0 });
 const newItem  = () => ({ id: Date.now()+Math.random(), desc:"", price:"" });
+const compressPhoto = (dataUrl) => new Promise(res => {
+  const img = new Image();
+  img.onload = () => {
+    const MAX = 600;
+    const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * scale);
+    c.height = Math.round(img.height * scale);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    res(c.toDataURL("image/jpeg", 0.7));
+  };
+  img.src = dataUrl;
+});
 const fmt      = n => Number(n||0).toFixed(2);
 const genInvNumber = (existing) => {
   const y = new Date().getFullYear();
@@ -163,8 +176,11 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  useEffect(() => { localStorage.setItem("ssp_orders", JSON.stringify(orders)); }, [orders]);
-  useEffect(() => { localStorage.setItem("ssp_invoices", JSON.stringify(invoices)); }, [invoices]);
+  useEffect(() => {
+    try { localStorage.setItem("ssp_orders", JSON.stringify(orders)); }
+    catch(e) { try { localStorage.setItem("ssp_orders", JSON.stringify(orders.map(o=>({...o,photo:null})))); } catch(_) {} }
+  }, [orders]);
+  useEffect(() => { try { localStorage.setItem("ssp_invoices", JSON.stringify(invoices)); } catch(_) {} }, [invoices]);
 
   const filteredOrders = orders.filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; return statusOk && dateOk; });
   const counts   = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
@@ -460,7 +476,7 @@ export default function App() {
           </div>
 
           <div style={{ padding:"20px 16px 100px" }}>
-            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{ const f=e.target.files[0]; if(!f)return; setImgFile(f); const r=new FileReader(); r.onload=ev=>{ setImgData(ev.target.result); setPhotoStep("preview"); }; r.readAsDataURL(f); }}/>
+            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{ const f=e.target.files[0]; if(!f)return; setImgFile(f); const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ setImgData(c); setPhotoStep("preview"); }); }; r.readAsDataURL(f); }}/>
 
             {photoStep==="capture" && (
               <>
@@ -614,7 +630,7 @@ export default function App() {
               <Card>
                 {/* Photo */}
                 <input ref={draftPhotoRef} type="file" accept="image/*" capture="environment" style={{ display:"none" }}
-                  onChange={e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>setDraft(d=>({...d,photo:ev.target.result})); r.readAsDataURL(f); }}/>
+                  onChange={e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>setDraft(d=>({...d,photo:c}))); }; r.readAsDataURL(f); }}/>
                 {draft.photo
                   ? <div style={{ position:"relative", marginBottom:14 }}>
                       <img src={draft.photo} alt="product" style={{ width:"100%", borderRadius:12, objectFit:"cover", maxHeight:200, display:"block" }}/>
