@@ -140,6 +140,7 @@ export default function App() {
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [invSelectedOrders, setInvSelectedOrders] = useState([]);
   const [invPorto, setInvPorto] = useState("");
+  const [invDraft, setInvDraft] = useState(null); // factura en construcción desde órdenes
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [rechnungData, setRechnungData] = useState(null);
   const [rechnungPorto, setRechnungPorto] = useState("");
@@ -685,38 +686,78 @@ export default function App() {
                         onChange={e=>setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,amount:parseFloat(e.target.value)||0}:o))}
                       />
                     </Field>
-                    <Field label={`Porto (${C.currency})`}>
-                      <Input
-                        type="number" placeholder="0.00"
-                        value={rechnungPorto}
-                        onChange={e=>setRechnungPorto(e.target.value)}
-                      />
-                    </Field>
                     {selectedOrder.amount>0 && (
                       <div style={{ fontSize:12, color:"#8E8E93", marginBottom:14, lineHeight:1.6 }}>
                         {C.currency} {fmt(selectedOrder.amount)} + {(C.taxRate*100).toFixed(1)}% MWST = <strong style={{color:ACCENT}}>{C.currency} {fmt(selectedOrder.amount*(1+C.taxRate))}</strong>
                       </div>
                     )}
-                    <BtnPrimary disabled={!selectedOrder.amount} onClick={()=>{
-                      const desc = [selectedOrder.field1, selectedOrder.field2].filter(Boolean).join(" · ") || selectedOrder.notes || `Auftrag #${selectedOrder.id}`;
-                      const porto = parseFloat(rechnungPorto)||0;
-                      const inv = {
-                        id: Date.now(),
-                        number: genInvNumber(invoices),
-                        client: selectedOrder.client,
-                        date: selectedOrder.received || new Date().toISOString().split("T")[0],
-                        porto,
-                        items: [{ id: Date.now(), desc, price: selectedOrder.amount, orderRef: selectedOrder.id }],
-                        printed: false,
-                        createdAt: new Date().toISOString(),
-                      };
-                      setInvoices([...invoices, inv]);
-                      setRechnungPorto("");
-                      setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:"invoiced"}:o));
-                      setView("list");
-                    }}>
-                      <Icon name="invoice" size={18} color="white"/> Crear y guardar factura
-                    </BtnPrimary>
+
+                    {/* Borrador en construcción */}
+                    {invDraft && (
+                      <div style={{ background:"#F2F2F7", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:ACCENT, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Factura en construcción — {invDraft.client}</div>
+                        {invDraft.items.map((it,i)=>(
+                          <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#1C1C1E", marginBottom:4 }}>
+                            <span>#{it.orderRef} {it.desc}</span>
+                            <span style={{ fontWeight:600 }}>{C.currency} {fmt(it.price)}</span>
+                          </div>
+                        ))}
+                        <div style={{ borderTop:"1px solid #E5E5EA", marginTop:8, paddingTop:8, display:"flex", justifyContent:"space-between", fontSize:13, fontWeight:700, color:"#1C1C1E" }}>
+                          <span>Subtotal</span>
+                          <span>{C.currency} {fmt(invDraft.items.reduce((s,it)=>s+(parseFloat(it.price)||0),0))}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ display:"flex", gap:10 }}>
+                      {/* Añadir esta orden al borrador y volver a la lista */}
+                      <button
+                        disabled={!selectedOrder.amount}
+                        onClick={()=>{
+                          const desc = [selectedOrder.field1, selectedOrder.field2].filter(Boolean).join(" · ") || selectedOrder.notes || `Auftrag #${selectedOrder.id}`;
+                          const newItem = { id: Date.now(), desc, price: selectedOrder.amount, orderRef: selectedOrder.id };
+                          const base = invDraft || { client: selectedOrder.client, date: selectedOrder.received || new Date().toISOString().split("T")[0], items: [] };
+                          setInvDraft({ ...base, items: [...base.items, newItem] });
+                          setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:"invoiced"}:o));
+                          setView("list");
+                        }}
+                        style={{ flex:1, padding:"13px 10px", background: selectedOrder.amount?"#F2F2F7":"#F2F2F7", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color: selectedOrder.amount?"#1C1C1E":"#C7C7CC", cursor: selectedOrder.amount?"pointer":"not-allowed" }}>
+                        + Añadir más
+                      </button>
+
+                      {/* Guardar factura definitiva */}
+                      <BtnPrimary
+                        disabled={!selectedOrder.amount && !(invDraft?.items?.length)}
+                        onClick={()=>{
+                          const desc = [selectedOrder.field1, selectedOrder.field2].filter(Boolean).join(" · ") || selectedOrder.notes || `Auftrag #${selectedOrder.id}`;
+                          const currentItem = selectedOrder.amount ? [{ id: Date.now(), desc, price: selectedOrder.amount, orderRef: selectedOrder.id }] : [];
+                          const base = invDraft || { client: selectedOrder.client, date: selectedOrder.received || new Date().toISOString().split("T")[0], items: [] };
+                          const allItems = [...base.items, ...currentItem];
+                          const inv = {
+                            id: Date.now(),
+                            number: genInvNumber(invoices),
+                            client: base.client,
+                            date: base.date,
+                            porto: parseFloat(rechnungPorto)||0,
+                            items: allItems,
+                            printed: false,
+                            createdAt: new Date().toISOString(),
+                          };
+                          setInvoices([...invoices, inv]);
+                          setRechnungPorto("");
+                          setInvDraft(null);
+                          setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:"invoiced"}:o));
+                          setView("list");
+                        }}
+                        style={{ flex:1, margin:0 }}>
+                        <Icon name="invoice" size={16} color="white"/> Guardar factura
+                      </BtnPrimary>
+                    </div>
+                    {invDraft && (
+                      <button onClick={()=>setInvDraft(null)} style={{ marginTop:10, width:"100%", background:"none", border:"none", fontSize:12, color:"#FF3B30", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                        Cancelar borrador
+                      </button>
+                    )}
                   </Card>
                 )}
               </>
