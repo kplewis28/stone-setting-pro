@@ -83,6 +83,7 @@ const Icon = ({ name, size=22, color="#1C1C1E" }) => {
     users:       <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
     receipt:     <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 2 2 2-2 2 2 2-2 2 2 1-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>,
     checkCircle: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>,
+    print:       <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>,
   };
   return icons[name] || null;
 };
@@ -370,6 +371,84 @@ export default function App() {
     });
   };
 
+  // ── PRINT WORK ORDER (Arbeitsauftrag) — no client info ──
+  const printWorkOrder = (order) => {
+    const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("de-CH") : "";
+    const GOLD = "#B8960C";
+    const photoHtml = order.photo
+      ? `<img src="${order.photo}" alt="Schmuckstück" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`
+      : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#C9A84C;font-size:13pt;letter-spacing:0.05em;">[ FOTO DES SCHMUCKSTÜCKS EINFÜGEN ]</div>`;
+    const html = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
+<title>Arbeitsauftrag #${order.id}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #1a1a1a; padding: 32px 44px; max-width: 820px; margin: 0 auto; }
+  .header { display:flex; align-items:flex-start; justify-content:space-between; padding-bottom:16px; border-bottom:1.5px solid #ccc; margin-bottom:24px; }
+  .title-block { text-align:right; }
+  .title { font-size:22pt; font-weight:900; letter-spacing:3px; color:#1a1a1a; line-height:1; }
+  .subtitle { font-size:9.5pt; font-style:italic; color:#666; margin-top:4px; }
+  .fields { display:grid; grid-template-columns:1fr 1fr; gap:0 40px; margin-bottom:22px; }
+  .field-label { font-size:8.5pt; font-weight:700; color:${GOLD}; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:6px; }
+  .field-line { border-bottom:1px solid #bbb; height:22px; }
+  .field-block { margin-bottom:18px; }
+  .photo-box { border:1.5px solid ${GOLD}; border-radius:8px; background:#faf8f3; height:280px; overflow:hidden; margin-bottom:20px; }
+  .desc-box { border:1.5px solid ${GOLD}; border-radius:8px; padding:14px 16px; min-height:110px; }
+  .desc-label { font-size:8.5pt; font-weight:700; color:${GOLD}; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px; }
+  .desc-text { font-size:11pt; color:#1a1a1a; line-height:1.6; white-space:pre-wrap; }
+  .footer { margin-top:28px; padding-top:12px; border-top:1px solid #ccc; text-align:center; font-size:8.5pt; color:#666; font-style:italic; letter-spacing:0.02em; }
+  @media print {
+    @page { size:A4; margin:10mm 12mm; }
+    body { padding:0; }
+  }
+</style></head>
+<body>
+  <div class="header">
+    <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:70px;object-fit:contain;">
+    <div class="title-block">
+      <div class="title">ARBEITSAUFTRAG</div>
+      <div class="subtitle">Wir setzen keine Steine. Wir setzen Maßstäbe.</div>
+    </div>
+  </div>
+
+  <div class="fields">
+    <div class="field-block">
+      <div class="field-label">Auftragsnummer</div>
+      <div class="field-line" style="padding-bottom:4px;font-size:12pt;font-weight:600;">#${order.id}</div>
+    </div>
+    <div class="field-block">
+      <div class="field-label">Verantwortlicher</div>
+      <div class="field-line"></div>
+    </div>
+  </div>
+
+  <div class="fields">
+    <div class="field-block">
+      <div class="field-label">Startdatum</div>
+      <div class="field-line" style="padding-bottom:4px;">${fmtDate(order.received)}</div>
+    </div>
+    <div class="field-block">
+      <div class="field-label">Lieferdatum</div>
+      <div class="field-line" style="padding-bottom:4px;">${fmtDate(order.deadline)}</div>
+    </div>
+  </div>
+
+  <div class="photo-box">${photoHtml}</div>
+
+  <div class="desc-box">
+    <div class="desc-label">Arbeitsbeschreibung</div>
+    <div class="desc-text">${order.description ? order.description.replace(/</g,"&lt;").replace(/>/g,"&gt;") : ""}</div>
+  </div>
+
+  <div class="footer">
+    ${C.address.replace(/\n/g," ◆ ")} ◆ ${C.phone} ◆ info@stoneartprecision.com
+  </div>
+
+  ${["<script>window.onload=()=>{ window.print(); }</","script>"].join("")}
+</body></html>`;
+    const w = window.open("", "_blank");
+    if(w){ w.document.write(html); w.document.close(); }
+  };
+
   // ── DETAIL ORDER ──
   const selectedOrder = orders.find(o=>o.id===selectedId);
 
@@ -590,6 +669,11 @@ export default function App() {
               {view==="list" && (
                 <button onClick={()=>setView("new")} style={{ width:36, height:36, borderRadius:"50%", background:ACCENT, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <Icon name="plus" size={18} color="white"/>
+                </button>
+              )}
+              {view==="detail" && selectedOrder && (
+                <button onClick={()=>printWorkOrder(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 14px", background:"#F2F2F7", border:"none", borderRadius:10, cursor:"pointer", fontSize:13, fontWeight:600, color:"#1C1C1E", fontFamily:"'DM Sans',sans-serif" }}>
+                  <Icon name="print" size={16} color="#1C1C1E"/> Drucken
                 </button>
               )}
             </div>
