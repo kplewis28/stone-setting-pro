@@ -528,7 +528,6 @@ export default function App() {
                     <Field label={C.subFieldLabel}><Input placeholder={C.subFieldLabel} value={extracted.field2||""} onChange={e=>setExtracted({...extracted,field2:e.target.value})}/></Field>
                   </div>
                   <Field label={C.piecesLabel}><Input type="number" placeholder="0" value={extracted.pieces||""} onChange={e=>setExtracted({...extracted,pieces:e.target.value})}/></Field>
-                  <Field label="Notes"><Textarea placeholder="Special instructions…" value={extracted.notes||""} onChange={e=>setExtracted({...extracted,notes:e.target.value})}/></Field>
                 </Card>
                 <BtnPrimary onClick={confirmOrder}><Icon name="check" size={18} color="white"/> Create Order</BtnPrimary>
                 <div style={{ height:10 }}/>
@@ -645,9 +644,6 @@ export default function App() {
                 <Field label={C.piecesLabel}>
                   <Input type="number" placeholder="0" value={draft.pieces} onChange={e=>setDraft({...draft,pieces:e.target.value})}/>
                 </Field>
-                <Field label="Notes">
-                  <Textarea value={draft.notes} onChange={e=>setDraft({...draft,notes:e.target.value})} placeholder="Special instructions…"/>
-                </Field>
                 <BtnPrimary disabled={!draft.client} onClick={()=>{ if(draft.client){ setOrders([{...draft},...orders]); syncToSheets(draft); setDraft(newOrder()); setView("list"); } }}>
                   Save Order
                 </BtnPrimary>
@@ -681,11 +677,6 @@ export default function App() {
                     <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F2F2F7" }}>
                       <div style={{ fontSize:11, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:600, marginBottom:6 }}>Descripción</div>
                       <div style={{ fontSize:14, color:"#1C1C1E", lineHeight:1.5 }}>{selectedOrder.description}</div>
-                    </div>
-                  )}
-                  {selectedOrder.notes && (
-                    <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F2F2F7", fontSize:13, color:"#8E8E93", lineHeight:1.5 }}>
-                      {selectedOrder.notes}
                     </div>
                   )}
                 </Card>
