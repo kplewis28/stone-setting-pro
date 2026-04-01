@@ -40,7 +40,7 @@ const SAMPLE_ORDERS = [
   { id:"0038", client:"Juwelier Keller",     received:"2026-03-08", field1:"Diamond",  field2:"Channel", pieces:2, status:"invoiced",   notes:"",                  amount:350 },
 ];
 
-const newOrder = () => ({ id: String(Date.now()).slice(-4), client:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", pieces:"", status:"received", notes:"", amount:0 });
+const newOrder = () => ({ id: String(Date.now()).slice(-4), client:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", description:"", deadline:"", pieces:"", status:"received", notes:"", amount:0 });
 const newItem  = () => ({ id: Date.now()+Math.random(), desc:"", price:"" });
 const compressPhoto = (dataUrl) => new Promise(res => {
   const img = new Image();
@@ -103,11 +103,6 @@ const Input = ({ ...props }) => (
   <input {...props} style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color:"#1C1C1E", background:"#FAFAFA", outline:"none", boxSizing:"border-box", ...props.style }} />
 );
 
-const Select = ({ children, ...props }) => (
-  <select {...props} style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color:"#1C1C1E", background:"#FAFAFA", outline:"none", boxSizing:"border-box", ...props.style }}>
-    {children}
-  </select>
-);
 
 const Textarea = ({ ...props }) => (
   <textarea {...props} style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color:"#1C1C1E", background:"#FAFAFA", outline:"none", boxSizing:"border-box", resize:"none", height:80, ...props.style }} />
@@ -153,7 +148,6 @@ export default function App() {
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [invSelectedOrders, setInvSelectedOrders] = useState([]);
   const [invPorto, setInvPorto] = useState("");
-  const [invDraft, setInvDraft] = useState(null); // factura en construcción desde órdenes
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [toast, setToast] = useState(null);
   const showToast = (msg, color="#34C759") => { setToast({msg,color}); setTimeout(()=>setToast(null), 2000); };
@@ -643,20 +637,12 @@ export default function App() {
                 <Field label="Client *">
                   <Input placeholder="Client or company" value={draft.client} onChange={e=>setDraft({...draft,client:e.target.value})}/>
                 </Field>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  <Field label={C.fieldLabel}>
-                    <Select value={draft.field1} onChange={e=>setDraft({...draft,field1:e.target.value})}>
-                      <option value="">— select —</option>
-                      {C.itemCategories.map(o=><option key={o}>{o}</option>)}
-                    </Select>
-                  </Field>
-                  <Field label={C.subFieldLabel}>
-                    <Select value={draft.field2} onChange={e=>setDraft({...draft,field2:e.target.value})}>
-                      <option value="">— select —</option>
-                      {C.serviceTypes.map(o=><option key={o}>{o}</option>)}
-                    </Select>
-                  </Field>
-                </div>
+                <Field label="Descripción del trabajo">
+                  <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Descripción del trabajo enviado por el cliente…"/>
+                </Field>
+                <Field label="Fecha de entrega">
+                  <Input type="date" value={draft.deadline} onChange={e=>setDraft({...draft,deadline:e.target.value})}/>
+                </Field>
                 <Field label={C.piecesLabel}>
                   <Input type="number" placeholder="0" value={draft.pieces} onChange={e=>setDraft({...draft,pieces:e.target.value})}/>
                 </Field>
@@ -683,8 +669,7 @@ export default function App() {
                     {[
                       ["Received", selectedOrder.received],
                       ["Order ID", `#${selectedOrder.id}`],
-                      [C.fieldLabel, selectedOrder.field1],
-                      [C.subFieldLabel, selectedOrder.field2],
+                      ["Entrega", selectedOrder.deadline],
                       [C.piecesLabel, selectedOrder.pieces],
                     ].filter(([,v])=>v).map(([l,v])=>(
                       <div key={l}>
@@ -693,6 +678,12 @@ export default function App() {
                       </div>
                     ))}
                   </div>
+                  {selectedOrder.description && (
+                    <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F2F2F7" }}>
+                      <div style={{ fontSize:11, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:600, marginBottom:6 }}>Descripción</div>
+                      <div style={{ fontSize:14, color:"#1C1C1E", lineHeight:1.5 }}>{selectedOrder.description}</div>
+                    </div>
+                  )}
                   {selectedOrder.notes && (
                     <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F2F2F7", fontSize:13, color:"#8E8E93", lineHeight:1.5 }}>
                       {selectedOrder.notes}
@@ -722,9 +713,10 @@ export default function App() {
                   })}
                 </div>
 
-                {/* Rechnung — only when done */}
+                {/* Factura — only when done */}
                 {selectedOrder.status==="done" && (
                   <Card id="invoice-section">
+                    <div style={{ fontSize:13, fontWeight:600, color:"#1C1C1E", marginBottom:12 }}>Crear factura para esta orden</div>
                     <Field label={`Monto (${C.currency})`}>
                       <Input
                         type="number" placeholder="0.00"
@@ -733,77 +725,22 @@ export default function App() {
                       />
                     </Field>
                     {selectedOrder.amount>0 && (
-                      <div style={{ fontSize:12, color:"#8E8E93", marginBottom:14, lineHeight:1.6 }}>
-                        {C.currency} {fmt(selectedOrder.amount)} + {(C.taxRate*100).toFixed(1)}% MWST = <strong style={{color:ACCENT}}>{C.currency} {fmt(selectedOrder.amount*(1+C.taxRate))}</strong>
+                      <div style={{ fontSize:12, color:"#8E8E93", marginBottom:14 }}>
+                        + {(C.taxRate*100).toFixed(1)}% MWST = <strong style={{color:ACCENT}}>{C.currency} {fmt(selectedOrder.amount*(1+C.taxRate))}</strong>
                       </div>
                     )}
-
-                    {/* Borrador en construcción */}
-                    {invDraft && (
-                      <div style={{ background:"#F2F2F7", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
-                        <div style={{ fontSize:11, fontWeight:700, color:ACCENT, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Factura en construcción — {invDraft.client}</div>
-                        {invDraft.items.map((it,i)=>(
-                          <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#1C1C1E", marginBottom:4 }}>
-                            <span>#{it.orderRef} {it.desc}</span>
-                            <span style={{ fontWeight:600 }}>{C.currency} {fmt(it.price)}</span>
-                          </div>
-                        ))}
-                        <div style={{ borderTop:"1px solid #E5E5EA", marginTop:8, paddingTop:8, display:"flex", justifyContent:"space-between", fontSize:13, fontWeight:700, color:"#1C1C1E" }}>
-                          <span>Subtotal</span>
-                          <span>{C.currency} {fmt(invDraft.items.reduce((s,it)=>s+(parseFloat(it.price)||0),0))}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div style={{ display:"flex", gap:10 }}>
-                      {/* Añadir esta orden al borrador y volver a la lista */}
-                      <button
-                        disabled={!selectedOrder.amount}
-                        onClick={()=>{
-                          const desc = [selectedOrder.field1, selectedOrder.field2].filter(Boolean).join(" · ") || selectedOrder.notes || `Auftrag #${selectedOrder.id}`;
-                          const newItem = { id: Date.now(), desc, price: selectedOrder.amount, orderRef: selectedOrder.id };
-                          const base = invDraft || { client: selectedOrder.client, date: selectedOrder.received || new Date().toISOString().split("T")[0], items: [] };
-                          setInvDraft({ ...base, items: [...base.items, newItem] });
-                          setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:"invoiced"}:o));
-                          setView("list");
-                        }}
-                        style={{ flex:1, padding:"13px 10px", background: selectedOrder.amount?"#F2F2F7":"#F2F2F7", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color: selectedOrder.amount?"#1C1C1E":"#C7C7CC", cursor: selectedOrder.amount?"pointer":"not-allowed" }}>
-                        + Añadir más
-                      </button>
-
-                      {/* Guardar factura definitiva */}
-                      <BtnPrimary
-                        disabled={!selectedOrder.amount && !(invDraft?.items?.length)}
-                        onClick={()=>{
-                          const desc = [selectedOrder.field1, selectedOrder.field2].filter(Boolean).join(" · ") || selectedOrder.notes || `Auftrag #${selectedOrder.id}`;
-                          const currentItem = selectedOrder.amount ? [{ id: Date.now(), desc, price: selectedOrder.amount, orderRef: selectedOrder.id }] : [];
-                          const base = invDraft || { client: selectedOrder.client, date: selectedOrder.received || new Date().toISOString().split("T")[0], items: [] };
-                          const allItems = [...base.items, ...currentItem];
-                          const inv = {
-                            id: Date.now(),
-                            number: genInvNumber(invoices),
-                            client: base.client,
-                            date: base.date,
-                            porto: parseFloat(rechnungPorto)||0,
-                            items: allItems,
-                            printed: false,
-                            createdAt: new Date().toISOString(),
-                          };
-                          setInvoices([...invoices, inv]);
-                          setRechnungPorto("");
-                          setInvDraft(null);
-                          setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:"invoiced"}:o));
-                          setView("list");
-                        }}
-                        style={{ flex:1, margin:0 }}>
-                        <Icon name="invoice" size={16} color="white"/> Guardar factura
-                      </BtnPrimary>
-                    </div>
-                    {invDraft && (
-                      <button onClick={()=>setInvDraft(null)} style={{ marginTop:10, width:"100%", background:"none", border:"none", fontSize:12, color:"#FF3B30", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
-                        Cancelar borrador
-                      </button>
-                    )}
+                    <BtnPrimary disabled={!selectedOrder.amount} onClick={()=>{
+                      const desc = [selectedOrder.field1, selectedOrder.field2].filter(Boolean).join(" · ") || selectedOrder.notes || `Auftrag #${selectedOrder.id}`;
+                      setInvClient(selectedOrder.client);
+                      setInvDate(selectedOrder.received || new Date().toISOString().split("T")[0]);
+                      setInvPorto("");
+                      setItems([{ id:Date.now()+Math.random(), desc, price: selectedOrder.amount, orderRef: selectedOrder.id }]);
+                      setInvSelectedOrders([selectedOrder.id]);
+                      setTab("invoice");
+                      setInvView("new");
+                    }} style={{ margin:0 }}>
+                      <Icon name="invoice" size={16} color="white"/> Ir al builder de factura
+                    </BtnPrimary>
                   </Card>
                 )}
               </>
@@ -868,106 +805,149 @@ export default function App() {
             const draftPorto = parseFloat(invPorto)||0;
             const draftTax   = draftSub * C.taxRate;
             const draftTotal = draftSub + draftPorto + draftTax;
-            const clientOrders = orders.filter(o => invClient && o.client.toLowerCase().includes(invClient.toLowerCase()) && o.status !== "invoiced");
+            // Orders done but not yet invoiced (exclude already linked)
+            const availableOrders = orders.filter(o => (o.status==="done" || o.status==="received" || o.status==="inprogress") && o.status!=="invoiced");
             const saveInvoice = (print) => {
+              const validItems = items.filter(it=>it.desc||it.price);
               const inv = {
                 id: Date.now(),
                 number: genInvNumber(invoices),
                 client: invClient,
                 date: invDate,
                 porto: invPorto,
-                items: items.filter(it=>it.desc||it.price),
+                items: validItems,
                 printed: print,
                 createdAt: new Date().toISOString(),
               };
+              // Mark linked orders as invoiced
+              const linkedIds = validItems.map(it=>it.orderRef).filter(Boolean);
+              if(linkedIds.length) setOrders(orders.map(o=>linkedIds.includes(o.id)?{...o,status:"invoiced"}:o));
               setInvoices([...invoices, inv]);
-              if (print) printInvoiceDoc(inv);
+              if(print) printInvoiceDoc(inv);
+              setInvSelectedOrders([]);
               setInvView("list");
+              showToast("Factura guardada","#34C759");
             };
             return (
               <>
+                {/* Header with live total */}
                 <div style={{ padding: isDesktop?"32px 40px 0":"56px 20px 0", background:"white", borderBottom:"1px solid #F2F2F7", paddingBottom:16 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                    <button onClick={()=>setInvView("list")} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="back" size={22} color="#1C1C1E"/></button>
-                    <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>New Invoice</div>
+                    <button onClick={()=>{ setInvSelectedOrders([]); setInvView("list"); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="back" size={22} color="#1C1C1E"/></button>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Nueva Factura</div>
+                      {invClient && <div style={{ fontSize:12, color:"#8E8E93", marginTop:1 }}>{invClient}</div>}
+                    </div>
+                    {draftTotal > 0 && (
+                      <div style={{ background:`${ACCENT}15`, borderRadius:10, padding:"6px 12px", textAlign:"right" }}>
+                        <div style={{ fontSize:11, color:ACCENT, fontWeight:700 }}>TOTAL</div>
+                        <div style={{ fontSize:15, fontWeight:800, color:ACCENT }}>{C.currency} {fmt(draftTotal)}</div>
+                      </div>
+                    )}
                   </div>
                 </div>
+
                 <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
+
+                  {/* Client + date */}
                   <Card>
-                    <Field label="Client *"><Input placeholder="Company name" value={invClient} onChange={e=>setInvClient(e.target.value)}/></Field>
-                    <Field label="Date"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
-                    <Field label={`Porto (${C.currency})`}><Input type="number" placeholder="0.00" value={invPorto} onChange={e=>setInvPorto(e.target.value)}/></Field>
+                    <Field label="Cliente *"><Input placeholder="Nombre de empresa" value={invClient} onChange={e=>setInvClient(e.target.value)}/></Field>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                      <Field label="Fecha"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
+                      <Field label={`Porto (${C.currency})`}><Input type="number" placeholder="0.00" value={invPorto} onChange={e=>setInvPorto(e.target.value)}/></Field>
+                    </div>
                   </Card>
 
-                  {/* Import from orders */}
-                  {clientOrders.length > 0 && (
+                  {/* Orders list — tap to add/remove */}
+                  {availableOrders.length > 0 && (
                     <>
-                      <SectionTitle>Import from orders — {invClient}</SectionTitle>
-                      {clientOrders.map(o=>{
-                        const alreadyLinked = invSelectedOrders.includes(o.id);
+                      <SectionTitle>Órdenes disponibles</SectionTitle>
+                      {availableOrders.map(o=>{
+                        const linked = invSelectedOrders.includes(o.id);
+                        const linkedItem = items.find(it=>it.orderRef===o.id);
                         return (
-                          <Card key={o.id} onClick={()=>{
-                            if (alreadyLinked) {
-                              setInvSelectedOrders(invSelectedOrders.filter(id=>id!==o.id));
-                              setItems(items.filter(it=>it.orderRef!==o.id));
-                            } else {
-                              setInvSelectedOrders([...invSelectedOrders, o.id]);
-                              const desc = [o.field1, o.field2].filter(Boolean).join(" · ") || o.notes || `Order #${o.id}`;
-                              setItems([...items.filter(it=>it.desc||it.price), { id:Date.now()+Math.random(), desc, price: o.amount||"", orderRef: o.id }]);
-                            }
-                          }} style={{ border: alreadyLinked?`2px solid ${ACCENT}`:"1.5px solid #F2F2F7", cursor:"pointer" }}>
-                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                              <div>
-                                <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E" }}>#{o.id} · {o.field1}{o.field2?` · ${o.field2}`:""}</div>
-                                <div style={{ fontSize:12, color:"#8E8E93" }}>{o.received} · {o.pieces} pcs</div>
+                          <div key={o.id} style={{ background:"white", border:`1.5px solid ${linked?ACCENT:"#E5E5EA"}`, borderRadius:16, marginBottom:10, overflow:"hidden", transition:"border 0.15s" }}>
+                            {/* Order row — tap to toggle */}
+                            <div onClick={()=>{
+                              if(linked){
+                                setInvSelectedOrders(invSelectedOrders.filter(id=>id!==o.id));
+                                setItems(items.filter(it=>it.orderRef!==o.id));
+                              } else {
+                                setInvSelectedOrders([...invSelectedOrders, o.id]);
+                                const desc = [o.field1, o.field2].filter(Boolean).join(" · ") || o.notes || `Auftrag #${o.id}`;
+                                setItems([...items.filter(it=>it.desc||it.price||it.orderRef), { id:Date.now()+Math.random(), desc, price: o.amount||"", orderRef: o.id }]);
+                              }
+                            }} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", cursor:"pointer" }}>
+                              {o.photo && <img src={o.photo} alt="" style={{ width:36, height:36, borderRadius:8, objectFit:"cover", flexShrink:0 }}/>}
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E", marginBottom:2 }}>{o.client}</div>
+                                <div style={{ fontSize:12, color:"#8E8E93" }}>#{o.id} · {[o.field1,o.field2].filter(Boolean).join(" · ")||"—"}</div>
                               </div>
-                              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                                {o.amount>0 && <span style={{ fontSize:13, fontWeight:700, color:"#1C1C1E" }}>{C.currency} {fmt(o.amount)}</span>}
-                                <div style={{ width:20, height:20, borderRadius:6, border:`2px solid ${alreadyLinked?ACCENT:"#C7C7CC"}`, background:alreadyLinked?ACCENT:"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                                  {alreadyLinked && <span style={{ color:"white", fontSize:13, fontWeight:700 }}>✓</span>}
+                              <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+                                {o.status==="done" && <span style={{ fontSize:10, fontWeight:700, color:"#34C759", background:"#34C75915", padding:"3px 8px", borderRadius:6 }}>Done</span>}
+                                <div style={{ width:22, height:22, borderRadius:7, border:`2px solid ${linked?ACCENT:"#C7C7CC"}`, background:linked?ACCENT:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                  {linked && <span style={{ color:"white", fontSize:13, fontWeight:800 }}>✓</span>}
                                 </div>
                               </div>
                             </div>
-                          </Card>
+                            {/* Price input — only when linked */}
+                            {linked && (
+                              <div style={{ padding:"0 16px 14px", borderTop:"1px solid #F2F2F7" }} onClick={e=>e.stopPropagation()}>
+                                <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
+                                  <Input
+                                    type="number" placeholder="Monto CHF"
+                                    value={linkedItem?.price||""}
+                                    onChange={e=>setItems(items.map(it=>it.orderRef===o.id?{...it,price:e.target.value}:it))}
+                                    style={{ flex:1, marginBottom:0 }}
+                                  />
+                                  {linkedItem?.price && <span style={{ fontSize:13, fontWeight:700, color:ACCENT, whiteSpace:"nowrap" }}>{C.currency} {fmt(parseFloat(linkedItem.price)||0)}</span>}
+                                </div>
+                                {linkedItem?.price && (
+                                  <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>
+                                    + {(C.taxRate*100).toFixed(1)}% MWST = <strong style={{color:"#1C1C1E"}}>{C.currency} {fmt((parseFloat(linkedItem.price)||0)*(1+C.taxRate))}</strong>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </>
                   )}
 
-                  <SectionTitle>Line Items</SectionTitle>
-                  {items.map((it,idx)=>(
-                    <Card key={it.id} style={{ position:"relative" }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:ACCENT, letterSpacing:"0.1em", textTransform:"uppercase" }}>
-                          Item {idx+1}{it.orderRef?` · Order #${it.orderRef}`:""}
-                        </div>
-                        {items.length>1 && <button onClick={()=>{ setItems(items.filter(i=>i.id!==it.id)); if(it.orderRef) setInvSelectedOrders(invSelectedOrders.filter(id=>id!==it.orderRef)); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#8E8E93"/></button>}
+                  {/* Manual items */}
+                  <SectionTitle>Ítems manuales</SectionTitle>
+                  {items.filter(it=>!it.orderRef).map((it,idx)=>(
+                    <Card key={it.id}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em" }}>Ítem manual {idx+1}</div>
+                        <button onClick={()=>setItems(items.filter(i=>i.id!==it.id))} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#FF3B30"/></button>
                       </div>
-                      <Field label="Description"><Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
-                      <Field label={`Amount (${C.currency})`}><Input type="number" placeholder="0.00" value={it.price} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,price:e.target.value}:i))}/></Field>
+                      <Field label="Descripción"><Input placeholder="p.ej. Pavé setting – anillo" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
+                      <Field label={`Monto (${C.currency})`}><Input type="number" placeholder="0.00" value={it.price} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,price:e.target.value}:i))}/></Field>
                     </Card>
                   ))}
+                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:16 }}>+ Añadir ítem manual</button>
 
-                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"14px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:16 }}>+ Add Item</button>
-
-                  <Card style={{ background:"#1C1C1E" }}>
-                    {[[`Subtotal`,draftSub],[`Porto`,draftPorto],[`${C.taxLabel} ${(C.taxRate*100).toFixed(1)}%`,draftTax]].map(([l,v])=>(
-                      <div key={l} style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}>
-                        <span>{l}</span><span>{C.currency} {fmt(v)}</span>
+                  {/* Live total */}
+                  {(items.some(it=>it.price)||draftPorto>0) && (
+                    <Card style={{ background:"#1C1C1E" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Subtotal</span><span>{C.currency} {fmt(draftSub)}</span></div>
+                      {draftPorto>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Porto</span><span>{C.currency} {fmt(draftPorto)}</span></div>}
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(draftTax)}</span></div>
+                      <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid rgba(255,255,255,0.15)", paddingTop:12 }}>
+                        <span style={{ fontSize:16, fontWeight:700, color:"white" }}>Total</span>
+                        <span style={{ fontSize:22, fontWeight:800, color:"white" }}>{C.currency} {fmt(draftTotal)}</span>
                       </div>
-                    ))}
-                    <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:12, marginTop:6 }}>
-                      <span style={{ fontSize:15, color:"rgba(255,255,255,0.7)" }}>Total</span>
-                      <span style={{ fontSize:22, fontWeight:700, color:"white" }}>{C.currency} {fmt(draftTotal)}</span>
-                    </div>
-                  </Card>
+                    </Card>
+                  )}
 
                   <BtnPrimary disabled={!invClient||items.every(it=>!it.desc&&!it.price)} onClick={()=>saveInvoice(false)}>
-                    <Icon name="invoice" size={18} color="white"/> Save Invoice
+                    <Icon name="invoice" size={18} color="white"/> Guardar factura
                   </BtnPrimary>
                   <div style={{ height:10 }}/>
                   <BtnGhost disabled={!invClient||items.every(it=>!it.desc&&!it.price)} onClick={()=>saveInvoice(true)}>
-                    ⎙ Save & Print now
+                    ⎙ Guardar e imprimir
                   </BtnGhost>
                 </div>
               </>
@@ -1094,9 +1074,18 @@ export default function App() {
                 Ahora no
               </button>
               <button onClick={()=>{
+                const o = orders.find(x=>x.id===doneModal);
+                if(o){
+                  setInvClient(o.client);
+                  setInvDate(o.received || new Date().toISOString().split("T")[0]);
+                  setInvPorto("");
+                  const desc = [o.field1, o.field2].filter(Boolean).join(" · ") || o.notes || `Auftrag #${o.id}`;
+                  setItems([{ id:Date.now()+Math.random(), desc, price: o.amount||"", orderRef: o.id }]);
+                  setInvSelectedOrders([o.id]);
+                }
                 setDoneModal(null);
-                showToast("Marcada como Done — añade el monto abajo","#34C759");
-                setTimeout(()=>document.getElementById("invoice-section")?.scrollIntoView({behavior:"smooth"}),300);
+                setTab("invoice");
+                setInvView("new");
               }}
                 style={{ width:"100%", padding:"15px", background:ACCENT, border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, color:"white", cursor:"pointer" }}>
                 Sí, crear factura
