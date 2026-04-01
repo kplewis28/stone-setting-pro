@@ -153,7 +153,6 @@ export default function App() {
   const showToast = (msg, color="#34C759") => { setToast({msg,color}); setTimeout(()=>setToast(null), 2000); };
   const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
-  const [rechnungPorto, setRechnungPorto] = useState("");
   const [photoStep, setPhotoStep] = useState("capture");
   const [imgData, setImgData]   = useState(null);
   const [imgFile, setImgFile]   = useState(null);
