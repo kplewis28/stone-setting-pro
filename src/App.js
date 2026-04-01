@@ -79,7 +79,10 @@ const Icon = ({ name, size=22, color="#1C1C1E" }) => {
     trash: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>,
     bell: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>,
     help: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>,
-    person: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    person:      <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    users:       <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
+    receipt:     <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 2 2 2-2 2 2 2-2 2 2 1-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>,
+    checkCircle: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>,
   };
   return icons[name] || null;
 };
@@ -103,6 +106,13 @@ const Field = ({ label, children }) => (
 
 const Input = ({ ...props }) => (
   <input {...props} style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color:"#1C1C1E", background:"#FAFAFA", outline:"none", boxSizing:"border-box", ...props.style }} />
+);
+
+const CHEVRON_URL = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C%2Fsvg%3E\")";
+const Select = ({ children, ...props }) => (
+  <select {...props} style={{ width:"100%", padding:"13px 40px 13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color: props.value ? "#1C1C1E" : "#8E8E93", background:"#FAFAFA", outline:"none", boxSizing:"border-box", appearance:"none", WebkitAppearance:"none", backgroundImage:CHEVRON_URL, backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center", ...props.style }}>
+    {children}
+  </select>
 );
 
 
@@ -603,10 +613,10 @@ export default function App() {
                 {/* Client filter (if clients saved) */}
                 {clients.length > 0 && (
                   <div style={{ marginBottom:12 }}>
-                    <select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ width:"100%", padding:"9px 12px", border:"1.5px solid #E5E5EA", borderRadius:10, fontFamily:"DM Sans,sans-serif", fontSize:13, color: filterClient!=="all"?ACCENT:"#1C1C1E", background:"white", outline:"none" }}>
+                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ fontSize:13, padding:"9px 40px 9px 12px", borderRadius:10, color: filterClient!=="all"?ACCENT:"#8E8E93" }}>
                       <option value="all">Todos los clientes</option>
                       {[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
-                    </select>
+                    </Select>
                   </div>
                 )}
                 {/* Date filter + Export */}
@@ -648,19 +658,19 @@ export default function App() {
                       <img src={draft.photo} alt="product" style={{ width:"100%", borderRadius:12, objectFit:"cover", maxHeight:200, display:"block" }}/>
                       <button onClick={()=>setDraft(d=>({...d,photo:null}))} style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:28, height:28, color:"white", fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
                     </div>
-                  : <button onClick={()=>draftPhotoRef.current.click()} style={{ width:"100%", padding:"14px", background:"#F2F2F7", border:"2px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:14 }}>
-                      📷 Añadir foto del producto
+                  : <button onClick={()=>draftPhotoRef.current.click()} style={{ width:"100%", padding:"14px", background:"#F2F2F7", border:"2px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      <Icon name="camera" size={18} color="#8E8E93"/> Añadir foto del producto
                     </button>
                 }
                 <Field label="Client *">
                   {clients.length > 0
-                    ? <select value={draft.clientId} onChange={e=>{
+                    ? <Select value={draft.clientId} onChange={e=>{
                         const c = clients.find(x=>x.id===e.target.value);
                         setDraft({...draft, clientId: e.target.value, client: c ? (c.company||c.name) : "" });
-                      }} style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color: draft.clientId?"#1C1C1E":"#8E8E93", background:"#FAFAFA", outline:"none", boxSizing:"border-box" }}>
+                      }}>
                         <option value="">— Seleccionar cliente —</option>
                         {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
-                      </select>
+                      </Select>
                     : <Input placeholder="Client or company" value={draft.client} onChange={e=>setDraft({...draft,client:e.target.value})}/>
                   }
                   {clients.length > 0 && <div onClick={()=>{ setTab("clients"); setClientView("new"); setClientDraft(newClient()); }} style={{ fontSize:12, color:ACCENT, fontWeight:600, marginTop:6, cursor:"pointer" }}>+ Agregar nuevo cliente</div>}
@@ -791,7 +801,7 @@ export default function App() {
               <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
                 {invoices.length === 0 && (
                   <div style={{ textAlign:"center", padding:"48px 24px" }}>
-                    <div style={{ fontSize:40, marginBottom:12 }}>🧾</div>
+                    <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}><Icon name="receipt" size={48} color="#C7C7CC"/></div>
                     <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:6 }}>No hay facturas aún</div>
                     <div style={{ fontSize:13, color:"#8E8E93", lineHeight:1.6 }}>Las facturas creadas desde órdenes aparecen aquí.<br/>También puedes crear una manualmente.</div>
                   </div>
@@ -874,14 +884,14 @@ export default function App() {
                   <Card>
                     <Field label="Cliente *">
                       {clients.length > 0
-                        ? <select value={invClient} onChange={e=>{
+                        ? <Select value={invClient} onChange={e=>{
                             const sel = clients.find(c=>c.name===e.target.value || c.company===e.target.value);
                             setInvClient(e.target.value);
                             setInvClientAddress(sel ? [sel.company&&sel.name?sel.company:"", sel.address].filter(Boolean).join("\n") : "");
-                          }} style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color: invClient?"#1C1C1E":"#8E8E93", background:"#FAFAFA", outline:"none", boxSizing:"border-box" }}>
+                          }}>
                             <option value="">— Seleccionar cliente —</option>
                             {clients.map(c=><option key={c.id} value={c.company||c.name}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
-                          </select>
+                          </Select>
                         : <Input placeholder="Nombre de empresa" value={invClient} onChange={e=>setInvClient(e.target.value)}/>
                       }
                     </Field>
@@ -919,7 +929,7 @@ export default function App() {
                               <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
                                 {o.status==="done" && <span style={{ fontSize:10, fontWeight:700, color:"#34C759", background:"#34C75915", padding:"3px 8px", borderRadius:6 }}>Done</span>}
                                 <div style={{ width:22, height:22, borderRadius:7, border:`2px solid ${linked?ACCENT:"#C7C7CC"}`, background:linked?ACCENT:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                                  {linked && <span style={{ color:"white", fontSize:13, fontWeight:800 }}>✓</span>}
+                                  {linked && <Icon name="check" size={13} color="white"/>}
                                 </div>
                               </div>
                             </div>
@@ -1105,7 +1115,7 @@ export default function App() {
               <>
                 {clients.length === 0 && (
                   <div style={{ textAlign:"center", padding:"48px 24px" }}>
-                    <div style={{ fontSize:40, marginBottom:12 }}>👥</div>
+                    <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}><Icon name="users" size={48} color="#C7C7CC"/></div>
                     <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:6 }}>No hay clientes aún</div>
                     <div style={{ fontSize:13, color:"#8E8E93", lineHeight:1.6, marginBottom:24 }}>Agrega tus clientes para asignarlos a órdenes y facturas automáticamente.</div>
                     <BtnPrimary onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ maxWidth:220, margin:"0 auto" }}>+ Agregar cliente</BtnPrimary>
@@ -1263,7 +1273,7 @@ export default function App() {
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
           <div style={{ background:"white", borderRadius:"24px 24px 0 0", padding:"28px 24px 40px", width:"100%", maxWidth:430, animation:"fadeUp 0.2s ease" }}>
             <div style={{ width:40, height:4, background:"#E5E5EA", borderRadius:2, margin:"0 auto 24px" }}/>
-            <div style={{ fontSize:22, marginBottom:8, textAlign:"center" }}>✅</div>
+            <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}><Icon name="checkCircle" size={44} color="#34C759"/></div>
             <div style={{ fontSize:17, fontWeight:700, color:"#1C1C1E", textAlign:"center", marginBottom:8 }}>¡Orden completada!</div>
             <div style={{ fontSize:14, color:"#8E8E93", textAlign:"center", marginBottom:28, lineHeight:1.5 }}>¿Quieres crear la factura para esta orden ahora?</div>
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -1295,8 +1305,8 @@ export default function App() {
 
       {/* ── TOAST ── */}
       {toast && (
-        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease" }}>
-          ✓ {toast.msg}
+        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
+          <Icon name="check" size={15} color="white"/> {toast.msg}
         </div>
       )}
 
