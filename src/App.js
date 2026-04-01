@@ -40,7 +40,8 @@ const SAMPLE_ORDERS = [
   { id:"0038", client:"Juwelier Keller",     received:"2026-03-08", field1:"Diamond",  field2:"Channel", pieces:2, status:"invoiced",   notes:"",                  amount:350 },
 ];
 
-const newOrder = () => ({ id: String(Date.now()).slice(-4), client:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", description:"", deadline:"", pieces:"", status:"received", notes:"", amount:0 });
+const newOrder  = () => ({ id: String(Date.now()).slice(-4), client:"", clientId:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", description:"", deadline:"", pieces:"", status:"received", notes:"", amount:0 });
+const newClient = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
 const newItem  = () => ({ id: Date.now()+Math.random(), desc:"", price:"" });
 const compressPhoto = (dataUrl) => new Promise(res => {
   const img = new Image();
@@ -78,6 +79,7 @@ const Icon = ({ name, size=22, color="#1C1C1E" }) => {
     trash: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>,
     bell: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>,
     help: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>,
+    person: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
   };
   return icons[name] || null;
 };
@@ -148,9 +150,15 @@ export default function App() {
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [invSelectedOrders, setInvSelectedOrders] = useState([]);
   const [invPorto, setInvPorto] = useState("");
+  const [invClientAddress, setInvClientAddress] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [toast, setToast] = useState(null);
   const showToast = (msg, color="#34C759") => { setToast({msg,color}); setTimeout(()=>setToast(null), 2000); };
+  const [clients, setClients]     = useState(() => { try { const s = localStorage.getItem("ssp_clients"); return s ? JSON.parse(s) : []; } catch { return []; } });
+  const [clientView, setClientView] = useState("list"); // "list" | "new" | "edit" | "detail"
+  const [selectedClientId, setSelectedClientId] = useState(null);
+  const [clientDraft, setClientDraft] = useState(newClient());
+  const [filterClient, setFilterClient] = useState("all");
   const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
   const [photoStep, setPhotoStep] = useState("capture");
@@ -174,8 +182,9 @@ export default function App() {
     catch(e) { try { localStorage.setItem("ssp_orders", JSON.stringify(orders.map(o=>({...o,photo:null})))); } catch(_) {} }
   }, [orders]);
   useEffect(() => { try { localStorage.setItem("ssp_invoices", JSON.stringify(invoices)); } catch(_) {} }, [invoices]);
+  useEffect(() => { try { localStorage.setItem("ssp_clients", JSON.stringify(clients)); } catch(_) {} }, [clients]);
 
-  const filteredOrders = orders.filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; return statusOk && dateOk; });
+  const filteredOrders = orders.filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return statusOk && dateOk && clientOk; });
   const counts   = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
   const pending  = orders.filter(o=>o.status==="done").reduce((s,o)=>s+(o.amount||0),0);
 
@@ -226,7 +235,7 @@ export default function App() {
 
   const resetPhoto = () => { setPhotoStep("capture"); setImgData(null); setImgFile(null); setExtracted(null); };
 
-  const goHome = () => { setTab("home"); setView("list"); setPhotoStep("capture"); setInvView("list"); };
+  const goHome = () => { setTab("home"); setView("list"); setPhotoStep("capture"); setInvView("list"); setClientView("list"); };
 
   // ── EXCEL EXPORT ──
   const orderToRow = o => ({
@@ -299,7 +308,8 @@ export default function App() {
       <div class="datum">DATUM: ${new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
     </div>
     <div class="recipient-block">
-      ${inv.client}<br>
+      <strong>${inv.client}</strong><br>
+      ${inv.clientAddress ? inv.clientAddress.replace(/\n/g,"<br>")+"<br>" : ""}
       ${inv.number}
     </div>
   </div>
@@ -377,9 +387,10 @@ export default function App() {
             { key:"home",    icon:"orders",  label:"Home"    },
             { key:"scan",    icon:"scan",    label:"Scan"    },
             { key:"orders",  icon:"gem",     label:"Orders"  },
+            { key:"clients", icon:"person",  label:"Clients" },
             { key:"invoice", icon:"invoice", label:"Invoice" },
           ].map(({ key, icon, label }) => (
-            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); }}
+            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); if(key==="clients")setClientView("list"); }}
               style={{ width:"100%", background: tab===key ? `${ACCENT}12` : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:14, padding:"13px 24px", borderLeft: tab===key ? `3px solid ${ACCENT}` : "3px solid transparent", transition:"all 0.15s" }}>
               <Icon name={icon} size={20} color={tab===key ? ACCENT : "#8E8E93"}/>
               <span style={{ fontSize:14, fontWeight: tab===key ? 700 : 500, color: tab===key ? ACCENT : "#8E8E93" }}>{label}</span>
@@ -589,6 +600,15 @@ export default function App() {
                 </div>
 
                 
+                {/* Client filter (if clients saved) */}
+                {clients.length > 0 && (
+                  <div style={{ marginBottom:12 }}>
+                    <select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ width:"100%", padding:"9px 12px", border:"1.5px solid #E5E5EA", borderRadius:10, fontFamily:"DM Sans,sans-serif", fontSize:13, color: filterClient!=="all"?ACCENT:"#1C1C1E", background:"white", outline:"none" }}>
+                      <option value="all">Todos los clientes</option>
+                      {[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                )}
                 {/* Date filter + Export */}
                 <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
                   <input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ flex:1, padding:"9px 12px", border:"1.5px solid #E5E5EA", borderRadius:10, fontFamily:"DM Sans,sans-serif", fontSize:13, color:"#1C1C1E", background:"white", outline:"none" }}/>
@@ -604,7 +624,7 @@ export default function App() {
                       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                         <div style={{ width:6, height:6, borderRadius:"50%", background:C.statuses[o.status].color, flexShrink:0 }}/>
                         <span style={{ fontSize:12, color:"#8E8E93" }}>
-                          {[o.field1, o.field2, o.pieces && `${o.pieces} ${C.piecesLabel}`].filter(Boolean).join(" · ")}
+                          {[o.deadline && `Entrega: ${o.deadline}`, o.pieces && `${o.pieces} ${C.piecesLabel}`].filter(Boolean).join(" · ") || o.description?.slice(0,40) || "—"}
                         </span>
                       </div>
                     </div>
@@ -633,7 +653,17 @@ export default function App() {
                     </button>
                 }
                 <Field label="Client *">
-                  <Input placeholder="Client or company" value={draft.client} onChange={e=>setDraft({...draft,client:e.target.value})}/>
+                  {clients.length > 0
+                    ? <select value={draft.clientId} onChange={e=>{
+                        const c = clients.find(x=>x.id===e.target.value);
+                        setDraft({...draft, clientId: e.target.value, client: c ? (c.company||c.name) : "" });
+                      }} style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color: draft.clientId?"#1C1C1E":"#8E8E93", background:"#FAFAFA", outline:"none", boxSizing:"border-box" }}>
+                        <option value="">— Seleccionar cliente —</option>
+                        {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
+                      </select>
+                    : <Input placeholder="Client or company" value={draft.client} onChange={e=>setDraft({...draft,client:e.target.value})}/>
+                  }
+                  {clients.length > 0 && <div onClick={()=>{ setTab("clients"); setClientView("new"); setClientDraft(newClient()); }} style={{ fontSize:12, color:ACCENT, fontWeight:600, marginTop:6, cursor:"pointer" }}>+ Agregar nuevo cliente</div>}
                 </Field>
                 <Field label="Descripción del trabajo">
                   <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Descripción del trabajo enviado por el cliente…"/>
@@ -752,7 +782,7 @@ export default function App() {
                     <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Invoices</div>
                     {invoices.length > 0 && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>{invoices.length} factura{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} sin imprimir</div>}
                   </div>
-                  <button onClick={()=>{ setInvClient(""); setInvDate(new Date().toISOString().split("T")[0]); setInvSelectedOrders([]); setInvPorto(""); setItems([newItem()]); setInvView("new"); }}
+                  <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvSelectedOrders([]); setInvPorto(""); setItems([newItem()]); setInvView("new"); }}
                     style={{ background:ACCENT, color:"white", border:"none", borderRadius:12, padding:"10px 18px", fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
                     + Nueva factura
                   </button>
@@ -803,6 +833,7 @@ export default function App() {
                 id: Date.now(),
                 number: genInvNumber(invoices),
                 client: invClient,
+                clientAddress: invClientAddress,
                 date: invDate,
                 porto: invPorto,
                 items: validItems,
@@ -841,7 +872,19 @@ export default function App() {
 
                   {/* Client + date */}
                   <Card>
-                    <Field label="Cliente *"><Input placeholder="Nombre de empresa" value={invClient} onChange={e=>setInvClient(e.target.value)}/></Field>
+                    <Field label="Cliente *">
+                      {clients.length > 0
+                        ? <select value={invClient} onChange={e=>{
+                            const sel = clients.find(c=>c.name===e.target.value || c.company===e.target.value);
+                            setInvClient(e.target.value);
+                            setInvClientAddress(sel ? [sel.company&&sel.name?sel.company:"", sel.address].filter(Boolean).join("\n") : "");
+                          }} style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color: invClient?"#1C1C1E":"#8E8E93", background:"#FAFAFA", outline:"none", boxSizing:"border-box" }}>
+                            <option value="">— Seleccionar cliente —</option>
+                            {clients.map(c=><option key={c.id} value={c.company||c.name}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
+                          </select>
+                        : <Input placeholder="Nombre de empresa" value={invClient} onChange={e=>setInvClient(e.target.value)}/>
+                      }
+                    </Field>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                       <Field label="Fecha"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
                       <Field label={`Porto (${C.currency})`}><Input type="number" placeholder="0.00" value={invPorto} onChange={e=>setInvPorto(e.target.value)}/></Field>
@@ -864,14 +907,14 @@ export default function App() {
                                 setItems(items.filter(it=>it.orderRef!==o.id));
                               } else {
                                 setInvSelectedOrders([...invSelectedOrders, o.id]);
-                                const desc = [o.field1, o.field2].filter(Boolean).join(" · ") || o.notes || `Auftrag #${o.id}`;
+                                const desc = o.description || `Auftrag #${o.id}`;
                                 setItems([...items.filter(it=>it.desc||it.price||it.orderRef), { id:Date.now()+Math.random(), desc, price: o.amount||"", orderRef: o.id }]);
                               }
                             }} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", cursor:"pointer" }}>
                               {o.photo && <img src={o.photo} alt="" style={{ width:36, height:36, borderRadius:8, objectFit:"cover", flexShrink:0 }}/>}
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E", marginBottom:2 }}>{o.client}</div>
-                                <div style={{ fontSize:12, color:"#8E8E93" }}>#{o.id} · {[o.field1,o.field2].filter(Boolean).join(" · ")||"—"}</div>
+                                <div style={{ fontSize:12, color:"#8E8E93" }}>#{o.id}{o.deadline ? ` · Entrega: ${o.deadline}` : ""}</div>
                               </div>
                               <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
                                 {o.status==="done" && <span style={{ fontSize:10, fontWeight:700, color:"#34C759", background:"#34C75915", padding:"3px 8px", borderRadius:6 }}>Done</span>}
@@ -1030,6 +1073,170 @@ export default function App() {
         </div>
       )}
 
+      {/* ── CLIENTS TAB ── */}
+      {tab==="clients" && (
+        <div style={{ animation:"fadeUp 0.3s ease" }}>
+          {/* Header */}
+          <div style={{ padding: isDesktop?"32px 40px 0":"56px 20px 0", background:"white", borderBottom:"1px solid #F2F2F7", paddingBottom:16 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                {clientView!=="list" && (
+                  <button onClick={()=>setClientView("list")} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="back" size={22} color="#1C1C1E"/></button>
+                )}
+                <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>
+                  {clientView==="list" ? "Clientes" : clientView==="new" ? "Nuevo Cliente" : clientView==="edit" ? "Editar Cliente" : (clients.find(c=>c.id===selectedClientId)?.company || clients.find(c=>c.id===selectedClientId)?.name || "Cliente")}
+                </div>
+              </div>
+              {clientView==="list" && (
+                <button onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ width:36, height:36, borderRadius:"50%", background:ACCENT, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <Icon name="plus" size={18} color="white"/>
+                </button>
+              )}
+              {clientView==="detail" && (
+                <button onClick={()=>{ setClientDraft({...clients.find(c=>c.id===selectedClientId)}); setClientView("edit"); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4, fontSize:13, fontWeight:600, color:ACCENT }}>Editar</button>
+              )}
+            </div>
+          </div>
+
+          <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
+
+            {/* ── LIST ── */}
+            {clientView==="list" && (
+              <>
+                {clients.length === 0 && (
+                  <div style={{ textAlign:"center", padding:"48px 24px" }}>
+                    <div style={{ fontSize:40, marginBottom:12 }}>👥</div>
+                    <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:6 }}>No hay clientes aún</div>
+                    <div style={{ fontSize:13, color:"#8E8E93", lineHeight:1.6, marginBottom:24 }}>Agrega tus clientes para asignarlos a órdenes y facturas automáticamente.</div>
+                    <BtnPrimary onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ maxWidth:220, margin:"0 auto" }}>+ Agregar cliente</BtnPrimary>
+                  </div>
+                )}
+                {clients.map(c => {
+                  const orderCount = orders.filter(o=>o.clientId===c.id||o.client===(c.company||c.name)).length;
+                  return (
+                    <Card key={c.id} onClick={()=>{ setSelectedClientId(c.id); setClientView("detail"); }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                        <div style={{ width:44, height:44, borderRadius:14, background:`${ACCENT}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <Icon name="person" size={22} color={ACCENT}/>
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:15, fontWeight:700, color:"#1C1C1E" }}>{c.company || c.name}</div>
+                          {c.company && c.name && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>{c.name}</div>}
+                          {c.address && <div style={{ fontSize:12, color:"#8E8E93", marginTop:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{c.address.split("\n")[0]}</div>}
+                        </div>
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4, flexShrink:0 }}>
+                          {orderCount > 0 && <span style={{ fontSize:11, fontWeight:700, color:ACCENT, background:`${ACCENT}15`, padding:"3px 9px", borderRadius:8 }}>{orderCount} orden{orderCount!==1?"es":""}</span>}
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </>
+            )}
+
+            {/* ── NEW / EDIT FORM ── */}
+            {(clientView==="new" || clientView==="edit") && (
+              <Card>
+                <Field label="Nombre de contacto *">
+                  <Input placeholder="Nombre completo" value={clientDraft.name} onChange={e=>setClientDraft({...clientDraft,name:e.target.value})}/>
+                </Field>
+                <Field label="Empresa">
+                  <Input placeholder="Nombre de la empresa" value={clientDraft.company} onChange={e=>setClientDraft({...clientDraft,company:e.target.value})}/>
+                </Field>
+                <Field label="Dirección (para facturas)">
+                  <Textarea placeholder={"Calle y número\nCódigo postal, Ciudad\nPaís"} value={clientDraft.address} onChange={e=>setClientDraft({...clientDraft,address:e.target.value})} style={{ height:90 }}/>
+                </Field>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                  <Field label="Teléfono">
+                    <Input placeholder="+41 …" value={clientDraft.phone} onChange={e=>setClientDraft({...clientDraft,phone:e.target.value})}/>
+                  </Field>
+                  <Field label="Email">
+                    <Input type="email" placeholder="email@empresa.com" value={clientDraft.email} onChange={e=>setClientDraft({...clientDraft,email:e.target.value})}/>
+                  </Field>
+                </div>
+                {clientView==="edit" && (
+                  <button onClick={()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Cliente eliminado","#FF3B30"); }}
+                    style={{ background:"none", border:"none", color:"#FF3B30", fontSize:13, fontWeight:600, cursor:"pointer", padding:"4px 0", marginBottom:8 }}>
+                    Eliminar cliente
+                  </button>
+                )}
+                <BtnPrimary disabled={!clientDraft.name && !clientDraft.company} onClick={()=>{
+                  if(!clientDraft.name && !clientDraft.company) return;
+                  if(clientView==="edit"){
+                    setClients(clients.map(c=>c.id===clientDraft.id ? clientDraft : c));
+                    setClientView("detail");
+                    showToast("Cliente actualizado");
+                  } else {
+                    const c = { ...clientDraft, id: String(Date.now()) };
+                    setClients([...clients, c]);
+                    setClientView("list");
+                    showToast("Cliente agregado");
+                  }
+                }}>
+                  {clientView==="edit" ? "Guardar cambios" : "Guardar cliente"}
+                </BtnPrimary>
+              </Card>
+            )}
+
+            {/* ── DETAIL ── */}
+            {clientView==="detail" && (() => {
+              const c = clients.find(x=>x.id===selectedClientId);
+              if(!c) return null;
+              const clientOrders = orders.filter(o=>o.clientId===c.id||o.client===(c.company||c.name));
+              return (
+                <>
+                  <Card>
+                    <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:16 }}>
+                      <div style={{ width:52, height:52, borderRadius:16, background:`${ACCENT}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <Icon name="person" size={26} color={ACCENT}/>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:17, fontWeight:700, color:"#1C1C1E" }}>{c.company || c.name}</div>
+                        {c.company && c.name && <div style={{ fontSize:13, color:"#8E8E93" }}>{c.name}</div>}
+                      </div>
+                    </div>
+                    {c.address && (
+                      <div style={{ marginBottom:12 }}>
+                        <div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Dirección</div>
+                        <div style={{ fontSize:13, color:"#1C1C1E", lineHeight:1.6, whiteSpace:"pre-line" }}>{c.address}</div>
+                      </div>
+                    )}
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                      {c.phone && <div><div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Teléfono</div><div style={{ fontSize:13, color:"#1C1C1E" }}>{c.phone}</div></div>}
+                      {c.email && <div><div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Email</div><div style={{ fontSize:13, color:"#1C1C1E", wordBreak:"break-all" }}>{c.email}</div></div>}
+                    </div>
+                  </Card>
+
+                  <SectionTitle>Órdenes ({clientOrders.length})</SectionTitle>
+                  {clientOrders.length === 0 && (
+                    <div style={{ textAlign:"center", padding:"24px", color:"#8E8E93", fontSize:13 }}>No hay órdenes para este cliente aún.</div>
+                  )}
+                  {clientOrders.map(o=>(
+                    <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                      style={{ width:"100%", background:"white", border:"1.5px solid #F2F2F7", borderRadius:16, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", textAlign:"left" }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E", marginBottom:3 }}>#{o.id}{o.deadline ? ` · Entrega: ${o.deadline}` : ""}</div>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <div style={{ width:6, height:6, borderRadius:"50%", background:C.statuses[o.status]?.color, flexShrink:0 }}/>
+                          <span style={{ fontSize:12, color:"#8E8E93" }}>{C.statuses[o.status]?.label}</span>
+                          {o.amount > 0 && <span style={{ fontSize:12, fontWeight:700, color:ACCENT }}>· {C.currency} {fmt(o.amount)}</span>}
+                        </div>
+                      </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                  ))}
+                  <BtnPrimary onClick={()=>{ setView("new"); setDraft({...newOrder(), clientId:c.id, client: c.company||c.name}); setTab("orders"); }} style={{ marginTop:8 }}>
+                    + Nueva orden para este cliente
+                  </BtnPrimary>
+                </>
+              );
+            })()}
+
+          </div>
+        </div>
+      )}
+
       {/* ── BOTTOM NAV (mobile only) ── */}
       {!isDesktop && (
         <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:430, background:"white", borderTop:"1px solid #F2F2F7", display:"flex", padding:"10px 0 24px", zIndex:100 }}>
@@ -1037,9 +1244,10 @@ export default function App() {
             { key:"home",    icon:"orders",  label:"Home"    },
             { key:"scan",    icon:"scan",    label:"Scan"    },
             { key:"orders",  icon:"gem",     label:"Orders"  },
+            { key:"clients", icon:"person",  label:"Clients" },
             { key:"invoice", icon:"invoice", label:"Invoice" },
           ].map(({ key, icon, label }) => (
-            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice"){ setInvView("list"); setSelectedInvoice(null); } }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 0" }}>
+            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice"){ setInvView("list"); setSelectedInvoice(null); } if(key==="clients"){ setClientView("list"); } }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 0" }}>
               <div style={{ width:44, height:44, borderRadius:14, background: tab===key ? `${ACCENT}15` : "transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}>
                 <Icon name={icon} size={22} color={tab===key ? ACCENT : "#8E8E93"}/>
               </div>
