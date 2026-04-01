@@ -170,6 +170,7 @@ export default function App() {
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [clientDraft, setClientDraft] = useState(newClient());
   const [filterClient, setFilterClient] = useState("all");
+  const [workOrderPreview, setWorkOrderPreview] = useState(null);
   const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
   const [photoStep, setPhotoStep] = useState("capture");
@@ -376,7 +377,7 @@ export default function App() {
     const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("de-CH") : "";
     const GOLD = "#B8960C";
     const photoHtml = order.photo
-      ? `<img src="${order.photo}" alt="Schmuckstück" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`
+      ? `<img src="${order.photo}" alt="Schmuckstück" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
       : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#C9A84C;font-size:13pt;letter-spacing:0.05em;">[ FOTO DES SCHMUCKSTÜCKS EINFÜGEN ]</div>`;
     const html = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
 <title>Arbeitsauftrag #${order.id}</title>
@@ -672,7 +673,7 @@ export default function App() {
                 </button>
               )}
               {view==="detail" && selectedOrder && (
-                <button onClick={()=>printWorkOrder(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 14px", background:"#F2F2F7", border:"none", borderRadius:10, cursor:"pointer", fontSize:13, fontWeight:600, color:"#1C1C1E", fontFamily:"'DM Sans',sans-serif" }}>
+                <button onClick={()=>setWorkOrderPreview(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 14px", background:"#F2F2F7", border:"none", borderRadius:10, cursor:"pointer", fontSize:13, fontWeight:600, color:"#1C1C1E", fontFamily:"'DM Sans',sans-serif" }}>
                   <Icon name="print" size={16} color="#1C1C1E"/> Drucken
                 </button>
               )}
@@ -1351,6 +1352,85 @@ export default function App() {
         </div>
       )}
       </div>{/* end content wrapper */}
+
+      {/* ── WORK ORDER PREVIEW OVERLAY ── */}
+      {workOrderPreview && (() => {
+        const o = workOrderPreview;
+        const GOLD = "#B8960C";
+        const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("de-CH") : "—";
+        const labelStyle = { fontSize:9, fontWeight:700, color:GOLD, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:5, fontFamily:"'DM Sans',sans-serif" };
+        const lineStyle  = { borderBottom:`1px solid #ccc`, paddingBottom:4, minHeight:24, fontSize:13, fontWeight:600, color:"#1a1a1a", fontFamily:"'DM Sans',sans-serif" };
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1000, overflowY:"auto", display:"flex", flexDirection:"column" }}>
+            {/* Sticky top bar */}
+            <div style={{ position:"sticky", top:0, background:"white", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", borderBottom:"1px solid #E5E5EA", zIndex:10, flexShrink:0 }}>
+              <button onClick={()=>setWorkOrderPreview(null)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#1C1C1E", padding:"0 4px", lineHeight:1 }}>×</button>
+              <span style={{ fontWeight:700, fontSize:15, fontFamily:"'DM Sans',sans-serif" }}>Vorschau Arbeitsauftrag</span>
+              <button onClick={()=>printWorkOrder(o)} style={{ background:GOLD, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
+                <Icon name="print" size={14} color="white"/> Drucken / PDF
+              </button>
+            </div>
+
+            {/* A4 document preview */}
+            <div style={{ flex:1, display:"flex", justifyContent:"center", padding:"24px 16px 40px", background:"#f0f0f0" }}>
+              <div style={{ background:"white", width:"100%", maxWidth:680, borderRadius:4, boxShadow:"0 4px 24px rgba(0,0,0,0.18)", padding:"36px 44px", fontFamily:"Arial, Helvetica, sans-serif" }}>
+
+                {/* Header */}
+                <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", paddingBottom:14, borderBottom:`1.5px solid #ccc`, marginBottom:22 }}>
+                  <img src={`${window.location.origin}/logo.png`} alt={C.businessName} style={{ height:60, objectFit:"contain" }}/>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:22, fontWeight:900, letterSpacing:3, color:"#1a1a1a", lineHeight:1 }}>ARBEITSAUFTRAG</div>
+                    <div style={{ fontSize:9, fontStyle:"italic", color:"#666", marginTop:4 }}>Wir setzen keine Steine. Wir setzen Maßstäbe.</div>
+                  </div>
+                </div>
+
+                {/* Fields row 1 */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 40px", marginBottom:18 }}>
+                  <div>
+                    <div style={labelStyle}>Auftragsnummer</div>
+                    <div style={lineStyle}>#{o.id}</div>
+                  </div>
+                  <div>
+                    <div style={labelStyle}>Verantwortlicher</div>
+                    <div style={lineStyle}>&nbsp;</div>
+                  </div>
+                </div>
+
+                {/* Fields row 2 */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 40px", marginBottom:22 }}>
+                  <div>
+                    <div style={labelStyle}>Startdatum</div>
+                    <div style={lineStyle}>{fmtDate(o.received)}</div>
+                  </div>
+                  <div>
+                    <div style={labelStyle}>Lieferdatum</div>
+                    <div style={lineStyle}>{fmtDate(o.deadline)}</div>
+                  </div>
+                </div>
+
+                {/* Photo box */}
+                <div style={{ border:`1.5px solid ${GOLD}`, borderRadius:8, background:"#faf8f3", height:280, overflow:"hidden", marginBottom:20, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  {o.photo
+                    ? <img src={o.photo} alt="Schmuckstück" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
+                    : <div style={{ fontSize:11, color:GOLD, letterSpacing:"0.05em", textAlign:"center" }}>[ FOTO DES SCHMUCKSTÜCKS EINFÜGEN ]</div>
+                  }
+                </div>
+
+                {/* Description box */}
+                <div style={{ border:`1.5px solid ${GOLD}`, borderRadius:8, padding:"14px 16px", minHeight:110 }}>
+                  <div style={labelStyle}>Arbeitsbeschreibung</div>
+                  <div style={{ fontSize:11, color:"#1a1a1a", lineHeight:1.6, whiteSpace:"pre-wrap" }}>{o.description || ""}</div>
+                </div>
+
+                {/* Footer */}
+                <div style={{ marginTop:24, paddingTop:10, borderTop:"1px solid #ccc", textAlign:"center", fontSize:8, color:"#666", fontStyle:"italic", letterSpacing:"0.02em" }}>
+                  {C.address.replace(/\n/g," \u25C6 ")} \u25C6 {C.phone} \u25C6 info@stoneartprecision.com
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── DONE MODAL ── */}
       {doneModal && (
