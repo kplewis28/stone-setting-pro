@@ -91,6 +91,7 @@ const Icon = ({ name, size=22, color="#1C1C1E" }) => {
 // ─── SHARED COMPONENTS ──────────────────────────────────
 const StatusPill = ({ status }) => {
   const st = C.statuses[status];
+  if(!st) return null;
   return (
     <span style={{ background:`${st.color}18`, color:st.color, border:`1px solid ${st.color}30`, borderRadius:100, padding:"3px 10px", fontSize:11, fontWeight:700, fontFamily:"'DM Sans','Helvetica',sans-serif", letterSpacing:"0.02em", whiteSpace:"nowrap" }}>
       {st.label}
@@ -127,8 +128,8 @@ const BtnPrimary = ({ children, onClick, disabled, style={} }) => (
   </button>
 );
 
-const BtnGhost = ({ children, onClick, style={} }) => (
-  <button onClick={onClick} style={{ width:"100%", padding:"14px", background:"white", color:"#1C1C1E", border:"1.5px solid #E5E5EA", borderRadius:14, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, fontWeight:600, cursor:"pointer", ...style }}>
+const BtnGhost = ({ children, onClick, disabled, style={} }) => (
+  <button onClick={onClick} disabled={disabled} style={{ width:"100%", padding:"14px", background:"white", color: disabled?"#999":"#1C1C1E", border:"1.5px solid #E5E5EA", borderRadius:14, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, fontWeight:600, cursor: disabled?"not-allowed":"pointer", opacity: disabled?0.6:1, ...style }}>
     {children}
   </button>
 );
@@ -176,9 +177,9 @@ export default function App() {
   const [rechnungData, setRechnungData] = useState(null);
   const [photoStep, setPhotoStep] = useState("capture");
   const [imgData, setImgData]   = useState(null);
-  const [imgFile, setImgFile]   = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMsg, setAiMsg]       = useState("");
+  const [aiError, setAiError]   = useState("");
   const [extracted, setExtracted] = useState(null);
   const fileRef = useRef();
   const draftPhotoRef = useRef();
@@ -246,6 +247,7 @@ export default function App() {
   // ── PHOTO AI ──
   const analyzePhoto = async () => {
     setAiLoading(true);
+    setAiError("");
     const MSGS = ["Reading document…","Extracting details…","Almost done…"];
     let i=0; setAiMsg(MSGS[0]);
     const iv = setInterval(()=>{ i=(i+1)%MSGS.length; setAiMsg(MSGS[i]); },1400);
@@ -253,33 +255,34 @@ export default function App() {
       const b64 = imgData.split(",")[1];
       const response = await fetch("/api/analyze",{
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800,
+        body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:800,
           messages:[{ role:"user", content:[
-            { type:"image", source:{ type:"base64", media_type: imgFile.type||"image/jpeg", data:b64 }},
+            { type:"image", source:{ type:"base64", media_type:"image/jpeg", data:b64 }},
             { type:"text", text:`Extract order info from this delivery document. Return ONLY valid JSON, no backticks:\n{"client":"","orderRef":"","field1":"${C.fieldLabel} value or empty","field2":"${C.subFieldLabel} value or empty","pieces":"","notes":"","summary":"1 sentence"}` }
           ]}]
         })
       });
       const data = await response.json();
+      if(data.error) throw new Error(data.error);
       const clean = data.content.map(x=>x.text||"").join("").replace(/```json|```/g,"").trim();
       clearInterval(iv);
       setExtracted(JSON.parse(clean));
       setPhotoStep("review");
     } catch(e) {
       clearInterval(iv);
-      setPhotoStep("capture");
+      setAiError(e.message || "Could not read the document. Please try again with a clearer photo.");
     }
     setAiLoading(false);
   };
 
   const confirmOrder = () => {
-    const order = { ...newOrder(), client:extracted.client||"", field1:extracted.field1||"", field2:extracted.field2||"", pieces:extracted.pieces||"", notes:extracted.notes||"", photo: imgData||null };
+    const order = { ...newOrder(), client:extracted.client||"", field1:extracted.field1||"", field2:extracted.field2||"", pieces:extracted.pieces||"", description:extracted.notes||"", notes:extracted.notes||"", photo: imgData||null };
     setOrders([order, ...orders]);
     syncToSheets(order);
     setPhotoStep("done");
   };
 
-  const resetPhoto = () => { setPhotoStep("capture"); setImgData(null); setImgFile(null); setExtracted(null); };
+  const resetPhoto = () => { setPhotoStep("capture"); setImgData(null); setExtracted(null); setAiError(""); };
 
   const goHome = () => { setTab("home"); setView("list"); setPhotoStep("capture"); setInvView("list"); setClientView("list"); };
 
@@ -702,7 +705,7 @@ export default function App() {
           </div>
 
           <div style={{ padding:"20px 16px 100px" }}>
-            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{ const f=e.target.files[0]; if(!f)return; setImgFile(f); const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ setImgData(c); setPhotoStep("preview"); }); }; r.readAsDataURL(f); }}/>
+            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ setImgData(c); setPhotoStep("preview"); }); }; r.readAsDataURL(f); }}/>
 
             {photoStep==="capture" && (
               <>
@@ -739,6 +742,7 @@ export default function App() {
                   </Card>
                 ) : (
                   <>
+                    {aiError && <div style={{ background:"#FF3B3015", border:"1px solid #FF3B3030", borderRadius:12, padding:"12px 14px", marginBottom:12, fontSize:13, color:"#FF3B30", lineHeight:1.5 }}>{aiError}</div>}
                     <BtnPrimary onClick={analyzePhoto}><Icon name="scan" size={18} color="white"/> Analyze with AI</BtnPrimary>
                     <div style={{ height:10 }}/>
                     <BtnGhost onClick={resetPhoto}>↩ Retake photo</BtnGhost>
@@ -977,8 +981,10 @@ export default function App() {
                       </div>
                     )}
                     <BtnPrimary disabled={!selectedOrder.amount} onClick={()=>{
-                      const desc = [selectedOrder.field1, selectedOrder.field2].filter(Boolean).join(" · ") || selectedOrder.notes || `Auftrag #${selectedOrder.id}`;
+                      const desc = selectedOrder.description || [selectedOrder.field1, selectedOrder.field2].filter(Boolean).join(" · ") || selectedOrder.notes || `Auftrag #${selectedOrder.id}`;
                       setInvClient(selectedOrder.client);
+                      const matchedClient = clients.find(c=>(c.company||c.name)===selectedOrder.client || c.id===selectedOrder.clientId);
+                      setInvClientAddress(matchedClient ? [matchedClient.company&&matchedClient.name?matchedClient.company:"", matchedClient.address].filter(Boolean).join("\n") : "");
                       setInvDate(selectedOrder.received || new Date().toISOString().split("T")[0]);
                       setInvPorto("");
                       setItems([{ id:Date.now()+Math.random(), desc, price: selectedOrder.amount, orderRef: selectedOrder.id }]);
@@ -1036,7 +1042,7 @@ export default function App() {
                         </div>
                         <div style={{ textAlign:"right" }}>
                           <div style={{ fontSize:15, fontWeight:700, color:ACCENT }}>{C.currency} {fmt(invTotal)}</div>
-                          <div style={{ fontSize:11, marginTop:4, padding:"3px 8px", borderRadius:8, background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:600 }}>{inv.printed?"Impresa":"Guardada"}</div>
+                          <div style={{ fontSize:11, marginTop:4, padding:"3px 8px", borderRadius:8, background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:600 }}>{inv.printed?"Printed":"Saved"}</div>
                         </div>
                       </div>
                     </Card>
@@ -1241,13 +1247,13 @@ export default function App() {
                         <div style={{ fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700 }}>Rechnung</div>
                         <div style={{ fontSize:13, fontFamily:"monospace", fontWeight:700, color:"#1C1C1E", marginTop:2 }}>{inv.number}</div>
                         <div style={{ fontSize:11, color:"#8E8E93" }}>{new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
-                        <div style={{ fontSize:11, marginTop:6, padding:"2px 8px", borderRadius:6, display:"inline-block", background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:700 }}>{inv.printed?"Impresa":"Guardada"}</div>
+                        <div style={{ fontSize:11, marginTop:6, padding:"2px 8px", borderRadius:6, display:"inline-block", background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:700 }}>{inv.printed?"Printed":"Saved"}</div>
                       </div>
                     </div>
 
                     {/* To */}
                     <div style={{ background:"#F2F2F7", borderRadius:10, padding:"10px 14px", marginBottom:18 }}>
-                      <div style={{ fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:700, marginBottom:3 }}>Para</div>
+                      <div style={{ fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:700, marginBottom:3 }}>To</div>
                       <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E" }}>{inv.client}</div>
                     </div>
 
@@ -1320,7 +1326,7 @@ export default function App() {
                 </button>
               )}
               {clientView==="detail" && (
-                <button onClick={()=>{ setClientDraft({...clients.find(c=>c.id===selectedClientId)}); setClientView("edit"); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4, fontSize:13, fontWeight:600, color:ACCENT }}>Editar</button>
+                <button onClick={()=>{ setClientDraft({...clients.find(c=>c.id===selectedClientId)}); setClientView("edit"); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4, fontSize:13, fontWeight:600, color:ACCENT }}>Edit</button>
               )}
             </div>
           </div>
@@ -1556,7 +1562,7 @@ export default function App() {
 
                 {/* Footer */}
                 <div style={{ marginTop:24, paddingTop:10, borderTop:"1px solid #ccc", textAlign:"center", fontSize:8, color:"#666", fontStyle:"italic", letterSpacing:"0.02em" }}>
-                  {C.address.replace(/\n/g," \u25C6 ")} \u25C6 {C.phone} \u25C6 info@stoneartprecision.com
+                  {C.address.replace(/\n/g," ◆ ")} ◆ {C.phone} ◆ info@stoneartprecision.com
                 </div>
               </div>
             </div>
@@ -1782,9 +1788,11 @@ export default function App() {
                 const o = orders.find(x=>x.id===doneModal);
                 if(o){
                   setInvClient(o.client);
+                  const matchedClient = clients.find(c=>(c.company||c.name)===o.client || c.id===o.clientId);
+                  setInvClientAddress(matchedClient ? [matchedClient.company&&matchedClient.name?matchedClient.company:"", matchedClient.address].filter(Boolean).join("\n") : "");
                   setInvDate(o.received || new Date().toISOString().split("T")[0]);
                   setInvPorto("");
-                  const desc = [o.field1, o.field2].filter(Boolean).join(" · ") || o.notes || `Auftrag #${o.id}`;
+                  const desc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || o.notes || `Auftrag #${o.id}`;
                   setItems([{ id:Date.now()+Math.random(), desc, price: o.amount||"", orderRef: o.id }]);
                   setInvSelectedOrders([o.id]);
                 }
