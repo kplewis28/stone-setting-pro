@@ -182,6 +182,11 @@ export default function App() {
   const [extracted, setExtracted] = useState(null);
   const fileRef = useRef();
   const draftPhotoRef = useRef();
+  const calStripRef = useRef();
+  const TODAY = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = useState(TODAY);
+  const [dayNotes, setDayNotes] = useState(() => { try { return JSON.parse(localStorage.getItem("ssp_day_notes")) || {}; } catch { return {}; } });
+  const [noteAlert, setNoteAlert] = useState(null); // { date, text } to show on load
 
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
   useEffect(() => {
@@ -196,6 +201,22 @@ export default function App() {
   }, [orders]);
   useEffect(() => { try { localStorage.setItem("ssp_invoices", JSON.stringify(invoices)); } catch(_) {} }, [invoices]);
   useEffect(() => { try { localStorage.setItem("ssp_clients", JSON.stringify(clients)); } catch(_) {} }, [clients]);
+  useEffect(() => { try { localStorage.setItem("ssp_day_notes", JSON.stringify(dayNotes)); } catch(_) {} }, [dayNotes]);
+
+  // Scroll calendar strip to today on mount
+  useEffect(() => {
+    if(calStripRef.current) {
+      const todayEl = calStripRef.current.querySelector("[data-today='true']");
+      if(todayEl) todayEl.scrollIntoView({ inline:"center", block:"nearest", behavior:"instant" });
+    }
+  }, []);
+
+  // Show alert for today's note if flagged
+  useEffect(() => {
+    const n = dayNotes[TODAY];
+    if(n && n.alert && n.text) setNoteAlert({ date: TODAY, text: n.text });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-show urgent modal once per session if there are upcoming deliveries
   useEffect(() => {
@@ -538,6 +559,81 @@ export default function App() {
               </button>
             ))}
           </div>
+
+          {/* ── CALENDAR STRIP ── */}
+          {(() => {
+            const days = [];
+            for(let i = -7; i <= 30; i++) {
+              const d = new Date(); d.setDate(d.getDate()+i);
+              days.push(d.toISOString().split("T")[0]);
+            }
+            const DAYS_ES = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+            const note = dayNotes[selectedDate];
+            const dayOrders = orders.filter(o => o.deadline === selectedDate && o.status !== "done" && o.status !== "invoiced");
+            return (
+              <>
+                {/* Scrollable day pills */}
+                <div ref={calStripRef} style={{ overflowX:"auto", display:"flex", gap:6, padding:"12px 16px", background:"white", borderBottom:"1px solid #F2F2F7", scrollbarWidth:"none" }}>
+                  {days.map(d => {
+                    const date = new Date(d+"T12:00:00");
+                    const isToday   = d === TODAY;
+                    const isSelected = d === selectedDate;
+                    const hasOrders = orders.some(o => o.deadline === d && o.status !== "done" && o.status !== "invoiced");
+                    const hasNote   = dayNotes[d]?.text;
+                    const isPast    = d < TODAY;
+                    return (
+                      <button key={d} data-today={isToday||undefined} onClick={()=>setSelectedDate(d)}
+                        style={{ flexShrink:0, width:52, padding:"8px 4px", borderRadius:14, border: isSelected ? `2px solid ${ACCENT}` : "1.5px solid #F2F2F7", background: isSelected ? ACCENT : isToday ? `${ACCENT}12` : "white", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+                        <span style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", color: isSelected ? "rgba(255,255,255,0.8)" : "#8E8E93", letterSpacing:"0.06em" }}>{DAYS_ES[date.getDay()]}</span>
+                        <span style={{ fontSize:17, fontWeight:700, color: isSelected ? "white" : isPast ? "#C7C7CC" : "#1C1C1E", lineHeight:1 }}>{date.getDate()}</span>
+                        <div style={{ display:"flex", gap:3, height:6, alignItems:"center" }}>
+                          {hasOrders && <div style={{ width:5, height:5, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.8)":ACCENT }}/>}
+                          {hasNote   && <div style={{ width:5, height:5, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.6)":"#007AFF" }}/>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Selected day panel */}
+                <div style={{ background:"#F8F8F8", borderBottom:"1px solid #F2F2F7", padding:"12px 16px" }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: (dayOrders.length||note?.text) ? 10 : 0 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:"#1C1C1E", fontFamily:"'DM Sans',sans-serif" }}>
+                      {selectedDate === TODAY ? "Hoy" : new Date(selectedDate+"T12:00:00").toLocaleDateString("es-ES",{ weekday:"long", day:"numeric", month:"long" })}
+                    </div>
+                    <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                      {/* Alert toggle */}
+                      <button onClick={()=>setDayNotes(n=>({ ...n, [selectedDate]:{ ...(n[selectedDate]||{}), alert: !(n[selectedDate]?.alert) } }))}
+                        style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity: dayNotes[selectedDate]?.alert ? 1 : 0.35 }}>
+                        <Icon name="bell" size={16} color={dayNotes[selectedDate]?.alert ? ACCENT : "#8E8E93"}/>
+                      </button>
+                      {dayOrders.length > 0 && <span style={{ fontSize:11, fontWeight:700, color:ACCENT, background:`${ACCENT}15`, padding:"2px 8px", borderRadius:6 }}>{dayOrders.length} orden{dayOrders.length>1?"es":""}</span>}
+                    </div>
+                  </div>
+
+                  {/* Orders for this day */}
+                  {dayOrders.map(o => (
+                    <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                      style={{ width:"100%", background:"white", border:`1.5px solid ${ACCENT}22`, borderRadius:12, padding:"10px 12px", marginBottom:8, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", textAlign:"left" }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:"#1C1C1E" }}>{o.client || `#${o.id}`}</div>
+                        {o.description && <div style={{ fontSize:11, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
+                      </div>
+                      <StatusPill status={o.status}/>
+                    </button>
+                  ))}
+
+                  {/* Notes textarea */}
+                  <textarea
+                    placeholder="Agregar nota para este día…"
+                    value={dayNotes[selectedDate]?.text || ""}
+                    onChange={e=>setDayNotes(n=>({ ...n, [selectedDate]:{ ...(n[selectedDate]||{}), text: e.target.value } }))}
+                    style={{ width:"100%", padding:"10px 12px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#1C1C1E", background:"white", outline:"none", resize:"none", height:60, boxSizing:"border-box" }}
+                  />
+                </div>
+              </>
+            );
+          })()}
 
           <div style={{ padding: isDesktop ? "20px 40px 60px" : "16px 16px 100px" }}>
 
@@ -1515,6 +1611,26 @@ export default function App() {
           </div>
         );
       })()}
+
+      {/* ── DAY NOTE ALERT ── */}
+      {noteAlert && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:2100, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <div style={{ background:"white", borderRadius:"24px 24px 0 0", padding:"24px 24px 40px", width:"100%", maxWidth:480, animation:"fadeUp 0.25s ease" }}>
+            <div style={{ width:40, height:4, background:"#E5E5EA", borderRadius:2, margin:"0 auto 20px" }}/>
+            <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+              <div style={{ width:40, height:40, borderRadius:12, background:`${ACCENT}15`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <Icon name="bell" size={20} color={ACCENT}/>
+              </div>
+              <div>
+                <div style={{ fontSize:16, fontWeight:700, color:"#1C1C1E" }}>Nota para hoy</div>
+                <div style={{ fontSize:12, color:"#8E8E93" }}>{new Date(noteAlert.date+"T12:00:00").toLocaleDateString("es-ES",{ weekday:"long", day:"numeric", month:"long" })}</div>
+              </div>
+            </div>
+            <div style={{ background:"#F8F8F8", borderRadius:12, padding:"14px 16px", fontSize:14, color:"#1C1C1E", lineHeight:1.6, marginBottom:20, whiteSpace:"pre-wrap" }}>{noteAlert.text}</div>
+            <button onClick={()=>setNoteAlert(null)} style={{ width:"100%", padding:"15px", background:ACCENT, color:"white", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>Entendido</button>
+          </div>
+        </div>
+      )}
 
       {/* ── URGENT / UPCOMING MODAL ── */}
       {urgentModal && (() => {
