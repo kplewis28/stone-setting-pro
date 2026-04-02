@@ -522,6 +522,23 @@ export default function App() {
             </div>
           </div>
 
+          {/* QUICK ACTIONS — below header, full width */}
+          <div style={{ padding: isDesktop ? "16px 40px" : "12px 16px", background:"white", borderBottom:"1px solid #F2F2F7", display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+            {[
+              { icon:"scan",    label:"Escanear orden",  sub:"Foto → orden auto",  action:()=>{ setTab("scan"); resetPhoto(); } },
+              { icon:"gem",     label:"Nueva orden",     sub:"Entrada manual",     action:()=>{ setTab("orders"); setView("new"); } },
+              { icon:"invoice", label:"Nueva factura",   sub:"Crear y guardar",    action:()=>{ setTab("invoice"); setInvView("list"); } },
+            ].map(({ icon, label, sub, action }) => (
+              <button key={label} onClick={action} style={{ background:"#F8F8F8", border:"1.5px solid #F2F2F7", borderRadius:16, padding:"14px 8px 12px", textAlign:"center", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:7 }}>
+                <div style={{ width:42, height:42, background:"white", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 1px 4px rgba(0,0,0,0.07)" }}>
+                  <Icon name={icon} size={20} color={ACCENT}/>
+                </div>
+                <div style={{ fontSize:11, fontWeight:700, color:"#1C1C1E", lineHeight:1.3 }}>{label}</div>
+                <div style={{ fontSize:10, color:"#8E8E93", lineHeight:1.2 }}>{sub}</div>
+              </button>
+            ))}
+          </div>
+
           <div style={{ padding: isDesktop ? "20px 40px 60px" : "16px 16px 100px" }}>
 
             {/* URGENT ALERT BANNER */}
@@ -624,22 +641,6 @@ export default function App() {
               Ver todas las órdenes →
             </button>
 
-            {/* QUICK ACTIONS — full width row */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginTop:20 }}>
-              {[
-                { icon:"scan",    label:"Escanear orden",  sub:"Foto → orden auto",     action:()=>{ setTab("scan"); resetPhoto(); },      color:"#1C1C1E" },
-                { icon:"gem",     label:"Nueva orden",     sub:"Entrada manual",         action:()=>{ setTab("orders"); setView("new"); },   color:"#1C1C1E" },
-                { icon:"invoice", label:"Nueva factura",   sub:"Crear y guardar",        action:()=>{ setTab("invoice"); setInvView("list"); }, color:"#1C1C1E" },
-              ].map(({ icon, label, sub, action }) => (
-                <button key={label} onClick={action} style={{ background:"white", border:"1.5px solid #F2F2F7", borderRadius:18, padding:"16px 10px 14px", textAlign:"center", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.05)", display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
-                  <div style={{ width:46, height:46, background:"#F2F2F7", borderRadius:13, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    <Icon name={icon} size={22} color="#1C1C1E"/>
-                  </div>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#1C1C1E", lineHeight:1.3 }}>{label}</div>
-                  <div style={{ fontSize:10, color:"#8E8E93", lineHeight:1.3 }}>{sub}</div>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       )}
