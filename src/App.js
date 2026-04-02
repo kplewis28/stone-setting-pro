@@ -561,6 +561,9 @@ export default function App() {
           </div>
 
           {/* ── CALENDAR STRIP ── */}
+          <div style={{ padding:"14px 16px 0", background:"white" }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontFamily:"'DM Sans',sans-serif" }}>Schedule</div>
+          </div>
           {(() => {
             const days = [];
             for(let i = -7; i <= 30; i++) {
