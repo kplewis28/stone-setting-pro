@@ -497,8 +497,7 @@ export default function App() {
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* TOP BAR */}
           <div style={{ padding: isDesktop ? "32px 40px 0" : "56px 24px 0", background:"white" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:28 }}>
-              <button style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="help" size={22} color="#8E8E93"/></button>
+            <div style={{ display:"flex", justifyContent:"flex-end", alignItems:"center", marginBottom:28 }}>
               <div style={{ position:"relative" }}>
                 <button style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="bell" size={22} color="#8E8E93"/></button>
                 <div style={{ position:"absolute", top:2, right:2, width:8, height:8, borderRadius:"50%", background:ACCENT }} />
@@ -544,14 +543,43 @@ export default function App() {
               ))}
             </div>
 
+            {/* URGENT */}
+            {(() => {
+              const today = new Date().toISOString().split("T")[0];
+              const urgent = orders.filter(o => o.deadline && o.deadline <= today && o.status !== "done" && o.status !== "invoiced");
+              if(!urgent.length) return null;
+              return (
+                <>
+                  <SectionTitle>Urgente</SectionTitle>
+                  {urgent.map(o => {
+                    const isOverdue = o.deadline < today;
+                    return (
+                      <Card key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }} style={{ border:`1.5px solid ${isOverdue ? "#FF3B30" : "#FF9500"}`, background: isOverdue ? "#FFF5F5" : "#FFFBF2" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12 }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:15, fontWeight:700, color:"#1C1C1E", marginBottom:3 }}>{o.client}</div>
+                            <div style={{ fontSize:12, color: isOverdue ? "#FF3B30" : "#FF9500", fontWeight:600 }}>
+                              {isOverdue ? `Vencida ${new Date(o.deadline+"T12:00:00").toLocaleDateString("de-CH")}` : `Entrega hoy ${new Date(o.deadline+"T12:00:00").toLocaleDateString("de-CH")}`}
+                            </div>
+                            {o.description && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
+                          </div>
+                          <StatusPill status={o.status}/>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </>
+              );
+            })()}
+
             {/* RECENT */}
             <SectionTitle>Recent orders</SectionTitle>
             {orders.slice(0,3).map(o => (
               <Card key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <div>
+                  <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:2 }}>{o.client}</div>
-                    <div style={{ fontSize:12, color:"#8E8E93" }}>#{o.id} · {o.field1} {o.field2 && `· ${o.field2}`}</div>
+                    <div style={{ fontSize:12, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>#{o.id}{o.deadline ? ` · Entrega: ${o.deadline}` : ""}{o.description ? ` · ${o.description}` : ""}</div>
                   </div>
                   <StatusPill status={o.status}/>
                 </div>
