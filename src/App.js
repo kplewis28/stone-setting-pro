@@ -187,6 +187,7 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [dayNotes, setDayNotes] = useState(() => { try { return JSON.parse(localStorage.getItem("ssp_day_notes")) || {}; } catch { return {}; } });
   const [noteAlert, setNoteAlert] = useState(null); // { date, text } to show on load
+  const [dayModal, setDayModal]   = useState(null); // date string or null
 
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
   useEffect(() => {
@@ -568,8 +569,6 @@ export default function App() {
               days.push(d.toISOString().split("T")[0]);
             }
             const DAYS_ES = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-            const note = dayNotes[selectedDate];
-            const dayOrders = orders.filter(o => o.deadline === selectedDate && o.status !== "done" && o.status !== "invoiced");
             return (
               <>
                 {/* Scrollable day pills */}
@@ -582,7 +581,7 @@ export default function App() {
                     const hasNote   = dayNotes[d]?.text;
                     const isPast    = d < TODAY;
                     return (
-                      <button key={d} data-today={isToday||undefined} onClick={()=>setSelectedDate(d)}
+                      <button key={d} data-today={isToday||undefined} onClick={()=>{ setSelectedDate(d); setDayModal(d); }}
                         style={{ flexShrink:0, width:52, padding:"8px 4px", borderRadius:14, border: isSelected ? `2px solid ${ACCENT}` : "1.5px solid #F2F2F7", background: isSelected ? ACCENT : isToday ? `${ACCENT}12` : "white", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
                         <span style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", color: isSelected ? "rgba(255,255,255,0.8)" : "#8E8E93", letterSpacing:"0.06em" }}>{DAYS_ES[date.getDay()]}</span>
                         <span style={{ fontSize:17, fontWeight:700, color: isSelected ? "white" : isPast ? "#C7C7CC" : "#1C1C1E", lineHeight:1 }}>{date.getDate()}</span>
@@ -595,42 +594,6 @@ export default function App() {
                   })}
                 </div>
 
-                {/* Selected day panel */}
-                <div style={{ background:"#F8F8F8", borderBottom:"1px solid #F2F2F7", padding:"12px 16px" }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: (dayOrders.length||note?.text) ? 10 : 0 }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:"#1C1C1E", fontFamily:"'DM Sans',sans-serif" }}>
-                      {selectedDate === TODAY ? "Hoy" : new Date(selectedDate+"T12:00:00").toLocaleDateString("es-ES",{ weekday:"long", day:"numeric", month:"long" })}
-                    </div>
-                    <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                      {/* Alert toggle */}
-                      <button onClick={()=>setDayNotes(n=>({ ...n, [selectedDate]:{ ...(n[selectedDate]||{}), alert: !(n[selectedDate]?.alert) } }))}
-                        style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity: dayNotes[selectedDate]?.alert ? 1 : 0.35 }}>
-                        <Icon name="bell" size={16} color={dayNotes[selectedDate]?.alert ? ACCENT : "#8E8E93"}/>
-                      </button>
-                      {dayOrders.length > 0 && <span style={{ fontSize:11, fontWeight:700, color:ACCENT, background:`${ACCENT}15`, padding:"2px 8px", borderRadius:6 }}>{dayOrders.length} orden{dayOrders.length>1?"es":""}</span>}
-                    </div>
-                  </div>
-
-                  {/* Orders for this day */}
-                  {dayOrders.map(o => (
-                    <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                      style={{ width:"100%", background:"white", border:`1.5px solid ${ACCENT}22`, borderRadius:12, padding:"10px 12px", marginBottom:8, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", textAlign:"left" }}>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:13, fontWeight:700, color:"#1C1C1E" }}>{o.client || `#${o.id}`}</div>
-                        {o.description && <div style={{ fontSize:11, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
-                      </div>
-                      <StatusPill status={o.status}/>
-                    </button>
-                  ))}
-
-                  {/* Notes textarea */}
-                  <textarea
-                    placeholder="Agregar nota para este día…"
-                    value={dayNotes[selectedDate]?.text || ""}
-                    onChange={e=>setDayNotes(n=>({ ...n, [selectedDate]:{ ...(n[selectedDate]||{}), text: e.target.value } }))}
-                    style={{ width:"100%", padding:"10px 12px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#1C1C1E", background:"white", outline:"none", resize:"none", height:60, boxSizing:"border-box" }}
-                  />
-                </div>
               </>
             );
           })()}
@@ -1605,6 +1568,129 @@ export default function App() {
                 {/* Footer */}
                 <div style={{ marginTop:24, paddingTop:10, borderTop:"1px solid #ccc", textAlign:"center", fontSize:8, color:"#666", fontStyle:"italic", letterSpacing:"0.02em" }}>
                   {C.address.replace(/\n/g," \u25C6 ")} \u25C6 {C.phone} \u25C6 info@stoneartprecision.com
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── DAY MODAL ── */}
+      {dayModal && (() => {
+        const d = dayModal;
+        const dateObj   = new Date(d+"T12:00:00");
+        const isToday   = d === TODAY;
+        const isPast    = d < TODAY;
+        const dayLabel  = isToday ? "Hoy" : dateObj.toLocaleDateString("es-ES",{ weekday:"long", day:"numeric", month:"long" });
+        const dayOrders = orders.filter(o => o.deadline === d && o.status !== "done" && o.status !== "invoiced");
+        const doneOrders = orders.filter(o => o.deadline === d && (o.status === "done" || o.status === "invoiced"));
+        const alertOn   = !!dayNotes[d]?.alert;
+        const noteText  = dayNotes[d]?.text || "";
+
+        // Delivery alert: overdue or today with pending orders
+        const hasPendingDelivery = dayOrders.length > 0 && (isToday || isPast);
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:2100, display:"flex", alignItems:"flex-end", justifyContent:"center" }} onClick={()=>setDayModal(null)}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:"white", borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, maxHeight:"88vh", display:"flex", flexDirection:"column", animation:"fadeUp 0.25s ease" }}>
+
+              {/* Header */}
+              <div style={{ padding:"16px 20px 14px", borderBottom:"1px solid #F2F2F7", flexShrink:0 }}>
+                <div style={{ width:40, height:4, background:"#E5E5EA", borderRadius:2, margin:"0 auto 16px" }}/>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <div>
+                    <div style={{ fontSize:20, fontWeight:800, color:"#1C1C1E", textTransform:"capitalize" }}>{dayLabel}</div>
+                    <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>
+                      {dateObj.toLocaleDateString("es-ES",{ day:"numeric", month:"long", year:"numeric" })}
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                    {/* Alert toggle */}
+                    <button onClick={()=>setDayNotes(n=>({...n,[d]:{...(n[d]||{}),alert:!alertOn}}))}
+                      style={{ width:36, height:36, borderRadius:10, background: alertOn?`${ACCENT}15`:"#F2F2F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <Icon name="bell" size={18} color={alertOn?ACCENT:"#8E8E93"}/>
+                    </button>
+                    <button onClick={()=>setDayModal(null)} style={{ width:36, height:36, borderRadius:10, background:"#F2F2F7", border:"none", cursor:"pointer", fontSize:20, color:"#8E8E93", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scrollable body */}
+              <div style={{ overflowY:"auto", padding:"16px 20px 32px", flex:1 }}>
+
+                {/* Delivery alert banner */}
+                {hasPendingDelivery && (
+                  <div style={{ background: isPast&&!isToday?"#FF3B30":"#FF9500", borderRadius:14, padding:"14px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:12 }}>
+                    <Icon name="bell" size={20} color="white"/>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:700, color:"white" }}>
+                        {isPast&&!isToday ? `${dayOrders.length} entrega${dayOrders.length>1?"s":""} vencida${dayOrders.length>1?"s":""}` : `${dayOrders.length} entrega${dayOrders.length>1?"s":""} para hoy`}
+                      </div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)" }}>Estas órdenes aún están pendientes</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pending orders */}
+                {dayOrders.length > 0 && (
+                  <>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'DM Sans',sans-serif" }}>Pendientes · {dayOrders.length}</div>
+                    {dayOrders.map(o=>(
+                      <button key={o.id} onClick={()=>{ setDayModal(null); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                        style={{ width:"100%", background:"white", border:`1.5px solid #F2F2F7`, borderRadius:14, padding:"13px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
+                        {o.photo && <img src={o.photo} alt="" style={{ width:38, height:38, borderRadius:9, objectFit:"cover", flexShrink:0 }}/>}
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E", marginBottom:2 }}>{o.client || `#${o.id}`}</div>
+                          {o.description && <div style={{ fontSize:12, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
+                        </div>
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4, flexShrink:0 }}>
+                          <StatusPill status={o.status}/>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {/* Done orders for this day */}
+                {doneOrders.length > 0 && (
+                  <>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, marginTop:4, fontFamily:"'DM Sans',sans-serif" }}>Completadas · {doneOrders.length}</div>
+                    {doneOrders.map(o=>(
+                      <button key={o.id} onClick={()=>{ setDayModal(null); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                        style={{ width:"100%", background:"#F8F8F8", border:"1.5px solid #F2F2F7", borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", opacity:0.7 }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:13, fontWeight:600, color:"#1C1C1E" }}>{o.client || `#${o.id}`}</div>
+                          {o.description && <div style={{ fontSize:11, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
+                        </div>
+                        <StatusPill status={o.status}/>
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {dayOrders.length===0 && doneOrders.length===0 && (
+                  <div style={{ textAlign:"center", padding:"20px 0 8px", color:"#C7C7CC", fontSize:13 }}>Sin órdenes para este día</div>
+                )}
+
+                {/* Add order for this day */}
+                <button onClick={()=>{ setDayModal(null); setDraft({...newOrder(), deadline:d}); setView("new"); setTab("orders"); }}
+                  style={{ width:"100%", padding:"12px", background:"none", border:`1.5px dashed ${ACCENT}60`, borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:ACCENT, cursor:"pointer", marginTop:4, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                  <Icon name="plus" size={16} color={ACCENT}/> Añadir orden para este día
+                </button>
+
+                {/* Notes */}
+                <div style={{ marginTop:16 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
+                    Notas
+                    {alertOn && <span style={{ fontSize:10, color:ACCENT, background:`${ACCENT}15`, padding:"2px 7px", borderRadius:6, fontWeight:700 }}>Alerta activa</span>}
+                  </div>
+                  <textarea
+                    placeholder="Escribe una nota para este día…"
+                    value={noteText}
+                    onChange={e=>setDayNotes(n=>({...n,[d]:{...(n[d]||{}),text:e.target.value}}))}
+                    style={{ width:"100%", padding:"12px 14px", border:"1.5px solid #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, color:"#1C1C1E", background:"white", outline:"none", resize:"none", height:90, boxSizing:"border-box" }}
+                  />
+                  {alertOn && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>Se mostrará una alerta al abrir la app en este día.</div>}
                 </div>
               </div>
             </div>
