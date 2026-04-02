@@ -232,8 +232,7 @@ export default function App() {
   }, []);
 
   const filteredOrders = orders.filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return statusOk && dateOk && clientOk; });
-  const counts   = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
-
+  const counts = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
 
   // ── GOOGLE SHEETS SYNC ──
   const syncToSheets = (order) => {
@@ -630,19 +629,6 @@ export default function App() {
               );
             })()}
 
-            {/* STATS */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
-              {[
-                { val: counts.received,   lbl:"Received",    col:"#8E8E93", action:()=>{ setFilterStatus("received");   setTab("orders"); } },
-                { val: counts.inprogress, lbl:"In progress", col:C.statuses.inprogress.color, action:()=>{ setFilterStatus("inprogress"); setTab("orders"); } },
-                { val: counts.done,       lbl:"Done",        col:C.statuses.done.color, action:()=>{ setFilterStatus("done"); setTab("orders"); } },
-              ].map(({ val, lbl, col, action }) => (
-                <button key={lbl} onClick={action} style={{ background:"white", borderRadius:16, padding:"14px 10px", textAlign:"center", border:"1.5px solid #F2F2F7", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
-                  <div style={{ fontSize:22, fontWeight:800, color:col, marginBottom:2 }}>{val}</div>
-                  <div style={{ fontSize:10, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{lbl}</div>
-                </button>
-              ))}
-            </div>
 
             {/* UPCOMING DELIVERIES */}
             {(() => {
