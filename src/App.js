@@ -211,7 +211,7 @@ export default function App() {
 
   const filteredOrders = orders.filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return statusOk && dateOk && clientOk; });
   const counts   = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
-  const pending  = orders.filter(o=>o.status==="done").reduce((s,o)=>s+(o.amount||0),0);
+
 
   // ── GOOGLE SHEETS SYNC ──
   const syncToSheets = (order) => {
@@ -508,55 +508,80 @@ export default function App() {
       {/* ── HOME TAB ── */}
       {tab==="home" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
-          {/* TOP BAR */}
-          <div style={{ padding: isDesktop ? "32px 40px 0" : "56px 24px 0", background:"white" }}>
-            <div style={{ display:"flex", justifyContent:"flex-end", alignItems:"center", marginBottom:28 }}>
-              <div style={{ position:"relative" }}>
-                <button style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="bell" size={22} color="#8E8E93"/></button>
-                <div style={{ position:"absolute", top:2, right:2, width:8, height:8, borderRadius:"50%", background:ACCENT }} />
+          {/* TOP BAR — compact */}
+          <div style={{ padding: isDesktop ? "28px 40px 16px" : "52px 20px 14px", background:"white", borderBottom:"1px solid #F2F2F7" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div>
+                <div style={{ fontSize:12, color:"#8E8E93", fontWeight:500, fontFamily:"'DM Sans',sans-serif" }}>{greeting}</div>
+                <div style={{ fontSize:17, fontWeight:700, color:"#1C1C1E", fontFamily:"'DM Sans',sans-serif" }}>{C.ownerName.split(" ")[0]}</div>
               </div>
-            </div>
-            <div style={{ paddingBottom:28 }}>
-              <div style={{ fontSize:28, color:"#8E8E93", fontWeight:400, lineHeight:1.2 }}>{greeting}, {C.ownerName},</div>
-              <div style={{ fontSize:28, fontWeight:700, color:"#1C1C1E", lineHeight:1.3 }}>How can I help<br/>you today?</div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                {/* Quick actions — compact icon pills */}
+                {[
+                  { icon:"scan",    label:"Scan",    action:()=>{ setTab("scan"); resetPhoto(); } },
+                  { icon:"gem",     label:"Nueva",   action:()=>{ setTab("orders"); setView("new"); } },
+                  { icon:"invoice", label:"Factura", action:()=>{ setTab("invoice"); setInvView("list"); } },
+                ].map(({ icon, label, action }) => (
+                  <button key={label} onClick={action} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, background:"#F2F2F7", border:"none", borderRadius:12, padding:"8px 12px", cursor:"pointer" }}>
+                    <Icon name={icon} size={18} color="#1C1C1E"/>
+                    <span style={{ fontSize:9, fontWeight:600, color:"#1C1C1E", fontFamily:"'DM Sans',sans-serif", letterSpacing:"0.02em" }}>{label}</span>
+                  </button>
+                ))}
+                <div style={{ position:"relative" }}>
+                  <button style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="bell" size={20} color="#8E8E93"/></button>
+                  <div style={{ position:"absolute", top:2, right:2, width:7, height:7, borderRadius:"50%", background:ACCENT }} />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div style={{ padding: isDesktop ? "28px 40px 60px" : "20px 16px 100px" }}>
-            {/* QUICK ACTIONS */}
-            <div style={{ display:"grid", gridTemplateColumns: isDesktop ? "repeat(4, 1fr)" : "1fr 1fr", gap:12, marginBottom:24 }}>
-              {[
-                { icon:"scan",    title:"Scan Order",   sub:"Photo → order auto",   action:()=>{ setTab("scan"); resetPhoto(); } },
-                { icon:"orders",  title:"My Orders",    sub:"Track & update status", action:()=>setTab("orders") },
-                { icon:"invoice", title:"New Invoice",  sub:"Generate PDF fast",    action:()=>{ setTab("invoice"); setInvView("form"); } },
-                { icon:"gem",     title:"Quick Add",    sub:"Manual order entry",   action:()=>{ setTab("orders"); setView("new"); } },
-              ].map(({ icon, title, sub, action }) => (
-                <button key={title} onClick={action} style={{ background:"white", border:"1.5px solid #F2F2F7", borderRadius:20, padding:"20px 16px", textAlign:"left", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
-                  <div style={{ width:44, height:44, background:"#F2F2F7", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
-                    <Icon name={icon} size={22} color="#1C1C1E"/>
+          <div style={{ padding: isDesktop ? "20px 40px 60px" : "16px 16px 100px" }}>
+
+            {/* URGENT ALERT BANNER */}
+            {(() => {
+              const today = new Date().toISOString().split("T")[0];
+              const cutoff = new Date(); cutoff.setDate(cutoff.getDate()+3);
+              const cutoffStr = cutoff.toISOString().split("T")[0];
+              const overdue  = orders.filter(o => o.deadline && o.deadline < today  && o.status !== "done" && o.status !== "invoiced");
+              const dueToday = orders.filter(o => o.deadline && o.deadline === today && o.status !== "done" && o.status !== "invoiced");
+              const dueSoon  = orders.filter(o => o.deadline && o.deadline > today && o.deadline <= cutoffStr && o.status !== "done" && o.status !== "invoiced");
+              if(!overdue.length && !dueToday.length && !dueSoon.length) return null;
+              const critical = overdue.length + dueToday.length;
+              const bgColor  = critical > 0 ? "#FF3B30" : "#FF9500";
+              const msg      = overdue.length   ? `${overdue.length} orden${overdue.length>1?"es":""} vencida${overdue.length>1?"s":""}${dueToday.length ? ` · ${dueToday.length} para hoy` : ""}`
+                             : dueToday.length  ? `${dueToday.length} entrega${dueToday.length>1?"s":""} para hoy`
+                             : `${dueSoon.length} entrega${dueSoon.length>1?"s":""} en los próximos 3 días`;
+              return (
+                <button onClick={()=>setUrgentModal(true)} style={{ width:"100%", background:`linear-gradient(135deg, ${bgColor}, ${bgColor}dd)`, border:"none", borderRadius:18, padding:"16px 20px", marginBottom:16, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, boxShadow:`0 4px 16px ${bgColor}40` }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                    <div style={{ width:42, height:42, borderRadius:13, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <Icon name="bell" size={22} color="white"/>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:15, fontWeight:700, color:"white", marginBottom:2 }}>{msg}</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)" }}>Toca para ver el detalle</div>
+                    </div>
                   </div>
-                  <div style={{ fontSize:15, fontWeight:700, color:"#1C1C1E", marginBottom:3 }}>{title}</div>
-                  <div style={{ fontSize:12, color:"#8E8E93", lineHeight:1.4 }}>{sub}</div>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+              );
+            })()}
+
+            {/* STATS */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
+              {[
+                { val: counts.received,   lbl:"Recibidas",  col:"#8E8E93", action:()=>{ setFilterStatus("received");   setTab("orders"); } },
+                { val: counts.inprogress, lbl:"En proceso", col:C.statuses.inprogress.color, action:()=>{ setFilterStatus("inprogress"); setTab("orders"); } },
+                { val: counts.done,       lbl:"Listas",     col:C.statuses.done.color, action:()=>{ setFilterStatus("done"); setTab("orders"); } },
+              ].map(({ val, lbl, col, action }) => (
+                <button key={lbl} onClick={action} style={{ background:"white", borderRadius:16, padding:"14px 10px", textAlign:"center", border:"1.5px solid #F2F2F7", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
+                  <div style={{ fontSize:22, fontWeight:800, color:col, marginBottom:2 }}>{val}</div>
+                  <div style={{ fontSize:10, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{lbl}</div>
                 </button>
               ))}
             </div>
 
-            {/* SUMMARY STRIP */}
-            <SectionTitle>Today's overview</SectionTitle>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:24 }}>
-              {[
-                [counts.inprogress, "In progress", C.statuses.inprogress.color],
-                [counts.done,       "Done",         C.statuses.done.color],
-                [`${C.currency} ${pending}`, "To invoice", ACCENT],
-              ].map(([val, lbl, col]) => (
-                <div key={lbl} style={{ background:"white", borderRadius:16, padding:"14px 12px", textAlign:"center", border:"1.5px solid #F2F2F7" }}>
-                  <div style={{ fontSize:20, fontWeight:700, color:col, marginBottom:2 }}>{val}</div>
-                  <div style={{ fontSize:11, color:"#8E8E93", fontWeight:500 }}>{lbl}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* UPCOMING DELIVERIES STRIP */}
+            {/* UPCOMING DELIVERIES */}
             {(() => {
               const today = new Date().toISOString().split("T")[0];
               const cutoff = new Date(); cutoff.setDate(cutoff.getDate()+7);
@@ -565,51 +590,52 @@ export default function App() {
                 .filter(o => o.deadline && o.deadline <= cutoffStr && o.status !== "done" && o.status !== "invoiced")
                 .sort((a,b) => a.deadline.localeCompare(b.deadline));
               if(!upcoming.length) return null;
-              const getLabel = (deadline) => {
-                if(deadline < today) return { text:"Vencida", color:"#FF3B30" };
-                if(deadline === today) return { text:"Hoy", color:"#FF9500" };
-                const diff = Math.round((new Date(deadline+"T12:00:00") - new Date(today+"T12:00:00"))/(1000*60*60*24));
+              const getLabel = (d) => {
+                if(d < today) return { text:"Vencida", color:"#FF3B30" };
+                if(d === today) return { text:"Hoy", color:"#FF9500" };
+                const diff = Math.round((new Date(d+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
                 if(diff === 1) return { text:"Mañana", color:"#FF9500" };
-                return { text:`En ${diff} días`, color:"#007AFF" };
+                return { text:`${diff}d`, color:"#007AFF" };
               };
               return (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                    <SectionTitle style={{ margin:0 }}>Próximas entregas</SectionTitle>
+                    <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontFamily:"'DM Sans',sans-serif" }}>Próximas entregas</div>
                     <button onClick={()=>setUrgentModal(true)} style={{ background:"none", border:"none", fontSize:12, color:ACCENT, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", padding:0 }}>Ver todas</button>
                   </div>
-                  {upcoming.slice(0,3).map(o => {
+                  {upcoming.slice(0,4).map(o => {
                     const { text, color } = getLabel(o.deadline);
                     return (
-                      <Card key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }} style={{ border:`1.5px solid ${color}22`, background:"white" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                          <div style={{ width:4, alignSelf:"stretch", borderRadius:4, background:color, flexShrink:0 }}/>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E" }}>{o.client || `#${o.id}`}</div>
-                            {o.description && <div style={{ fontSize:12, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
-                          </div>
-                          <div style={{ fontSize:12, fontWeight:700, color, background:`${color}15`, padding:"4px 10px", borderRadius:8, flexShrink:0 }}>{text}</div>
+                      <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                        style={{ width:"100%", background:"white", border:"1.5px solid #F2F2F7", borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+                        <div style={{ width:4, alignSelf:"stretch", borderRadius:4, background:color, flexShrink:0 }}/>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E" }}>{o.client || `#${o.id}`}</div>
+                          {o.description && <div style={{ fontSize:12, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
                         </div>
-                      </Card>
+                        <span style={{ fontSize:12, fontWeight:700, color, background:`${color}15`, padding:"3px 9px", borderRadius:7, flexShrink:0 }}>{text}</span>
+                      </button>
                     );
                   })}
                 </>
               );
             })()}
 
-            {/* RECENT */}
-            <SectionTitle>Recent orders</SectionTitle>
+            {/* RECENT ORDERS */}
+            <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontFamily:"'DM Sans',sans-serif", marginBottom:10, marginTop:8 }}>Últimas órdenes</div>
             {orders.slice(0,3).map(o => (
-              <Card key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:2 }}>{o.client}</div>
-                    <div style={{ fontSize:12, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>#{o.id}{o.deadline ? ` · Entrega: ${o.deadline}` : ""}{o.description ? ` · ${o.description}` : ""}</div>
-                  </div>
-                  <StatusPill status={o.status}/>
+              <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                style={{ width:"100%", background:"white", border:"1.5px solid #F2F2F7", borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", textAlign:"left", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E", marginBottom:2 }}>{o.client || `#${o.id}`}</div>
+                  <div style={{ fontSize:12, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>#{o.id}{o.deadline ? ` · ${o.deadline}` : ""}{o.description ? ` · ${o.description}` : ""}</div>
                 </div>
-              </Card>
+                <StatusPill status={o.status}/>
+              </button>
             ))}
+            <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"12px", background:"none", border:"1.5px solid #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginTop:4 }}>
+              Ver todas las órdenes →
+            </button>
           </div>
         </div>
       )}
