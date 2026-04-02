@@ -545,18 +545,18 @@ export default function App() {
           </div>
 
           {/* QUICK ACTIONS — below header, full width */}
-          <div style={{ padding: isDesktop ? "16px 40px" : "12px 16px", background:"white", borderBottom:"1px solid #F2F2F7", display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+          <div style={{ padding: isDesktop ? "16px 40px" : "14px 16px", background:"white", borderBottom:"1px solid #F2F2F7", display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
             {[
-              { icon:"scan",    label:"Escanear orden",  sub:"Foto → orden auto",  action:()=>{ setTab("scan"); resetPhoto(); } },
-              { icon:"gem",     label:"Nueva orden",     sub:"Entrada manual",     action:()=>{ setTab("orders"); setView("new"); } },
-              { icon:"invoice", label:"Nueva factura",   sub:"Crear y guardar",    action:()=>{ setTab("invoice"); setInvView("list"); } },
+              { icon:"scan",    label:"Scan Order",   sub:"Photo → auto order", action:()=>{ setTab("scan"); resetPhoto(); } },
+              { icon:"gem",     label:"New Order",    sub:"Manual entry",       action:()=>{ setTab("orders"); setView("new"); } },
+              { icon:"invoice", label:"New Invoice",  sub:"Create & save",      action:()=>{ setTab("invoice"); setInvView("list"); } },
             ].map(({ icon, label, sub, action }) => (
-              <button key={label} onClick={action} style={{ background:"#F8F8F8", border:"1.5px solid #F2F2F7", borderRadius:16, padding:"14px 8px 12px", textAlign:"center", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:7 }}>
-                <div style={{ width:42, height:42, background:"white", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 1px 4px rgba(0,0,0,0.07)" }}>
-                  <Icon name={icon} size={20} color={ACCENT}/>
+              <button key={label} onClick={action} style={{ background:"#F8F8F8", border:"1.5px solid #F2F2F7", borderRadius:18, padding:"18px 10px 16px", textAlign:"center", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:9 }}>
+                <div style={{ width:52, height:52, background:"white", borderRadius:15, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.09)" }}>
+                  <Icon name={icon} size={24} color={ACCENT}/>
                 </div>
-                <div style={{ fontSize:11, fontWeight:700, color:"#1C1C1E", lineHeight:1.3 }}>{label}</div>
-                <div style={{ fontSize:10, color:"#8E8E93", lineHeight:1.2 }}>{sub}</div>
+                <div style={{ fontSize:13, fontWeight:700, color:"#1C1C1E", lineHeight:1.3 }}>{label}</div>
+                <div style={{ fontSize:11, color:"#8E8E93", lineHeight:1.2 }}>{sub}</div>
               </button>
             ))}
           </div>
@@ -568,7 +568,7 @@ export default function App() {
               const d = new Date(); d.setDate(d.getDate()+i);
               days.push(d.toISOString().split("T")[0]);
             }
-            const DAYS_ES = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+            const DAYS_ES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
             return (
               <>
                 {/* Scrollable day pills */}
@@ -611,9 +611,9 @@ export default function App() {
               if(!overdue.length && !dueToday.length && !dueSoon.length) return null;
               const critical = overdue.length + dueToday.length;
               const bgColor  = critical > 0 ? "#FF3B30" : "#FF9500";
-              const msg      = overdue.length   ? `${overdue.length} orden${overdue.length>1?"es":""} vencida${overdue.length>1?"s":""}${dueToday.length ? ` · ${dueToday.length} para hoy` : ""}`
-                             : dueToday.length  ? `${dueToday.length} entrega${dueToday.length>1?"s":""} para hoy`
-                             : `${dueSoon.length} entrega${dueSoon.length>1?"s":""} en los próximos 3 días`;
+              const msg      = overdue.length   ? `${overdue.length} overdue order${overdue.length>1?"s":""}${dueToday.length ? ` · ${dueToday.length} due today` : ""}`
+                             : dueToday.length  ? `${dueToday.length} deliver${dueToday.length>1?"ies":"y"} due today`
+                             : `${dueSoon.length} deliver${dueSoon.length>1?"ies":"y"} in the next 3 days`;
               return (
                 <button onClick={()=>setUrgentModal(true)} style={{ width:"100%", background:`linear-gradient(135deg, ${bgColor}, ${bgColor}dd)`, border:"none", borderRadius:18, padding:"16px 20px", marginBottom:16, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, boxShadow:`0 4px 16px ${bgColor}40` }}>
                   <div style={{ display:"flex", alignItems:"center", gap:14 }}>
@@ -622,7 +622,7 @@ export default function App() {
                     </div>
                     <div>
                       <div style={{ fontSize:15, fontWeight:700, color:"white", marginBottom:2 }}>{msg}</div>
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)" }}>Toca para ver el detalle</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.8)" }}>Tap to see details</div>
                     </div>
                   </div>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
@@ -633,9 +633,9 @@ export default function App() {
             {/* STATS */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
               {[
-                { val: counts.received,   lbl:"Recibidas",  col:"#8E8E93", action:()=>{ setFilterStatus("received");   setTab("orders"); } },
-                { val: counts.inprogress, lbl:"En proceso", col:C.statuses.inprogress.color, action:()=>{ setFilterStatus("inprogress"); setTab("orders"); } },
-                { val: counts.done,       lbl:"Listas",     col:C.statuses.done.color, action:()=>{ setFilterStatus("done"); setTab("orders"); } },
+                { val: counts.received,   lbl:"Received",    col:"#8E8E93", action:()=>{ setFilterStatus("received");   setTab("orders"); } },
+                { val: counts.inprogress, lbl:"In progress", col:C.statuses.inprogress.color, action:()=>{ setFilterStatus("inprogress"); setTab("orders"); } },
+                { val: counts.done,       lbl:"Done",        col:C.statuses.done.color, action:()=>{ setFilterStatus("done"); setTab("orders"); } },
               ].map(({ val, lbl, col, action }) => (
                 <button key={lbl} onClick={action} style={{ background:"white", borderRadius:16, padding:"14px 10px", textAlign:"center", border:"1.5px solid #F2F2F7", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
                   <div style={{ fontSize:22, fontWeight:800, color:col, marginBottom:2 }}>{val}</div>
@@ -654,17 +654,17 @@ export default function App() {
                 .sort((a,b) => a.deadline.localeCompare(b.deadline));
               if(!upcoming.length) return null;
               const getLabel = (d) => {
-                if(d < today) return { text:"Vencida", color:"#FF3B30" };
-                if(d === today) return { text:"Hoy", color:"#FF9500" };
+                if(d < today) return { text:"Overdue", color:"#FF3B30" };
+                if(d === today) return { text:"Today", color:"#FF9500" };
                 const diff = Math.round((new Date(d+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
-                if(diff === 1) return { text:"Mañana", color:"#FF9500" };
+                if(diff === 1) return { text:"Tomorrow", color:"#FF9500" };
                 return { text:`${diff}d`, color:"#007AFF" };
               };
               return (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontFamily:"'DM Sans',sans-serif" }}>Próximas entregas</div>
-                    <button onClick={()=>setUrgentModal(true)} style={{ background:"none", border:"none", fontSize:12, color:ACCENT, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", padding:0 }}>Ver todas</button>
+                    <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontFamily:"'DM Sans',sans-serif" }}>Upcoming deliveries</div>
+                    <button onClick={()=>setUrgentModal(true)} style={{ background:"none", border:"none", fontSize:12, color:ACCENT, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", padding:0 }}>View all</button>
                   </div>
                   {upcoming.slice(0,4).map(o => {
                     const { text, color } = getLabel(o.deadline);
@@ -685,7 +685,7 @@ export default function App() {
             })()}
 
             {/* RECENT ORDERS */}
-            <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontFamily:"'DM Sans',sans-serif", marginBottom:10, marginTop:8 }}>Últimas órdenes</div>
+            <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontFamily:"'DM Sans',sans-serif", marginBottom:10, marginTop:8 }}>Recent orders</div>
             {orders.slice(0,3).map(o => (
               <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                 style={{ width:"100%", background:"white", border:"1.5px solid #F2F2F7", borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", textAlign:"left", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
@@ -697,7 +697,7 @@ export default function App() {
               </button>
             ))}
             <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"12px", background:"none", border:"1.5px solid #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginTop:4 }}>
-              Ver todas las órdenes →
+              View all orders →
             </button>
 
           </div>
@@ -842,7 +842,7 @@ export default function App() {
                 {clients.length > 0 && (
                   <div style={{ marginBottom:12 }}>
                     <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ fontSize:13, padding:"9px 40px 9px 12px", borderRadius:10, color: filterClient!=="all"?ACCENT:"#8E8E93" }}>
-                      <option value="all">Todos los clientes</option>
+                      <option value="all">All clients</option>
                       {[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
                     </Select>
                   </div>
@@ -862,7 +862,7 @@ export default function App() {
                       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                         <div style={{ width:6, height:6, borderRadius:"50%", background:C.statuses[o.status].color, flexShrink:0 }}/>
                         <span style={{ fontSize:12, color:"#8E8E93" }}>
-                          {[o.deadline && `Entrega: ${o.deadline}`, o.pieces && `${o.pieces} ${C.piecesLabel}`].filter(Boolean).join(" · ") || o.description?.slice(0,40) || "—"}
+                          {[o.deadline && `Delivery: ${o.deadline}`, o.pieces && `${o.pieces} ${C.piecesLabel}`].filter(Boolean).join(" · ") || o.description?.slice(0,40) || "—"}
                         </span>
                       </div>
                     </div>
@@ -887,7 +887,7 @@ export default function App() {
                       <button onClick={()=>setDraft(d=>({...d,photo:null}))} style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:28, height:28, color:"white", fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
                     </div>
                   : <button onClick={()=>draftPhotoRef.current.click()} style={{ width:"100%", padding:"14px", background:"#F2F2F7", border:"2px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                      <Icon name="camera" size={18} color="#8E8E93"/> Añadir foto del producto
+                      <Icon name="camera" size={18} color="#8E8E93"/> Add product photo
                     </button>
                 }
                 <Field label="Client *">
@@ -896,17 +896,17 @@ export default function App() {
                         const c = clients.find(x=>x.id===e.target.value);
                         setDraft({...draft, clientId: e.target.value, client: c ? (c.company||c.name) : "" });
                       }}>
-                        <option value="">— Seleccionar cliente —</option>
+                        <option value="">— Select client —</option>
                         {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
                       </Select>
                     : <Input placeholder="Client or company" value={draft.client} onChange={e=>setDraft({...draft,client:e.target.value})}/>
                   }
-                  {clients.length > 0 && <div onClick={()=>{ setTab("clients"); setClientView("new"); setClientDraft(newClient()); }} style={{ fontSize:12, color:ACCENT, fontWeight:600, marginTop:6, cursor:"pointer" }}>+ Agregar nuevo cliente</div>}
+                  {clients.length > 0 && <div onClick={()=>{ setTab("clients"); setClientView("new"); setClientDraft(newClient()); }} style={{ fontSize:12, color:ACCENT, fontWeight:600, marginTop:6, cursor:"pointer" }}>+ Add new client</div>}
                 </Field>
-                <Field label="Descripción del trabajo">
-                  <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Descripción del trabajo enviado por el cliente…"/>
+                <Field label="Work description">
+                  <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Work description sent by client…"/>
                 </Field>
-                <Field label="Fecha de entrega">
+                <Field label="Delivery date">
                   <Input type="date" value={draft.deadline} onChange={e=>setDraft({...draft,deadline:e.target.value})}/>
                 </Field>
                 <Field label={C.piecesLabel}>
@@ -932,7 +932,7 @@ export default function App() {
                     {[
                       ["Received", selectedOrder.received],
                       ["Order ID", `#${selectedOrder.id}`],
-                      ["Entrega", selectedOrder.deadline],
+                      ["Delivery", selectedOrder.deadline],
                       [C.piecesLabel, selectedOrder.pieces],
                     ].filter(([,v])=>v).map(([l,v])=>(
                       <div key={l}>
@@ -943,7 +943,7 @@ export default function App() {
                   </div>
                   {selectedOrder.description && (
                     <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F2F2F7" }}>
-                      <div style={{ fontSize:11, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:600, marginBottom:6 }}>Descripción</div>
+                      <div style={{ fontSize:11, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:600, marginBottom:6 }}>Description</div>
                       <div style={{ fontSize:14, color:"#1C1C1E", lineHeight:1.5 }}>{selectedOrder.description}</div>
                     </div>
                   )}
@@ -974,8 +974,8 @@ export default function App() {
                 {/* Factura — only when done */}
                 {selectedOrder.status==="done" && (
                   <Card id="invoice-section">
-                    <div style={{ fontSize:13, fontWeight:600, color:"#1C1C1E", marginBottom:12 }}>Crear factura para esta orden</div>
-                    <Field label={`Monto (${C.currency})`}>
+                    <div style={{ fontSize:13, fontWeight:600, color:"#1C1C1E", marginBottom:12 }}>Create invoice for this order</div>
+                    <Field label={`Amount (${C.currency})`}>
                       <Input
                         type="number" placeholder="0.00"
                         value={selectedOrder.amount||""}
@@ -997,7 +997,7 @@ export default function App() {
                       setTab("invoice");
                       setInvView("new");
                     }} style={{ margin:0 }}>
-                      <Icon name="invoice" size={16} color="white"/> Ir al builder de factura
+                      <Icon name="invoice" size={16} color="white"/> Go to invoice builder
                     </BtnPrimary>
                   </Card>
                 )}
@@ -1018,11 +1018,11 @@ export default function App() {
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
                     <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Invoices</div>
-                    {invoices.length > 0 && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>{invoices.length} factura{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} sin imprimir</div>}
+                    {invoices.length > 0 && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
                   </div>
                   <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvSelectedOrders([]); setInvPorto(""); setItems([newItem()]); setInvView("new"); }}
                     style={{ background:ACCENT, color:"white", border:"none", borderRadius:12, padding:"10px 18px", fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
-                    + Nueva factura
+                    + New Invoice
                   </button>
                 </div>
               </div>
@@ -1030,8 +1030,8 @@ export default function App() {
                 {invoices.length === 0 && (
                   <div style={{ textAlign:"center", padding:"48px 24px" }}>
                     <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}><Icon name="receipt" size={48} color="#C7C7CC"/></div>
-                    <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:6 }}>No hay facturas aún</div>
-                    <div style={{ fontSize:13, color:"#8E8E93", lineHeight:1.6 }}>Las facturas creadas desde órdenes aparecen aquí.<br/>También puedes crear una manualmente.</div>
+                    <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:6 }}>No invoices yet</div>
+                    <div style={{ fontSize:13, color:"#8E8E93", lineHeight:1.6 }}>Invoices created from orders appear here.<br/>You can also create one manually.</div>
                   </div>
                 )}
                 {[...invoices].reverse().map(inv => {
@@ -1085,7 +1085,7 @@ export default function App() {
               if(print) printInvoiceDoc(inv);
               setInvSelectedOrders([]);
               setInvView("list");
-              showToast("Factura guardada","#34C759");
+              showToast("Invoice saved","#34C759");
             };
             return (
               <>
@@ -1094,7 +1094,7 @@ export default function App() {
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setInvSelectedOrders([]); setInvView("list"); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="back" size={22} color="#1C1C1E"/></button>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Nueva Factura</div>
+                      <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>New Invoice</div>
                       {invClient && <div style={{ fontSize:12, color:"#8E8E93", marginTop:1 }}>{invClient}</div>}
                     </div>
                     {draftTotal > 0 && (
@@ -1110,29 +1110,29 @@ export default function App() {
 
                   {/* Client + date */}
                   <Card>
-                    <Field label="Cliente *">
+                    <Field label="Client *">
                       {clients.length > 0
                         ? <Select value={invClient} onChange={e=>{
                             const sel = clients.find(c=>c.name===e.target.value || c.company===e.target.value);
                             setInvClient(e.target.value);
                             setInvClientAddress(sel ? [sel.company&&sel.name?sel.company:"", sel.address].filter(Boolean).join("\n") : "");
                           }}>
-                            <option value="">— Seleccionar cliente —</option>
+                            <option value="">— Select client —</option>
                             {clients.map(c=><option key={c.id} value={c.company||c.name}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
                           </Select>
-                        : <Input placeholder="Nombre de empresa" value={invClient} onChange={e=>setInvClient(e.target.value)}/>
+                        : <Input placeholder="Company name" value={invClient} onChange={e=>setInvClient(e.target.value)}/>
                       }
                     </Field>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                      <Field label="Fecha"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
-                      <Field label={`Porto (${C.currency})`}><Input type="number" placeholder="0.00" value={invPorto} onChange={e=>setInvPorto(e.target.value)}/></Field>
+                      <Field label="Date"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
+                      <Field label={`Postage (${C.currency})`}><Input type="number" placeholder="0.00" value={invPorto} onChange={e=>setInvPorto(e.target.value)}/></Field>
                     </div>
                   </Card>
 
                   {/* Orders list — tap to add/remove */}
                   {availableOrders.length > 0 && (
                     <>
-                      <SectionTitle>Órdenes disponibles</SectionTitle>
+                      <SectionTitle>Available orders</SectionTitle>
                       {availableOrders.map(o=>{
                         const linked = invSelectedOrders.includes(o.id);
                         const linkedItem = items.find(it=>it.orderRef===o.id);
@@ -1152,7 +1152,7 @@ export default function App() {
                               {o.photo && <img src={o.photo} alt="" style={{ width:36, height:36, borderRadius:8, objectFit:"cover", flexShrink:0 }}/>}
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E", marginBottom:2 }}>{o.client}</div>
-                                <div style={{ fontSize:12, color:"#8E8E93" }}>#{o.id}{o.deadline ? ` · Entrega: ${o.deadline}` : ""}</div>
+                                <div style={{ fontSize:12, color:"#8E8E93" }}>#{o.id}{o.deadline ? ` · Delivery: ${o.deadline}` : ""}</div>
                               </div>
                               <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
                                 {o.status==="done" && <span style={{ fontSize:10, fontWeight:700, color:"#34C759", background:"#34C75915", padding:"3px 8px", borderRadius:6 }}>Done</span>}
@@ -1166,7 +1166,7 @@ export default function App() {
                               <div style={{ padding:"0 16px 14px", borderTop:"1px solid #F2F2F7" }} onClick={e=>e.stopPropagation()}>
                                 <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
                                   <Input
-                                    type="number" placeholder="Monto CHF"
+                                    type="number" placeholder="Amount CHF"
                                     value={linkedItem?.price||""}
                                     onChange={e=>setItems(items.map(it=>it.orderRef===o.id?{...it,price:e.target.value}:it))}
                                     style={{ flex:1, marginBottom:0 }}
@@ -1187,24 +1187,24 @@ export default function App() {
                   )}
 
                   {/* Manual items */}
-                  <SectionTitle>Ítems manuales</SectionTitle>
+                  <SectionTitle>Manual items</SectionTitle>
                   {items.filter(it=>!it.orderRef).map((it,idx)=>(
                     <Card key={it.id}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em" }}>Ítem manual {idx+1}</div>
+                        <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em" }}>Manual item {idx+1}</div>
                         <button onClick={()=>setItems(items.filter(i=>i.id!==it.id))} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#FF3B30"/></button>
                       </div>
-                      <Field label="Descripción"><Input placeholder="p.ej. Pavé setting – anillo" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
-                      <Field label={`Monto (${C.currency})`}><Input type="number" placeholder="0.00" value={it.price} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,price:e.target.value}:i))}/></Field>
+                      <Field label="Description"><Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
+                      <Field label={`Amount (${C.currency})`}><Input type="number" placeholder="0.00" value={it.price} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,price:e.target.value}:i))}/></Field>
                     </Card>
                   ))}
-                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:16 }}>+ Añadir ítem manual</button>
+                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:16 }}>+ Add manual item</button>
 
                   {/* Live total */}
                   {(items.some(it=>it.price)||draftPorto>0) && (
                     <Card style={{ background:"#1C1C1E" }}>
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Subtotal</span><span>{C.currency} {fmt(draftSub)}</span></div>
-                      {draftPorto>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Porto</span><span>{C.currency} {fmt(draftPorto)}</span></div>}
+                      {draftPorto>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Postage</span><span>{C.currency} {fmt(draftPorto)}</span></div>}
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(draftTax)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid rgba(255,255,255,0.15)", paddingTop:12 }}>
                         <span style={{ fontSize:16, fontWeight:700, color:"white" }}>Total</span>
@@ -1214,11 +1214,11 @@ export default function App() {
                   )}
 
                   <BtnPrimary disabled={!invClient||items.every(it=>!it.desc&&!it.price)} onClick={()=>saveInvoice(false)}>
-                    <Icon name="invoice" size={18} color="white"/> Guardar factura
+                    <Icon name="invoice" size={18} color="white"/> Save invoice
                   </BtnPrimary>
                   <div style={{ height:10 }}/>
                   <BtnGhost disabled={!invClient||items.every(it=>!it.desc&&!it.price)} onClick={()=>saveInvoice(true)}>
-                    ⎙ Guardar e imprimir
+                    {"⎙ Save & print"}
                   </BtnGhost>
                 </div>
               </>
@@ -1266,8 +1266,8 @@ export default function App() {
                     <table style={{ width:"100%", borderCollapse:"collapse", marginBottom:12 }}>
                       <thead>
                         <tr style={{ borderBottom:"1.5px solid #E5E5EA" }}>
-                          <th style={{ textAlign:"left", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Descripción</th>
-                          <th style={{ textAlign:"right", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Importe</th>
+                          <th style={{ textAlign:"left", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Description</th>
+                          <th style={{ textAlign:"right", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Amount</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1285,7 +1285,7 @@ export default function App() {
 
                     {/* Totals */}
                     <div style={{ borderTop:"1px solid #E5E5EA", paddingTop:10 }}>
-                      {invPortoVal>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#8E8E93", marginBottom:4 }}><span>Porto</span><span>{C.currency} {fmt(invPortoVal)}</span></div>}
+                      {invPortoVal>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#8E8E93", marginBottom:4 }}><span>Postage</span><span>{C.currency} {fmt(invPortoVal)}</span></div>}
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#8E8E93", marginBottom:4 }}><span>Subtotal</span><span>{C.currency} {fmt(invSub)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#8E8E93", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(invMwst)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", borderTop:"2px solid #1C1C1E", paddingTop:10 }}>
@@ -1301,7 +1301,7 @@ export default function App() {
                   </div>
 
                   <BtnPrimary onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}>
-                    <Icon name="invoice" size={18} color="white"/> Imprimir / Guardar PDF
+                    <Icon name="invoice" size={18} color="white"/> Print / Save PDF
                   </BtnPrimary>
                 </div>
               </>
@@ -1322,7 +1322,7 @@ export default function App() {
                   <button onClick={()=>setClientView("list")} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="back" size={22} color="#1C1C1E"/></button>
                 )}
                 <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>
-                  {clientView==="list" ? "Clientes" : clientView==="new" ? "Nuevo Cliente" : clientView==="edit" ? "Editar Cliente" : (clients.find(c=>c.id===selectedClientId)?.company || clients.find(c=>c.id===selectedClientId)?.name || "Cliente")}
+                  {clientView==="list" ? "Clients" : clientView==="new" ? "New Client" : clientView==="edit" ? "Edit Client" : (clients.find(c=>c.id===selectedClientId)?.company || clients.find(c=>c.id===selectedClientId)?.name || "Client")}
                 </div>
               </div>
               {clientView==="list" && (
@@ -1344,9 +1344,9 @@ export default function App() {
                 {clients.length === 0 && (
                   <div style={{ textAlign:"center", padding:"48px 24px" }}>
                     <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}><Icon name="users" size={48} color="#C7C7CC"/></div>
-                    <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:6 }}>No hay clientes aún</div>
-                    <div style={{ fontSize:13, color:"#8E8E93", lineHeight:1.6, marginBottom:24 }}>Agrega tus clientes para asignarlos a órdenes y facturas automáticamente.</div>
-                    <BtnPrimary onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ maxWidth:220, margin:"0 auto" }}>+ Agregar cliente</BtnPrimary>
+                    <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:6 }}>No clients yet</div>
+                    <div style={{ fontSize:13, color:"#8E8E93", lineHeight:1.6, marginBottom:24 }}>Add your clients to assign them to orders and invoices automatically.</div>
+                    <BtnPrimary onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ maxWidth:220, margin:"0 auto" }}>+ Add client</BtnPrimary>
                   </div>
                 )}
                 {clients.map(c => {
@@ -1363,7 +1363,7 @@ export default function App() {
                           {c.address && <div style={{ fontSize:12, color:"#8E8E93", marginTop:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{c.address.split("\n")[0]}</div>}
                         </div>
                         <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4, flexShrink:0 }}>
-                          {orderCount > 0 && <span style={{ fontSize:11, fontWeight:700, color:ACCENT, background:`${ACCENT}15`, padding:"3px 9px", borderRadius:8 }}>{orderCount} orden{orderCount!==1?"es":""}</span>}
+                          {orderCount > 0 && <span style={{ fontSize:11, fontWeight:700, color:ACCENT, background:`${ACCENT}15`, padding:"3px 9px", borderRadius:8 }}>{orderCount} order{orderCount!==1?"s":""}</span>}
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                         </div>
                       </div>
@@ -1376,27 +1376,27 @@ export default function App() {
             {/* ── NEW / EDIT FORM ── */}
             {(clientView==="new" || clientView==="edit") && (
               <Card>
-                <Field label="Nombre de contacto *">
-                  <Input placeholder="Nombre completo" value={clientDraft.name} onChange={e=>setClientDraft({...clientDraft,name:e.target.value})}/>
+                <Field label="Contact name *">
+                  <Input placeholder="Full name" value={clientDraft.name} onChange={e=>setClientDraft({...clientDraft,name:e.target.value})}/>
                 </Field>
-                <Field label="Empresa">
-                  <Input placeholder="Nombre de la empresa" value={clientDraft.company} onChange={e=>setClientDraft({...clientDraft,company:e.target.value})}/>
+                <Field label="Company">
+                  <Input placeholder="Company name" value={clientDraft.company} onChange={e=>setClientDraft({...clientDraft,company:e.target.value})}/>
                 </Field>
-                <Field label="Dirección (para facturas)">
-                  <Textarea placeholder={"Calle y número\nCódigo postal, Ciudad\nPaís"} value={clientDraft.address} onChange={e=>setClientDraft({...clientDraft,address:e.target.value})} style={{ height:90 }}/>
+                <Field label="Address (for invoices)">
+                  <Textarea placeholder={"Street and number\nPostal code, City\nCountry"} value={clientDraft.address} onChange={e=>setClientDraft({...clientDraft,address:e.target.value})} style={{ height:90 }}/>
                 </Field>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  <Field label="Teléfono">
+                  <Field label="Phone">
                     <Input placeholder="+41 …" value={clientDraft.phone} onChange={e=>setClientDraft({...clientDraft,phone:e.target.value})}/>
                   </Field>
                   <Field label="Email">
-                    <Input type="email" placeholder="email@empresa.com" value={clientDraft.email} onChange={e=>setClientDraft({...clientDraft,email:e.target.value})}/>
+                    <Input type="email" placeholder="email@company.com" value={clientDraft.email} onChange={e=>setClientDraft({...clientDraft,email:e.target.value})}/>
                   </Field>
                 </div>
                 {clientView==="edit" && (
-                  <button onClick={()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Cliente eliminado","#FF3B30"); }}
+                  <button onClick={()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Client deleted","#FF3B30"); }}
                     style={{ background:"none", border:"none", color:"#FF3B30", fontSize:13, fontWeight:600, cursor:"pointer", padding:"4px 0", marginBottom:8 }}>
-                    Eliminar cliente
+                    Delete client
                   </button>
                 )}
                 <BtnPrimary disabled={!clientDraft.name && !clientDraft.company} onClick={()=>{
@@ -1404,15 +1404,15 @@ export default function App() {
                   if(clientView==="edit"){
                     setClients(clients.map(c=>c.id===clientDraft.id ? clientDraft : c));
                     setClientView("detail");
-                    showToast("Cliente actualizado");
+                    showToast("Client updated");
                   } else {
                     const c = { ...clientDraft, id: String(Date.now()) };
                     setClients([...clients, c]);
                     setClientView("list");
-                    showToast("Cliente agregado");
+                    showToast("Client added");
                   }
                 }}>
-                  {clientView==="edit" ? "Guardar cambios" : "Guardar cliente"}
+                  {clientView==="edit" ? "Save changes" : "Save client"}
                 </BtnPrimary>
               </Card>
             )}
@@ -1436,25 +1436,25 @@ export default function App() {
                     </div>
                     {c.address && (
                       <div style={{ marginBottom:12 }}>
-                        <div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Dirección</div>
+                        <div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Address</div>
                         <div style={{ fontSize:13, color:"#1C1C1E", lineHeight:1.6, whiteSpace:"pre-line" }}>{c.address}</div>
                       </div>
                     )}
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                      {c.phone && <div><div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Teléfono</div><div style={{ fontSize:13, color:"#1C1C1E" }}>{c.phone}</div></div>}
+                      {c.phone && <div><div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Phone</div><div style={{ fontSize:13, color:"#1C1C1E" }}>{c.phone}</div></div>}
                       {c.email && <div><div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Email</div><div style={{ fontSize:13, color:"#1C1C1E", wordBreak:"break-all" }}>{c.email}</div></div>}
                     </div>
                   </Card>
 
-                  <SectionTitle>Órdenes ({clientOrders.length})</SectionTitle>
+                  <SectionTitle>Orders ({clientOrders.length})</SectionTitle>
                   {clientOrders.length === 0 && (
-                    <div style={{ textAlign:"center", padding:"24px", color:"#8E8E93", fontSize:13 }}>No hay órdenes para este cliente aún.</div>
+                    <div style={{ textAlign:"center", padding:"24px", color:"#8E8E93", fontSize:13 }}>No orders for this client yet.</div>
                   )}
                   {clientOrders.map(o=>(
                     <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                       style={{ width:"100%", background:"white", border:"1.5px solid #F2F2F7", borderRadius:16, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", textAlign:"left" }}>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E", marginBottom:3 }}>#{o.id}{o.deadline ? ` · Entrega: ${o.deadline}` : ""}</div>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E", marginBottom:3 }}>#{o.id}{o.deadline ? ` · Delivery: ${o.deadline}` : ""}</div>
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                           <div style={{ width:6, height:6, borderRadius:"50%", background:C.statuses[o.status]?.color, flexShrink:0 }}/>
                           <span style={{ fontSize:12, color:"#8E8E93" }}>{C.statuses[o.status]?.label}</span>
@@ -1465,7 +1465,7 @@ export default function App() {
                     </button>
                   ))}
                   <BtnPrimary onClick={()=>{ setView("new"); setDraft({...newOrder(), clientId:c.id, client: c.company||c.name}); setTab("orders"); }} style={{ marginTop:8 }}>
-                    + Nueva orden para este cliente
+                    + New order for this client
                   </BtnPrimary>
                 </>
               );
@@ -1581,7 +1581,7 @@ export default function App() {
         const dateObj   = new Date(d+"T12:00:00");
         const isToday   = d === TODAY;
         const isPast    = d < TODAY;
-        const dayLabel  = isToday ? "Hoy" : dateObj.toLocaleDateString("es-ES",{ weekday:"long", day:"numeric", month:"long" });
+        const dayLabel  = isToday ? "Today" : dateObj.toLocaleDateString("en-GB",{ weekday:"long", day:"numeric", month:"long" });
         const dayOrders = orders.filter(o => o.deadline === d && o.status !== "done" && o.status !== "invoiced");
         const doneOrders = orders.filter(o => o.deadline === d && (o.status === "done" || o.status === "invoiced"));
         const alertOn   = !!dayNotes[d]?.alert;
@@ -1600,7 +1600,7 @@ export default function App() {
                   <div>
                     <div style={{ fontSize:20, fontWeight:800, color:"#1C1C1E", textTransform:"capitalize" }}>{dayLabel}</div>
                     <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>
-                      {dateObj.toLocaleDateString("es-ES",{ day:"numeric", month:"long", year:"numeric" })}
+                      {dateObj.toLocaleDateString("en-GB",{ day:"numeric", month:"long", year:"numeric" })}
                     </div>
                   </div>
                   <div style={{ display:"flex", gap:10, alignItems:"center" }}>
@@ -1623,9 +1623,9 @@ export default function App() {
                     <Icon name="bell" size={20} color="white"/>
                     <div>
                       <div style={{ fontSize:14, fontWeight:700, color:"white" }}>
-                        {isPast&&!isToday ? `${dayOrders.length} entrega${dayOrders.length>1?"s":""} vencida${dayOrders.length>1?"s":""}` : `${dayOrders.length} entrega${dayOrders.length>1?"s":""} para hoy`}
+                        {isPast&&!isToday ? `${dayOrders.length} overdue deliver${dayOrders.length>1?"ies":"y"}` : `${dayOrders.length} deliver${dayOrders.length>1?"ies":"y"} today`}
                       </div>
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)" }}>Estas órdenes aún están pendientes</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)" }}>These orders are still pending</div>
                     </div>
                   </div>
                 )}
@@ -1633,7 +1633,7 @@ export default function App() {
                 {/* Pending orders */}
                 {dayOrders.length > 0 && (
                   <>
-                    <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'DM Sans',sans-serif" }}>Pendientes · {dayOrders.length}</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'DM Sans',sans-serif" }}>Pending · {dayOrders.length}</div>
                     {dayOrders.map(o=>(
                       <button key={o.id} onClick={()=>{ setDayModal(null); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:"white", border:`1.5px solid #F2F2F7`, borderRadius:14, padding:"13px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -1654,7 +1654,7 @@ export default function App() {
                 {/* Done orders for this day */}
                 {doneOrders.length > 0 && (
                   <>
-                    <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, marginTop:4, fontFamily:"'DM Sans',sans-serif" }}>Completadas · {doneOrders.length}</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, marginTop:4, fontFamily:"'DM Sans',sans-serif" }}>Completed · {doneOrders.length}</div>
                     {doneOrders.map(o=>(
                       <button key={o.id} onClick={()=>{ setDayModal(null); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:"#F8F8F8", border:"1.5px solid #F2F2F7", borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", opacity:0.7 }}>
@@ -1669,28 +1669,28 @@ export default function App() {
                 )}
 
                 {dayOrders.length===0 && doneOrders.length===0 && (
-                  <div style={{ textAlign:"center", padding:"20px 0 8px", color:"#C7C7CC", fontSize:13 }}>Sin órdenes para este día</div>
+                  <div style={{ textAlign:"center", padding:"20px 0 8px", color:"#C7C7CC", fontSize:13 }}>No orders for this day</div>
                 )}
 
                 {/* Add order for this day */}
                 <button onClick={()=>{ setDayModal(null); setDraft({...newOrder(), deadline:d}); setView("new"); setTab("orders"); }}
                   style={{ width:"100%", padding:"12px", background:"none", border:`1.5px dashed ${ACCENT}60`, borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:ACCENT, cursor:"pointer", marginTop:4, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                  <Icon name="plus" size={16} color={ACCENT}/> Añadir orden para este día
+                  <Icon name="plus" size={16} color={ACCENT}/> Add order for this day
                 </button>
 
                 {/* Notes */}
                 <div style={{ marginTop:16 }}>
                   <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
-                    Notas
-                    {alertOn && <span style={{ fontSize:10, color:ACCENT, background:`${ACCENT}15`, padding:"2px 7px", borderRadius:6, fontWeight:700 }}>Alerta activa</span>}
+                    Notes
+                    {alertOn && <span style={{ fontSize:10, color:ACCENT, background:`${ACCENT}15`, padding:"2px 7px", borderRadius:6, fontWeight:700 }}>Active alert</span>}
                   </div>
                   <textarea
-                    placeholder="Escribe una nota para este día…"
+                    placeholder="Write a note for this day…"
                     value={noteText}
                     onChange={e=>setDayNotes(n=>({...n,[d]:{...(n[d]||{}),text:e.target.value}}))}
                     style={{ width:"100%", padding:"12px 14px", border:"1.5px solid #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, color:"#1C1C1E", background:"white", outline:"none", resize:"none", height:90, boxSizing:"border-box" }}
                   />
-                  {alertOn && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>Se mostrará una alerta al abrir la app en este día.</div>}
+                  {alertOn && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>An alert will be shown when the app is opened on this day.</div>}
                 </div>
               </div>
             </div>
@@ -1708,12 +1708,12 @@ export default function App() {
                 <Icon name="bell" size={20} color={ACCENT}/>
               </div>
               <div>
-                <div style={{ fontSize:16, fontWeight:700, color:"#1C1C1E" }}>Nota para hoy</div>
-                <div style={{ fontSize:12, color:"#8E8E93" }}>{new Date(noteAlert.date+"T12:00:00").toLocaleDateString("es-ES",{ weekday:"long", day:"numeric", month:"long" })}</div>
+                <div style={{ fontSize:16, fontWeight:700, color:"#1C1C1E" }}>Note for today</div>
+                <div style={{ fontSize:12, color:"#8E8E93" }}>{new Date(noteAlert.date+"T12:00:00").toLocaleDateString("en-GB",{ weekday:"long", day:"numeric", month:"long" })}</div>
               </div>
             </div>
             <div style={{ background:"#F8F8F8", borderRadius:12, padding:"14px 16px", fontSize:14, color:"#1C1C1E", lineHeight:1.6, marginBottom:20, whiteSpace:"pre-wrap" }}>{noteAlert.text}</div>
-            <button onClick={()=>setNoteAlert(null)} style={{ width:"100%", padding:"15px", background:ACCENT, color:"white", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>Entendido</button>
+            <button onClick={()=>setNoteAlert(null)} style={{ width:"100%", padding:"15px", background:ACCENT, color:"white", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>Got it</button>
           </div>
         </div>
       )}
@@ -1727,11 +1727,11 @@ export default function App() {
           .filter(o => o.deadline && o.deadline <= cutoffStr && o.status !== "done" && o.status !== "invoiced")
           .sort((a,b) => a.deadline.localeCompare(b.deadline));
         const getLabel = (deadline) => {
-          if(deadline < today) return { text:"Vencida", color:"#FF3B30" };
-          if(deadline === today) return { text:"Hoy", color:"#FF9500" };
+          if(deadline < today) return { text:"Overdue", color:"#FF3B30" };
+          if(deadline === today) return { text:"Today", color:"#FF9500" };
           const diff = Math.round((new Date(deadline+"T12:00:00") - new Date(today+"T12:00:00"))/(1000*60*60*24));
-          if(diff === 1) return { text:"Mañana", color:"#FF9500" };
-          return { text:`En ${diff} días`, color:"#007AFF" };
+          if(diff === 1) return { text:"Tomorrow", color:"#FF9500" };
+          return { text:`In ${diff} days`, color:"#007AFF" };
         };
         return (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }} onClick={()=>setUrgentModal(false)}>
@@ -1741,8 +1741,8 @@ export default function App() {
                 <div style={{ width:40, height:4, background:"#E5E5EA", borderRadius:2, margin:"0 auto 18px" }}/>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
-                    <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Entregas próximas</div>
-                    <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>Órdenes activas con fecha de entrega</div>
+                    <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Upcoming deliveries</div>
+                    <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>Active orders with delivery date</div>
                   </div>
                   <button onClick={()=>setUrgentModal(false)} style={{ background:"#F2F2F7", border:"none", borderRadius:"50%", width:32, height:32, cursor:"pointer", fontSize:18, color:"#8E8E93", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
                 </div>
@@ -1750,7 +1750,7 @@ export default function App() {
               {/* Scrollable list */}
               <div style={{ overflowY:"auto", padding:"12px 20px 0" }}>
                 {upcoming.length === 0 && (
-                  <div style={{ textAlign:"center", padding:"32px 0", color:"#8E8E93", fontSize:14 }}>No hay entregas pendientes próximamente.</div>
+                  <div style={{ textAlign:"center", padding:"32px 0", color:"#8E8E93", fontSize:14 }}>No pending deliveries coming up.</div>
                 )}
                 {upcoming.map(o => {
                   const { text, color } = getLabel(o.deadline);
@@ -1759,7 +1759,7 @@ export default function App() {
                       style={{ width:"100%", background:"white", border:"1.5px solid #F2F2F7", borderRadius:16, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left" }}>
                       <div style={{ width:5, alignSelf:"stretch", borderRadius:4, background:color, flexShrink:0 }}/>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:15, fontWeight:700, color:"#1C1C1E", marginBottom:2 }}>{o.client || `Orden #${o.id}`}</div>
+                        <div style={{ fontSize:15, fontWeight:700, color:"#1C1C1E", marginBottom:2 }}>{o.client || `Order #${o.id}`}</div>
                         {o.description && <div style={{ fontSize:12, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:2 }}>{o.description}</div>}
                         <div style={{ fontSize:11, color:"#8E8E93" }}>{new Date(o.deadline+"T12:00:00").toLocaleDateString("de-CH", { weekday:"long", day:"numeric", month:"long" })}</div>
                       </div>
@@ -1782,12 +1782,12 @@ export default function App() {
           <div style={{ background:"white", borderRadius:"24px 24px 0 0", padding:"28px 24px 40px", width:"100%", maxWidth:430, animation:"fadeUp 0.2s ease" }}>
             <div style={{ width:40, height:4, background:"#E5E5EA", borderRadius:2, margin:"0 auto 24px" }}/>
             <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}><Icon name="checkCircle" size={44} color="#34C759"/></div>
-            <div style={{ fontSize:17, fontWeight:700, color:"#1C1C1E", textAlign:"center", marginBottom:8 }}>¡Orden completada!</div>
-            <div style={{ fontSize:14, color:"#8E8E93", textAlign:"center", marginBottom:28, lineHeight:1.5 }}>¿Quieres crear la factura para esta orden ahora?</div>
+            <div style={{ fontSize:17, fontWeight:700, color:"#1C1C1E", textAlign:"center", marginBottom:8 }}>Order completed!</div>
+            <div style={{ fontSize:14, color:"#8E8E93", textAlign:"center", marginBottom:28, lineHeight:1.5 }}>Would you like to create an invoice for this order now?</div>
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              <button onClick={()=>{ setDoneModal(null); setView("detail"); showToast("Marcada como Done","#34C759"); }}
+              <button onClick={()=>{ setDoneModal(null); setView("detail"); showToast("Marked as Done","#34C759"); }}
                 style={{ width:"100%", padding:"15px", background:"#F2F2F7", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:600, color:"#1C1C1E", cursor:"pointer" }}>
-                Ahora no
+                Not now
               </button>
               <button onClick={()=>{
                 const o = orders.find(x=>x.id===doneModal);
@@ -1804,7 +1804,7 @@ export default function App() {
                 setInvView("new");
               }}
                 style={{ width:"100%", padding:"15px", background:ACCENT, border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, color:"white", cursor:"pointer" }}>
-                Sí, crear factura
+                Yes, create invoice
               </button>
             </div>
           </div>
