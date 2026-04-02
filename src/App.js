@@ -171,6 +171,7 @@ export default function App() {
   const [clientDraft, setClientDraft] = useState(newClient());
   const [filterClient, setFilterClient] = useState("all");
   const [workOrderPreview, setWorkOrderPreview] = useState(null);
+  const [urgentModal, setUrgentModal] = useState(false);
   const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
   const [photoStep, setPhotoStep] = useState("capture");
@@ -195,6 +196,18 @@ export default function App() {
   }, [orders]);
   useEffect(() => { try { localStorage.setItem("ssp_invoices", JSON.stringify(invoices)); } catch(_) {} }, [invoices]);
   useEffect(() => { try { localStorage.setItem("ssp_clients", JSON.stringify(clients)); } catch(_) {} }, [clients]);
+
+  // Auto-show urgent modal once per session if there are upcoming deliveries
+  useEffect(() => {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate()+5);
+    const cutoffStr = cutoff.toISOString().split("T")[0];
+    const hasUpcoming = orders.some(o => o.deadline && o.deadline <= cutoffStr && o.status !== "done" && o.status !== "invoiced");
+    if(hasUpcoming && !sessionStorage.getItem("urgent_shown")) {
+      setUrgentModal(true);
+      sessionStorage.setItem("urgent_shown","1");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredOrders = orders.filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return statusOk && dateOk && clientOk; });
   const counts   = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
@@ -543,27 +556,39 @@ export default function App() {
               ))}
             </div>
 
-            {/* URGENT */}
+            {/* UPCOMING DELIVERIES STRIP */}
             {(() => {
               const today = new Date().toISOString().split("T")[0];
-              const urgent = orders.filter(o => o.deadline && o.deadline <= today && o.status !== "done" && o.status !== "invoiced");
-              if(!urgent.length) return null;
+              const cutoff = new Date(); cutoff.setDate(cutoff.getDate()+7);
+              const cutoffStr = cutoff.toISOString().split("T")[0];
+              const upcoming = orders
+                .filter(o => o.deadline && o.deadline <= cutoffStr && o.status !== "done" && o.status !== "invoiced")
+                .sort((a,b) => a.deadline.localeCompare(b.deadline));
+              if(!upcoming.length) return null;
+              const getLabel = (deadline) => {
+                if(deadline < today) return { text:"Vencida", color:"#FF3B30" };
+                if(deadline === today) return { text:"Hoy", color:"#FF9500" };
+                const diff = Math.round((new Date(deadline+"T12:00:00") - new Date(today+"T12:00:00"))/(1000*60*60*24));
+                if(diff === 1) return { text:"Mañana", color:"#FF9500" };
+                return { text:`En ${diff} días`, color:"#007AFF" };
+              };
               return (
                 <>
-                  <SectionTitle>Urgente</SectionTitle>
-                  {urgent.map(o => {
-                    const isOverdue = o.deadline < today;
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                    <SectionTitle style={{ margin:0 }}>Próximas entregas</SectionTitle>
+                    <button onClick={()=>setUrgentModal(true)} style={{ background:"none", border:"none", fontSize:12, color:ACCENT, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", padding:0 }}>Ver todas</button>
+                  </div>
+                  {upcoming.slice(0,3).map(o => {
+                    const { text, color } = getLabel(o.deadline);
                     return (
-                      <Card key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }} style={{ border:`1.5px solid ${isOverdue ? "#FF3B30" : "#FF9500"}`, background: isOverdue ? "#FFF5F5" : "#FFFBF2" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12 }}>
+                      <Card key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }} style={{ border:`1.5px solid ${color}22`, background:"white" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                          <div style={{ width:4, alignSelf:"stretch", borderRadius:4, background:color, flexShrink:0 }}/>
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:15, fontWeight:700, color:"#1C1C1E", marginBottom:3 }}>{o.client}</div>
-                            <div style={{ fontSize:12, color: isOverdue ? "#FF3B30" : "#FF9500", fontWeight:600 }}>
-                              {isOverdue ? `Vencida ${new Date(o.deadline+"T12:00:00").toLocaleDateString("de-CH")}` : `Entrega hoy ${new Date(o.deadline+"T12:00:00").toLocaleDateString("de-CH")}`}
-                            </div>
-                            {o.description && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
+                            <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E" }}>{o.client || `#${o.id}`}</div>
+                            {o.description && <div style={{ fontSize:12, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
                           </div>
-                          <StatusPill status={o.status}/>
+                          <div style={{ fontSize:12, fontWeight:700, color, background:`${color}15`, padding:"4px 10px", borderRadius:8, flexShrink:0 }}>{text}</div>
                         </div>
                       </Card>
                     );
@@ -1454,6 +1479,64 @@ export default function App() {
                 <div style={{ marginTop:24, paddingTop:10, borderTop:"1px solid #ccc", textAlign:"center", fontSize:8, color:"#666", fontStyle:"italic", letterSpacing:"0.02em" }}>
                   {C.address.replace(/\n/g," \u25C6 ")} \u25C6 {C.phone} \u25C6 info@stoneartprecision.com
                 </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── URGENT / UPCOMING MODAL ── */}
+      {urgentModal && (() => {
+        const today = new Date().toISOString().split("T")[0];
+        const cutoff = new Date(); cutoff.setDate(cutoff.getDate()+14);
+        const cutoffStr = cutoff.toISOString().split("T")[0];
+        const upcoming = orders
+          .filter(o => o.deadline && o.deadline <= cutoffStr && o.status !== "done" && o.status !== "invoiced")
+          .sort((a,b) => a.deadline.localeCompare(b.deadline));
+        const getLabel = (deadline) => {
+          if(deadline < today) return { text:"Vencida", color:"#FF3B30" };
+          if(deadline === today) return { text:"Hoy", color:"#FF9500" };
+          const diff = Math.round((new Date(deadline+"T12:00:00") - new Date(today+"T12:00:00"))/(1000*60*60*24));
+          if(diff === 1) return { text:"Mañana", color:"#FF9500" };
+          return { text:`En ${diff} días`, color:"#007AFF" };
+        };
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }} onClick={()=>setUrgentModal(false)}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:"white", borderRadius:"24px 24px 0 0", padding:"20px 0 40px", width:"100%", maxWidth:480, animation:"fadeUp 0.25s ease", maxHeight:"80vh", display:"flex", flexDirection:"column" }}>
+              {/* Handle + header */}
+              <div style={{ padding:"0 20px 16px", borderBottom:"1px solid #F2F2F7" }}>
+                <div style={{ width:40, height:4, background:"#E5E5EA", borderRadius:2, margin:"0 auto 18px" }}/>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>
+                    <div style={{ fontSize:18, fontWeight:700, color:"#1C1C1E" }}>Entregas próximas</div>
+                    <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>Órdenes activas con fecha de entrega</div>
+                  </div>
+                  <button onClick={()=>setUrgentModal(false)} style={{ background:"#F2F2F7", border:"none", borderRadius:"50%", width:32, height:32, cursor:"pointer", fontSize:18, color:"#8E8E93", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+                </div>
+              </div>
+              {/* Scrollable list */}
+              <div style={{ overflowY:"auto", padding:"12px 20px 0" }}>
+                {upcoming.length === 0 && (
+                  <div style={{ textAlign:"center", padding:"32px 0", color:"#8E8E93", fontSize:14 }}>No hay entregas pendientes próximamente.</div>
+                )}
+                {upcoming.map(o => {
+                  const { text, color } = getLabel(o.deadline);
+                  return (
+                    <button key={o.id} onClick={()=>{ setUrgentModal(false); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                      style={{ width:"100%", background:"white", border:"1.5px solid #F2F2F7", borderRadius:16, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left" }}>
+                      <div style={{ width:5, alignSelf:"stretch", borderRadius:4, background:color, flexShrink:0 }}/>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:15, fontWeight:700, color:"#1C1C1E", marginBottom:2 }}>{o.client || `Orden #${o.id}`}</div>
+                        {o.description && <div style={{ fontSize:12, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:2 }}>{o.description}</div>}
+                        <div style={{ fontSize:11, color:"#8E8E93" }}>{new Date(o.deadline+"T12:00:00").toLocaleDateString("de-CH", { weekday:"long", day:"numeric", month:"long" })}</div>
+                      </div>
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, flexShrink:0 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color, background:`${color}15`, padding:"4px 10px", borderRadius:8 }}>{text}</div>
+                        <StatusPill status={o.status}/>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
