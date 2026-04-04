@@ -118,20 +118,21 @@ const Field = ({ label, children }) => (
   </div>
 );
 
+const inputBase = { width:"100%", padding:"13px 14px", border:"none", borderRadius:14, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:14, color:"#1C1C1E", background:"#F5F5F3", outline:"none", boxSizing:"border-box" };
 const Input = ({ ...props }) => (
-  <input {...props} style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color:"#1C1C1E", background:"#FAFAFA", outline:"none", boxSizing:"border-box", ...props.style }} />
+  <input {...props} style={{ ...inputBase, ...props.style }} />
 );
 
 const CHEVRON_URL = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C%2Fsvg%3E\")";
 const Select = ({ children, ...props }) => (
-  <select {...props} style={{ width:"100%", padding:"13px 40px 13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color: props.value ? "#1C1C1E" : "#8E8E93", background:"#FAFAFA", outline:"none", boxSizing:"border-box", appearance:"none", WebkitAppearance:"none", backgroundImage:CHEVRON_URL, backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center", ...props.style }}>
+  <select {...props} style={{ ...inputBase, padding:"13px 40px 13px 14px", color: props.value ? "#1C1C1E" : "#8E8E93", appearance:"none", WebkitAppearance:"none", backgroundImage:CHEVRON_URL, backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center", ...props.style }}>
     {children}
   </select>
 );
 
 
 const Textarea = ({ ...props }) => (
-  <textarea {...props} style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E5E5EA", borderRadius:12, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, color:"#1C1C1E", background:"#FAFAFA", outline:"none", boxSizing:"border-box", resize:"none", height:80, ...props.style }} />
+  <textarea {...props} style={{ ...inputBase, resize:"none", height:80, ...props.style }} />
 );
 
 const BtnPrimary = ({ children, onClick, disabled, style={} }) => (
@@ -516,7 +517,7 @@ export default function App() {
         @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
         * { -webkit-tap-highlight-color: transparent; }
-        input:focus, select:focus, textarea:focus { border-color: ${ACCENT} !important; background:white !important; }
+        input:focus, select:focus, textarea:focus { outline: 2px solid ${ACCENT} !important; outline-offset: 0px; background:white !important; }
         ::-webkit-scrollbar { display: none; }
       `}</style>
 
@@ -867,20 +868,19 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Client filter (if clients saved) */}
-                {clients.length > 0 && (
-                  <div style={{ marginBottom:12 }}>
-                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ fontSize:13, padding:"9px 40px 9px 12px", borderRadius:12, color: filterClient!=="all"?ACCENT:"#8E8E93" }}>
+                {/* Client + Date filters */}
+                <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
+                  {clients.length > 0 && (
+                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ flex:1, minWidth:140, fontSize:13, padding:"10px 36px 10px 12px", color: filterClient!=="all"?"#0A0A0A":"#ADADAD" }}>
                       <option value="all">All clients</option>
                       {[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
                     </Select>
+                  )}
+                  <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:140 }}>
+                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ fontSize:13, padding:"10px 12px", color: filterDate?"#0A0A0A":"#ADADAD" }}/>
+                    {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:12, background:"#F5F5F3", fontSize:12, fontWeight:700, color:"#8E8E93", cursor:"pointer", whiteSpace:"nowrap" }}>✕</button>}
                   </div>
-                )}
-                {/* Date filter + Export */}
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
-                  <input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ flex:1, padding:"9px 12px", border:"none", borderRadius:12, fontFamily:"DM Sans,sans-serif", fontSize:13, color:"#1C1C1E", background:"white", outline:"none", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}/>
-                  {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"9px 14px", border:"none", borderRadius:12, background:"white", fontSize:12, color:"#8E8E93", cursor:"pointer" }}>Clear</button>}
-                  <button onClick={exportToExcel} style={{ padding:"9px 14px", border:"none", borderRadius:12, background:"white", fontSize:12, fontWeight:700, color:ACCENT, cursor:"pointer", whiteSpace:"nowrap", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>↓ Excel</button>
+                  <button onClick={exportToExcel} style={{ padding:"10px 14px", border:"none", borderRadius:12, background:"#F5F5F3", fontSize:12, fontWeight:700, color:"#0A0A0A", cursor:"pointer", whiteSpace:"nowrap" }}>↓ Excel</button>
                 </div>
                 {/* Order rows */}
                 {filteredOrders.map((o, i) => {
@@ -1716,7 +1716,7 @@ export default function App() {
                     placeholder="Write a note for this day…"
                     value={noteText}
                     onChange={e=>setDayNotes(n=>({...n,[d]:{...(n[d]||{}),text:e.target.value}}))}
-                    style={{ width:"100%", padding:"12px 14px", border:"1.5px solid #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, color:"#1C1C1E", background:"white", outline:"none", resize:"none", height:90, boxSizing:"border-box" }}
+                    style={{ width:"100%", padding:"12px 14px", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, color:"#1C1C1E", background:"#F5F5F3", outline:"none", resize:"none", height:90, boxSizing:"border-box" }}
                   />
                   {alertOn && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>An alert will be shown when the app is opened on this day.</div>}
                 </div>
