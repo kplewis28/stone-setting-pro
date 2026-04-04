@@ -883,24 +883,37 @@ export default function App() {
                   <button onClick={exportToExcel} style={{ padding:"9px 14px", border:"none", borderRadius:12, background:"white", fontSize:12, fontWeight:700, color:ACCENT, cursor:"pointer", whiteSpace:"nowrap", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>↓ Excel</button>
                 </div>
                 {/* Order rows */}
-                {filteredOrders.map((o,i) => {
-                  const bgs = [PASTELS.orders, PASTELS.invoice, PASTELS.scan, PASTELS.done];
+                {filteredOrders.map((o, i) => {
+                  const today = new Date().toISOString().split("T")[0];
+                  const getUrgency = (deadline) => {
+                    if(!deadline) return { accent:"transparent", label:null };
+                    if(deadline < today) return { accent:"#FF3B30", label:"Overdue" };
+                    if(deadline === today) return { accent:"#FF9500", label:"Today" };
+                    const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
+                    if(diff === 1) return { accent:"#FF9500", label:"Tomorrow" };
+                    if(diff <= 7)  return { accent:"#007AFF", label:null };
+                    return { accent:"transparent", label:null };
+                  };
+                  const urg = getUrgency(o.deadline);
+                  const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#007AFF" : "#ADADAD";
                   return (
-                    <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); }} style={{ width:"100%", background: bgs[i%4], border:"none", borderRadius:20, padding:"16px 18px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left" }}>
-                      {o.photo
-                        ? <img src={o.photo} alt="order" style={{ width:48, height:48, borderRadius:13, objectFit:"cover", flexShrink:0 }}/>
-                        : <div style={{ width:48, height:48, borderRadius:13, background:"#0A0A0A", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon name="gem" size={20} color="white"/></div>
-                      }
+                    <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); }}
+                      style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
+                      <div style={{ width:40, height:40, borderRadius:12, background:"#F5F5F3", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{i+1}</span>
+                      </div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:15, fontWeight:800, color:"#0A0A0A", marginBottom:3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", letterSpacing:"-0.01em" }}>{o.client || "—"}</div>
-                        <div style={{ fontSize:12, color:"rgba(0,0,0,0.4)", fontWeight:500 }}>
-                          {[o.deadline && `📅 ${o.deadline}`, o.pieces && `${o.pieces} ${C.piecesLabel}`].filter(Boolean).join(" · ") || o.description?.slice(0,40) || `#${o.id}`}
+                        <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", marginBottom:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", letterSpacing:"-0.01em" }}>{o.client || "—"}</div>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                          {o.deadline && (
+                            <span style={{ fontSize:11, fontWeight:700, color: urg.accent !== "transparent" ? urg.accent : "#6B6B6B", background: urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F0F0", padding:"3px 9px", borderRadius:8 }}>
+                              {urg.label ? `${urg.label} · ` : ""}{new Date(o.deadline+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}
+                            </span>
+                          )}
+                          {o.description && <span style={{ fontSize:11, color:"rgba(0,0,0,0.35)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</span>}
                         </div>
                       </div>
-                      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:5, flexShrink:0 }}>
-                        <StatusPill status={o.status}/>
-                        {o.amount>0 && <span style={{ fontSize:13, fontWeight:800, color:"#0A0A0A" }}>{C.currency} {fmt(o.amount)}</span>}
-                      </div>
+                      <StatusPill status={o.status}/>
                     </button>
                   );
                 })}
