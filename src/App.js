@@ -566,8 +566,9 @@ export default function App() {
           </div>
 
           {/* ── CALENDAR STRIP ── */}
-          <div style={{ padding:"20px 22px 0", background:"white" }}>
-            <div style={{ fontSize:20, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Schedule</div>
+          <div style={{ padding:"20px 22px 4px", background:"white" }}>
+            <div style={{ fontSize:20, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Pending Tasks</div>
+            <div style={{ fontSize:13, color:"#ADADAD", fontWeight:500, marginTop:3 }}>Tap a day to see or add orders</div>
           </div>
           {(() => {
             const days = [];
@@ -605,75 +606,78 @@ export default function App() {
             );
           })()}
 
-          <div style={{ padding: isDesktop ? "20px 40px 60px" : "16px 22px 100px" }}>
-
-
-            {/* UPCOMING DELIVERIES */}
+          <div style={{ padding: isDesktop ? "16px 40px 60px" : "12px 22px 100px" }}>
             {(() => {
               const today = new Date().toISOString().split("T")[0];
-              const cutoff = new Date(); cutoff.setDate(cutoff.getDate()+7);
-              const cutoffStr = cutoff.toISOString().split("T")[0];
-              const upcoming = orders
-                .filter(o => o.deadline && o.deadline <= cutoffStr && o.status !== "done" && o.status !== "invoiced")
-                .sort((a,b) => a.deadline.localeCompare(b.deadline));
-              if(!upcoming.length) return null;
-              const getLabel = (d) => {
-                if(d < today) return { text:"Overdue", color:"#FF3B30" };
-                if(d === today) return { text:"Today", color:"#FF9500" };
-                const diff = Math.round((new Date(d+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
-                if(diff === 1) return { text:"Tomorrow", color:"#FF9500" };
-                return { text:`${diff}d`, color:"#007AFF" };
+              const active = orders.filter(o => o.status !== "done" && o.status !== "invoiced");
+              const withDeadline = active.filter(o => o.deadline).sort((a,b) => a.deadline.localeCompare(b.deadline));
+              const noDeadline   = active.filter(o => !o.deadline);
+              const sorted = [...withDeadline, ...noDeadline];
+
+              const getLabel = (deadline) => {
+                if(!deadline) return null;
+                if(deadline < today) return { text:"Overdue", color:"#FF3B30", bg:"#FFE5E5" };
+                if(deadline === today) return { text:"Today", color:"#FF9500", bg:PASTELS.received };
+                const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
+                if(diff === 1) return { text:"Tomorrow", color:"#FF9500", bg:PASTELS.received };
+                if(diff <= 7)  return { text:`${diff}d`, color:"#007AFF", bg:PASTELS.inprogress };
+                return { text:`${diff}d`, color:"#8E8E93", bg:"#F5F5F3" };
               };
+
+              const overdue = withDeadline.filter(o => o.deadline < today);
+
               return (
                 <>
-                  <div style={{ marginBottom:12 }}>
-                    <div style={{ fontSize:20, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Upcoming</div>
-                  </div>
-                  {upcoming.slice(0,4).map(o => {
-                    const { text, color } = getLabel(o.deadline);
-                    const pastels = { "#FF3B30":"#FFE5E5", "#FF9500":PASTELS.received, "#007AFF":PASTELS.inprogress };
+                  {/* Overdue alert */}
+                  {overdue.length > 0 && (
+                    <div style={{ background:"#FF3B30", borderRadius:18, padding:"14px 18px", marginBottom:14, display:"flex", alignItems:"center", gap:12 }}>
+                      <div style={{ width:38, height:38, borderRadius:12, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <Icon name="bell" size={18} color="white"/>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:14, fontWeight:800, color:"white", letterSpacing:"-0.01em" }}>
+                          {overdue.length} overdue order{overdue.length>1?"s":""}
+                        </div>
+                        <div style={{ fontSize:12, color:"rgba(255,255,255,0.75)", fontWeight:500 }}>These need to go out immediately</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sorted order list */}
+                  {sorted.length === 0 && (
+                    <div style={{ textAlign:"center", padding:"32px 0", color:"#ADADAD", fontSize:14, fontWeight:500 }}>No pending orders</div>
+                  )}
+                  {sorted.map((o, i) => {
+                    const label = getLabel(o.deadline);
+                    const cardBg = label ? label.bg : [PASTELS.orders, PASTELS.invoice, PASTELS.scan][i%3];
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background: pastels[color]||"white", border:"none", borderRadius:18, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left" }}>
+                        style={{ width:"100%", background:cardBg, border:"none", borderRadius:18, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left" }}>
                         <div style={{ width:42, height:42, borderRadius:13, background:"#0A0A0A", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                           <Icon name="gem" size={18} color="white"/>
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em" }}>{o.client || `#${o.id}`}</div>
-                          {o.description && <div style={{ fontSize:12, color:"rgba(0,0,0,0.4)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:500, marginTop:1 }}>{o.description}</div>}
+                          <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
+                          <div style={{ fontSize:12, color:"rgba(0,0,0,0.4)", fontWeight:500, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                            #{o.id}{o.description ? ` · ${o.description}` : ""}
+                          </div>
                         </div>
-                        <span style={{ fontSize:11, fontWeight:800, color, background:"rgba(0,0,0,0.08)", padding:"4px 10px", borderRadius:100, flexShrink:0 }}>{text}</span>
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:5, flexShrink:0 }}>
+                          {label && <span style={{ fontSize:11, fontWeight:800, color:label.color, background:"rgba(0,0,0,0.07)", padding:"4px 10px", borderRadius:100 }}>{label.text}</span>}
+                          <StatusPill status={o.status}/>
+                        </div>
                       </button>
                     );
                   })}
+
+                  {sorted.length > 0 && (
+                    <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"13px", background:"#F5F5F3", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:"#0A0A0A", cursor:"pointer", marginTop:4 }}>
+                      View all orders
+                    </button>
+                  )}
                 </>
               );
             })()}
-
-            {/* RECENT ORDERS */}
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, marginTop:20 }}>
-              <div style={{ fontSize:20, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Recent orders</div>
-              <button onClick={()=>setTab("orders")} style={{ background:"none", border:"none", fontSize:13, color:ACCENT, fontWeight:700, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", padding:0 }}>View all</button>
-            </div>
-            {orders.slice(0,3).map((o,i) => {
-              const bgs = [PASTELS.orders, PASTELS.invoice, PASTELS.scan];
-              return (
-                <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                  style={{ width:"100%", background: bgs[i%3], border:"none", borderRadius:18, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", textAlign:"left" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:14, flex:1, minWidth:0 }}>
-                    <div style={{ width:42, height:42, borderRadius:13, background:"#0A0A0A", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                      <Icon name="gem" size={18} color="white"/>
-                    </div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
-                      <div style={{ fontSize:11, color:"rgba(0,0,0,0.4)", fontWeight:500, marginTop:1 }}>#{o.id}{o.deadline ? ` · ${o.deadline}` : ""}</div>
-                    </div>
-                  </div>
-                  <StatusPill status={o.status}/>
-                </button>
-              );
-            })}
-
           </div>
         </div>
       )}
