@@ -172,7 +172,6 @@ export default function App() {
   const [invDate, setInvDate]   = useState(new Date().toISOString().split("T")[0]);
   const [invView, setInvView]   = useState("list");
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
-  const [invSelectedOrders, setInvSelectedOrders] = useState([]);
   const [invPorto, setInvPorto] = useState("");
   const [invClientAddress, setInvClientAddress] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -303,6 +302,21 @@ export default function App() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Orders");
     XLSX.writeFile(wb, `orders-${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
+
+  // ── LOAD ORDER INTO INVOICE BUILDER ──
+  const loadOrderIntoInvoice = (o) => {
+    setInvClient(o.client);
+    const matchedClient = clients.find(c=>(c.company||c.name)===o.client || c.id===o.clientId);
+    setInvClientAddress(matchedClient ? [matchedClient.company&&matchedClient.name?matchedClient.company:"", matchedClient.address].filter(Boolean).join("\n") : "");
+    setInvDate(new Date().toISOString().split("T")[0]);
+    setInvPorto("");
+    const invoiceItems = (o.lineItems||[]).length > 0
+      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }))
+      : [{ id:Date.now()+Math.random(), desc: o.description||`Order #${o.id}`, qty:"1", unitPrice:String(o.amount||""), price:String(o.amount||""), orderRef:o.id }];
+    setItems(invoiceItems);
+    setTab("invoice");
+    setInvView("new");
   };
 
   // ── PRINT INVOICE (shared by order-level and invoice tab) ──
@@ -1009,35 +1023,9 @@ export default function App() {
 
                 {/* Factura — only when done */}
                 {selectedOrder.status==="done" && (
-                  <Card id="invoice-section">
-                    <div style={{ fontSize:13, fontWeight:600, color:"#1C1C1E", marginBottom:12 }}>Create invoice for this order</div>
-                    <Field label={`Amount (${C.currency})`}>
-                      <Input
-                        type="number" placeholder="0.00"
-                        value={selectedOrder.amount||""}
-                        onChange={e=>setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,amount:parseFloat(e.target.value)||0}:o))}
-                      />
-                    </Field>
-                    {selectedOrder.amount>0 && (
-                      <div style={{ fontSize:12, color:"#8E8E93", marginBottom:14 }}>
-                        + {(C.taxRate*100).toFixed(1)}% MWST = <strong style={{color:ACCENT}}>{C.currency} {fmt(selectedOrder.amount*(1+C.taxRate))}</strong>
-                      </div>
-                    )}
-                    <BtnPrimary disabled={!selectedOrder.amount} onClick={()=>{
-                      const desc = selectedOrder.description || [selectedOrder.field1, selectedOrder.field2].filter(Boolean).join(" · ") || selectedOrder.notes || `Auftrag #${selectedOrder.id}`;
-                      setInvClient(selectedOrder.client);
-                      const matchedClient = clients.find(c=>(c.company||c.name)===selectedOrder.client || c.id===selectedOrder.clientId);
-                      setInvClientAddress(matchedClient ? [matchedClient.company&&matchedClient.name?matchedClient.company:"", matchedClient.address].filter(Boolean).join("\n") : "");
-                      setInvDate(selectedOrder.received || new Date().toISOString().split("T")[0]);
-                      setInvPorto("");
-                      setItems([{ id:Date.now()+Math.random(), desc, price: selectedOrder.amount, orderRef: selectedOrder.id }]);
-                      setInvSelectedOrders([selectedOrder.id]);
-                      setTab("invoice");
-                      setInvView("new");
-                    }} style={{ margin:0 }}>
-                      <Icon name="invoice" size={16} color="white"/> Go to invoice builder
-                    </BtnPrimary>
-                  </Card>
+                  <BtnPrimary onClick={()=>loadOrderIntoInvoice(selectedOrder)} style={{ marginTop:4 }}>
+                    <Icon name="invoice" size={16} color="white"/> Create invoice
+                  </BtnPrimary>
                 )}
               </>
             )}
@@ -1058,7 +1046,7 @@ export default function App() {
                     <div style={{ fontSize:24, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Invoices</div>
                     {invoices.length > 0 && <div style={{ fontSize:13, color:"#ADADAD", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
                   </div>
-                  <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvSelectedOrders([]); setInvPorto(""); setItems([newItem()]); setInvView("new"); }}
+                  <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvView("new"); }}
                     style={{ background:"#0A0A0A", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", letterSpacing:"-0.01em" }}>
                     + New
                   </button>
@@ -1103,7 +1091,6 @@ export default function App() {
             const draftTax   = draftSub * C.taxRate;
             const draftTotal = draftSub + draftPorto + draftTax;
             // Orders done but not yet invoiced (exclude already linked)
-            const availableOrders = orders.filter(o => (o.status==="done" || o.status==="received" || o.status==="inprogress") && o.status!=="invoiced");
             const saveInvoice = (print) => {
               const validItems = items.filter(it=>it.desc||it.unitPrice||it.price).map(it=>({...it, price: String(lineTotal(it))}));
               const inv = {
@@ -1122,7 +1109,6 @@ export default function App() {
               if(linkedIds.length) setOrders(orders.map(o=>linkedIds.includes(o.id)?{...o,status:"invoiced"}:o));
               setInvoices([...invoices, inv]);
               if(print) printInvoiceDoc(inv);
-              setInvSelectedOrders([]);
               setInvView("list");
               showToast("Invoice saved","#34C759");
             };
@@ -1131,7 +1117,7 @@ export default function App() {
                 {/* Header with live total */}
                 <div style={{ padding: isDesktop?"32px 40px 20px":"56px 22px 20px", background:"white" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                    <button onClick={()=>{ setInvSelectedOrders([]); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
+                    <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:24, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>New Invoice</div>
                       {invClient && <div style={{ fontSize:13, color:"#ADADAD", marginTop:2, fontWeight:500 }}>{invClient}</div>}
@@ -1168,65 +1154,6 @@ export default function App() {
                     </div>
                   </Card>
 
-                  {/* Orders list — tap to add/remove */}
-                  {availableOrders.length > 0 && (
-                    <>
-                      <SectionTitle>Available orders</SectionTitle>
-                      {availableOrders.map(o=>{
-                        const linked = invSelectedOrders.includes(o.id);
-                        return (
-                          <div key={o.id} style={{ background:"white", border:`1.5px solid ${linked?ACCENT:"#E5E5EA"}`, borderRadius:16, marginBottom:10, overflow:"hidden", transition:"border 0.15s" }}>
-                            {/* Order row — tap to toggle */}
-                            <div onClick={()=>{
-                              if(linked){
-                                setInvSelectedOrders(invSelectedOrders.filter(id=>id!==o.id));
-                                setItems(items.filter(it=>it.orderRef!==o.id));
-                              } else {
-                                setInvSelectedOrders([...invSelectedOrders, o.id]);
-                                const desc = o.description || `Auftrag #${o.id}`;
-                                const fromOrder = (o.lineItems||[]).length > 0
-                                  ? (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }))
-                                  : [{ id:Date.now()+Math.random(), desc, qty:"1", unitPrice: o.amount||"", price: String(o.amount||""), orderRef:o.id }];
-                                setItems([...items.filter(it=>it.desc||it.price||it.orderRef), ...fromOrder]);
-                              }
-                            }} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", cursor:"pointer" }}>
-                              {o.photo && <img src={o.photo} alt="" style={{ width:36, height:36, borderRadius:8, objectFit:"cover", flexShrink:0 }}/>}
-                              <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E", marginBottom:2 }}>{o.client}</div>
-                                <div style={{ fontSize:12, color:"#8E8E93" }}>#{o.id}{o.deadline ? ` · Delivery: ${o.deadline}` : ""}</div>
-                              </div>
-                              <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
-                                {o.status==="done" && <span style={{ fontSize:10, fontWeight:700, color:"#34C759", background:"#34C75915", padding:"3px 8px", borderRadius:6 }}>Done</span>}
-                                <div style={{ width:22, height:22, borderRadius:7, border:`2px solid ${linked?ACCENT:"#C7C7CC"}`, background:linked?ACCENT:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                                  {linked && <Icon name="check" size={13} color="white"/>}
-                                </div>
-                              </div>
-                            </div>
-                            {/* Line items — only when linked */}
-                            {linked && (
-                              <div style={{ padding:"0 16px 14px", borderTop:"1px solid #F2F2F7" }} onClick={e=>e.stopPropagation()}>
-                                {items.filter(it=>it.orderRef===o.id).map((it,idx)=>(
-                                  <div key={it.id} style={{ marginTop:10 }}>
-                                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
-                                      <span style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.06em" }}>Item {idx+1}</span>
-                                      {items.filter(i=>i.orderRef===o.id).length > 1 && <button onClick={e=>{ e.stopPropagation(); setItems(items.filter(i=>i.id!==it.id)); }} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={13} color="#FF3B30"/></button>}
-                                    </div>
-                                    <Input placeholder="Description (e.g. Pavé setting – ring)" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))} style={{ marginBottom:6 }}/>
-                                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                                      <Input type="number" placeholder="Qty" value={it.qty||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,qty:e.target.value}:i))}/>
-                                      <Input type="number" placeholder={`Unit price (${C.currency})`} value={it.unitPrice||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,unitPrice:e.target.value}:i))}/>
-                                    </div>
-                                    {(it.qty||it.unitPrice) && lineTotal(it) > 0 && <div style={{ fontSize:11, color:"#8E8E93", marginTop:5 }}>Subtotal: <strong style={{color:"#1C1C1E"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
-                                  </div>
-                                ))}
-                                <button onClick={e=>{ e.stopPropagation(); setItems([...items, { id:Date.now()+Math.random(), desc:"", qty:"1", unitPrice:"", price:"", orderRef:o.id }]); }} style={{ width:"100%", marginTop:8, padding:"8px", background:"none", border:"1.5px dashed #E5E5EA", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:"#8E8E93", cursor:"pointer" }}>+ Add item</button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </>
-                  )}
 
                   {/* Manual items */}
                   <SectionTitle>Items</SectionTitle>
@@ -1801,19 +1728,8 @@ export default function App() {
               </button>
               <button onClick={()=>{
                 const o = orders.find(x=>x.id===doneModal);
-                if(o){
-                  setInvClient(o.client);
-                  const matchedClient = clients.find(c=>(c.company||c.name)===o.client || c.id===o.clientId);
-                  setInvClientAddress(matchedClient ? [matchedClient.company&&matchedClient.name?matchedClient.company:"", matchedClient.address].filter(Boolean).join("\n") : "");
-                  setInvDate(o.received || new Date().toISOString().split("T")[0]);
-                  setInvPorto("");
-                  const desc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || o.notes || `Auftrag #${o.id}`;
-                  setItems([{ id:Date.now()+Math.random(), desc, price: o.amount||"", orderRef: o.id }]);
-                  setInvSelectedOrders([o.id]);
-                }
                 setDoneModal(null);
-                setTab("invoice");
-                setInvView("new");
+                if(o) loadOrderIntoInvoice(o);
               }}
                 style={{ width:"100%", padding:"16px", background:"#0A0A0A", border:"none", borderRadius:16, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, color:"white", cursor:"pointer" }}>
                 Yes, create invoice
