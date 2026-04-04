@@ -51,9 +51,10 @@ const SAMPLE_ORDERS = [
   { id:"0038", client:"Juwelier Keller",     received:"2026-03-08", field1:"Diamond",  field2:"Channel", pieces:2, status:"invoiced",   notes:"",                  amount:350 },
 ];
 
-const newOrder  = () => ({ id: String(Date.now()).slice(-4), client:"", clientId:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", description:"", deadline:"", pieces:"", status:"received", notes:"", amount:0 });
-const newClient = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
-const newItem  = () => ({ id: Date.now()+Math.random(), desc:"", price:"" });
+const newOrder     = () => ({ id: String(Date.now()).slice(-4), client:"", clientId:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", description:"", deadline:"", pieces:"", status:"received", notes:"", amount:0, lineItems:[] });
+const newClient    = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
+const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", qty:"1", unitPrice:"", price:"" });
+const lineTotal    = it => (parseFloat(it.qty)||1) * (parseFloat(it.unitPrice)||parseFloat(it.price)||0);
 const compressPhoto = (dataUrl) => new Promise(res => {
   const img = new Image();
   img.onload = () => {
@@ -307,13 +308,16 @@ export default function App() {
   // ── PRINT INVOICE (shared by order-level and invoice tab) ──
   const printInvoiceDoc = (inv, autoprint = true) => {
     const fmtCHF = n => `CHF ${Number(n).toFixed(2).replace(".", ",")}`;
-    const sub    = inv.items.reduce((s,it) => s + (parseFloat(it.price)||0), 0);
+    const sub    = inv.items.reduce((s,it) => s + lineTotal(it), 0);
     const porto  = parseFloat(inv.porto) || 0;
     const mwst   = sub * C.taxRate;
     const total  = sub + porto + mwst;
-    const rowsHtml = inv.items.map(it =>
-      `<tr><td>${it.desc || "—"}${it.orderRef ? `<br><span style="font-size:9.5pt;color:#777">Auftrag #${it.orderRef}</span>` : ""}</td><td class="right">${fmtCHF(parseFloat(it.price)||0)}</td></tr>`
-    ).join("");
+    const rowsHtml = inv.items.map(it => {
+      const qty  = parseFloat(it.qty)||1;
+      const unit = parseFloat(it.unitPrice)||parseFloat(it.price)||0;
+      const tot  = qty * unit;
+      return `<tr><td>${it.desc || "—"}${it.orderRef ? `<br><span style="font-size:9.5pt;color:#777">Order #${it.orderRef}</span>` : ""}</td><td class="right">${qty}</td><td class="right">${fmtCHF(unit)}</td><td class="right">${fmtCHF(tot)}</td></tr>`;
+    }).join("");
 
     const html = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
 <title>Rechnung ${inv.number}</title>
@@ -361,7 +365,7 @@ export default function App() {
     </div>
   </div>
   <table>
-    <thead><tr><th style="width:80%">BESCHREIBUNG</th><th class="right" style="width:20%">BETRAG</th></tr></thead>
+    <thead><tr><th style="width:50%">BESCHREIBUNG</th><th class="right" style="width:10%">ANZ.</th><th class="right" style="width:20%">STÜCKPREIS</th><th class="right" style="width:20%">BETRAG</th></tr></thead>
     <tbody>${rowsHtml}</tbody>
   </table>
   <table class="totals" style="margin-top:0;">
@@ -923,9 +927,27 @@ export default function App() {
                 <Field label="Delivery date">
                   <Input type="date" value={draft.deadline} onChange={e=>setDraft({...draft,deadline:e.target.value})}/>
                 </Field>
-                <Field label={C.piecesLabel}>
-                  <Input type="number" placeholder="0" value={draft.pieces} onChange={e=>setDraft({...draft,pieces:e.target.value})}/>
-                </Field>
+
+                {/* Line items */}
+                <div style={{ marginTop:8, marginBottom:4 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Items for invoice</div>
+                  {(draft.lineItems||[]).map((li,idx)=>(
+                    <div key={li.id} style={{ background:"#F5F5F3", borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                        <span style={{ fontSize:12, fontWeight:700, color:"#8E8E93" }}>Item {idx+1}</span>
+                        <button onClick={()=>setDraft({...draft, lineItems:draft.lineItems.filter(i=>i.id!==li.id)})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#FF3B30"/></button>
+                      </div>
+                      <Input placeholder="Description (e.g. Pavé setting – ring)" value={li.desc} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                        <Input type="number" placeholder="Qty" value={li.qty||""} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,qty:e.target.value}:i)})}/>
+                        <Input type="number" placeholder={`Unit price (${C.currency})`} value={li.unitPrice||""} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,unitPrice:e.target.value}:i)})}/>
+                      </div>
+                      {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>Total: <strong style={{color:"#0A0A0A"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
+                    </div>
+                  ))}
+                  <button onClick={()=>setDraft({...draft, lineItems:[...(draft.lineItems||[]), {id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#8E8E93", cursor:"pointer" }}>+ Add item</button>
+                </div>
+
                 <BtnPrimary disabled={!draft.client} onClick={()=>{ if(draft.client){ setOrders([{...draft},...orders]); syncToSheets(draft); setDraft(newOrder()); setView("list"); } }}>
                   Save Order
                 </BtnPrimary>
@@ -1076,14 +1098,14 @@ export default function App() {
 
           {/* ── NEW INVOICE VIEW ── */}
           {invView==="new" && (()=>{
-            const draftSub   = items.reduce((s,it)=>s+(parseFloat(it.price)||0),0);
+            const draftSub   = items.reduce((s,it)=>s+lineTotal(it),0);
             const draftPorto = parseFloat(invPorto)||0;
             const draftTax   = draftSub * C.taxRate;
             const draftTotal = draftSub + draftPorto + draftTax;
             // Orders done but not yet invoiced (exclude already linked)
             const availableOrders = orders.filter(o => (o.status==="done" || o.status==="received" || o.status==="inprogress") && o.status!=="invoiced");
             const saveInvoice = (print) => {
-              const validItems = items.filter(it=>it.desc||it.price);
+              const validItems = items.filter(it=>it.desc||it.unitPrice||it.price).map(it=>({...it, price: String(lineTotal(it))}));
               const inv = {
                 id: Date.now(),
                 number: genInvNumber(invoices),
@@ -1152,7 +1174,6 @@ export default function App() {
                       <SectionTitle>Available orders</SectionTitle>
                       {availableOrders.map(o=>{
                         const linked = invSelectedOrders.includes(o.id);
-                        const linkedItem = items.find(it=>it.orderRef===o.id);
                         return (
                           <div key={o.id} style={{ background:"white", border:`1.5px solid ${linked?ACCENT:"#E5E5EA"}`, borderRadius:16, marginBottom:10, overflow:"hidden", transition:"border 0.15s" }}>
                             {/* Order row — tap to toggle */}
@@ -1163,7 +1184,10 @@ export default function App() {
                               } else {
                                 setInvSelectedOrders([...invSelectedOrders, o.id]);
                                 const desc = o.description || `Auftrag #${o.id}`;
-                                setItems([...items.filter(it=>it.desc||it.price||it.orderRef), { id:Date.now()+Math.random(), desc, price: o.amount||"", orderRef: o.id }]);
+                                const fromOrder = (o.lineItems||[]).length > 0
+                                  ? (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }))
+                                  : [{ id:Date.now()+Math.random(), desc, qty:"1", unitPrice: o.amount||"", price: String(o.amount||""), orderRef:o.id }];
+                                setItems([...items.filter(it=>it.desc||it.price||it.orderRef), ...fromOrder]);
                               }
                             }} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", cursor:"pointer" }}>
                               {o.photo && <img src={o.photo} alt="" style={{ width:36, height:36, borderRadius:8, objectFit:"cover", flexShrink:0 }}/>}
@@ -1178,23 +1202,24 @@ export default function App() {
                                 </div>
                               </div>
                             </div>
-                            {/* Price input — only when linked */}
+                            {/* Line items — only when linked */}
                             {linked && (
                               <div style={{ padding:"0 16px 14px", borderTop:"1px solid #F2F2F7" }} onClick={e=>e.stopPropagation()}>
-                                <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
-                                  <Input
-                                    type="number" placeholder="Amount CHF"
-                                    value={linkedItem?.price||""}
-                                    onChange={e=>setItems(items.map(it=>it.orderRef===o.id?{...it,price:e.target.value}:it))}
-                                    style={{ flex:1, marginBottom:0 }}
-                                  />
-                                  {linkedItem?.price && <span style={{ fontSize:13, fontWeight:700, color:ACCENT, whiteSpace:"nowrap" }}>{C.currency} {fmt(parseFloat(linkedItem.price)||0)}</span>}
-                                </div>
-                                {linkedItem?.price && (
-                                  <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>
-                                    + {(C.taxRate*100).toFixed(1)}% MWST = <strong style={{color:"#1C1C1E"}}>{C.currency} {fmt((parseFloat(linkedItem.price)||0)*(1+C.taxRate))}</strong>
+                                {items.filter(it=>it.orderRef===o.id).map((it,idx)=>(
+                                  <div key={it.id} style={{ marginTop:10 }}>
+                                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
+                                      <span style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.06em" }}>Item {idx+1}</span>
+                                      {items.filter(i=>i.orderRef===o.id).length > 1 && <button onClick={e=>{ e.stopPropagation(); setItems(items.filter(i=>i.id!==it.id)); }} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={13} color="#FF3B30"/></button>}
+                                    </div>
+                                    <Input placeholder="Description (e.g. Pavé setting – ring)" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))} style={{ marginBottom:6 }}/>
+                                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                                      <Input type="number" placeholder="Qty" value={it.qty||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,qty:e.target.value}:i))}/>
+                                      <Input type="number" placeholder={`Unit price (${C.currency})`} value={it.unitPrice||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,unitPrice:e.target.value}:i))}/>
+                                    </div>
+                                    {(it.qty||it.unitPrice) && lineTotal(it) > 0 && <div style={{ fontSize:11, color:"#8E8E93", marginTop:5 }}>Subtotal: <strong style={{color:"#1C1C1E"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
                                   </div>
-                                )}
+                                ))}
+                                <button onClick={e=>{ e.stopPropagation(); setItems([...items, { id:Date.now()+Math.random(), desc:"", qty:"1", unitPrice:"", price:"", orderRef:o.id }]); }} style={{ width:"100%", marginTop:8, padding:"8px", background:"none", border:"1.5px dashed #E5E5EA", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:"#8E8E93", cursor:"pointer" }}>+ Add item</button>
                               </div>
                             )}
                           </div>
@@ -1204,18 +1229,22 @@ export default function App() {
                   )}
 
                   {/* Manual items */}
-                  <SectionTitle>Manual items</SectionTitle>
+                  <SectionTitle>Items</SectionTitle>
                   {items.filter(it=>!it.orderRef).map((it,idx)=>(
                     <Card key={it.id}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em" }}>Manual item {idx+1}</div>
+                        <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em" }}>Item {idx+1}</div>
                         <button onClick={()=>setItems(items.filter(i=>i.id!==it.id))} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#FF3B30"/></button>
                       </div>
                       <Field label="Description"><Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
-                      <Field label={`Amount (${C.currency})`}><Input type="number" placeholder="0.00" value={it.price} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,price:e.target.value}:i))}/></Field>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                        <Field label="Qty"><Input type="number" placeholder="1" value={it.qty||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,qty:e.target.value}:i))}/></Field>
+                        <Field label={`Unit price (${C.currency})`}><Input type="number" placeholder="0.00" value={it.unitPrice||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,unitPrice:e.target.value}:i))}/></Field>
+                      </div>
+                      {lineTotal(it) > 0 && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>Total: <strong style={{color:"#0A0A0A"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
                     </Card>
                   ))}
-                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:16 }}>+ Add manual item</button>
+                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:16 }}>+ Add item</button>
 
                   {/* Live total */}
                   {(items.some(it=>it.price)||draftPorto>0) && (
@@ -1245,7 +1274,7 @@ export default function App() {
           {/* ── DETAIL VIEW ── */}
           {invView==="detail" && selectedInvoice && (()=>{
             const inv = selectedInvoice;
-            const invSub   = inv.items.reduce((s,it)=>s+(parseFloat(it.price)||0),0);
+            const invSub   = inv.items.reduce((s,it)=>s+lineTotal(it),0);
             const invPortoVal = parseFloat(inv.porto)||0;
             const invMwst  = invSub * C.taxRate;
             const invTotal = invSub + invPortoVal + invMwst;
@@ -1287,19 +1316,28 @@ export default function App() {
                       <thead>
                         <tr style={{ borderBottom:"1.5px solid #E5E5EA" }}>
                           <th style={{ textAlign:"left", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Description</th>
-                          <th style={{ textAlign:"right", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Amount</th>
+                          <th style={{ textAlign:"right", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Qty</th>
+                          <th style={{ textAlign:"right", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Unit</th>
+                          <th style={{ textAlign:"right", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Total</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {inv.items.map((it,i)=>(
-                          <tr key={i} style={{ borderBottom:"1px solid #F2F2F7" }}>
-                            <td style={{ padding:"9px 0", verticalAlign:"top" }}>
-                              <div style={{ fontSize:13, fontWeight:600, color:"#1C1C1E" }}>{it.desc||"—"}</div>
-                              {it.orderRef && <div style={{ fontSize:10, color:"#8E8E93" }}>Auftrag #{it.orderRef}</div>}
-                            </td>
-                            <td style={{ padding:"9px 0", textAlign:"right", fontSize:13, fontWeight:600, color:"#1C1C1E" }}>{C.currency} {fmt(parseFloat(it.price)||0)}</td>
-                          </tr>
-                        ))}
+                        {inv.items.map((it,i)=>{
+                          const qty = parseFloat(it.qty)||1;
+                          const unit = parseFloat(it.unitPrice)||parseFloat(it.price)||0;
+                          const tot = qty * unit;
+                          return (
+                            <tr key={i} style={{ borderBottom:"1px solid #F2F2F7" }}>
+                              <td style={{ padding:"9px 0", verticalAlign:"top" }}>
+                                <div style={{ fontSize:13, fontWeight:600, color:"#1C1C1E" }}>{it.desc||"—"}</div>
+                                {it.orderRef && <div style={{ fontSize:10, color:"#8E8E93" }}>Order #{it.orderRef}</div>}
+                              </td>
+                              <td style={{ padding:"9px 0", textAlign:"right", fontSize:13, color:"#8E8E93" }}>{qty}</td>
+                              <td style={{ padding:"9px 0", textAlign:"right", fontSize:13, color:"#8E8E93" }}>{C.currency} {fmt(unit)}</td>
+                              <td style={{ padding:"9px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1C1C1E" }}>{C.currency} {fmt(tot)}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
 
