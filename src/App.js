@@ -666,12 +666,16 @@ export default function App() {
                         </div>
                         {/* Content */}
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
-                            <span style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `Order #${o.id}`}</span>
-                            {urg.label && <span style={{ fontSize:10, fontWeight:800, color:urg.accent, flexShrink:0 }}>{urg.label}</span>}
-                          </div>
-                          <div style={{ fontSize:12, color:"rgba(0,0,0,0.38)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                            {dateParts ? `${dateParts.weekday} ${dateParts.day} ${dateParts.month}` : "No delivery date"}{o.description ? ` · ${o.description}` : ""}
+                          <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:6 }}>{o.client || `Order #${o.id}`}</div>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                            {dateParts ? (
+                              <span style={{ fontSize:11, fontWeight:700, color:urg.accent !== "transparent" ? urg.accent : "#6B6B6B", background:urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F0F0", padding:"3px 9px", borderRadius:8 }}>
+                                {urg.label ? `${urg.label} · ` : ""}{dateParts.weekday} {dateParts.day} {dateParts.month}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize:11, fontWeight:600, color:"#ADADAD", background:"#F5F5F3", padding:"3px 9px", borderRadius:8 }}>No date</span>
+                            )}
+                            {o.description && <span style={{ fontSize:11, color:"rgba(0,0,0,0.35)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</span>}
                           </div>
                         </div>
                         <StatusPill status={o.status}/>
