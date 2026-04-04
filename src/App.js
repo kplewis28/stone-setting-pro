@@ -1171,7 +1171,36 @@ export default function App() {
                       {lineTotal(it) > 0 && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>Total: <strong style={{color:"#0A0A0A"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
                     </Card>
                   ))}
-                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:16 }}>+ Add item</button>
+                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:10 }}>+ Add item</button>
+
+                  {/* Add items from another order of the same client */}
+                  {(() => {
+                    const alreadyLinked = items.map(it=>it.orderRef).filter(Boolean);
+                    const otherOrders = orders.filter(o =>
+                      o.client === invClient &&
+                      (o.lineItems||[]).length > 0 &&
+                      !alreadyLinked.includes(o.id) &&
+                      o.status !== "invoiced"
+                    );
+                    if(!invClient || otherOrders.length === 0) return null;
+                    return (
+                      <div style={{ marginBottom:16 }}>
+                        <Select value="" onChange={e=>{
+                          const o = orders.find(x=>x.id===e.target.value);
+                          if(!o) return;
+                          const newItems = (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }));
+                          setItems([...items, ...newItems]);
+                        }}>
+                          <option value="">+ Add items from another order…</option>
+                          {otherOrders.map(o=>(
+                            <option key={o.id} value={o.id}>
+                              #{o.id}{o.description ? ` · ${o.description}` : ""}{o.deadline ? ` · ${o.deadline}` : ""}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                    );
+                  })()}
 
                   {/* Live total */}
                   {(draftSub>0||draftPorto>0) && (
