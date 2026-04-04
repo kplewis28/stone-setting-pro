@@ -614,14 +614,16 @@ export default function App() {
               const noDeadline   = active.filter(o => !o.deadline);
               const sorted = [...withDeadline, ...noDeadline];
 
-              const getUrgency = (deadline) => {
-                if(!deadline) return { label:null, color:"#8E8E93", accent:"#8E8E93", bg:"#F5F5F3", dark:false };
-                if(deadline < today) return { label:"OVERDUE", color:"white", accent:"#FF3B30", bg:"#FF3B30", dark:true };
-                if(deadline === today) return { label:"TODAY", color:"white", accent:"#FF9500", bg:"#FF9500", dark:true };
+              const PASTEL_CYCLE = [PASTELS.orders, PASTELS.invoice, PASTELS.scan, PASTELS.inprogress];
+              const getUrgency = (deadline, idx) => {
+                const cardBg = PASTEL_CYCLE[idx % PASTEL_CYCLE.length];
+                if(!deadline) return { label:null, dateBg:"rgba(0,0,0,0.07)", dateColor:"#ADADAD", accent:"#ADADAD", bg:cardBg };
+                if(deadline < today) return { label:"OVERDUE", dateBg:"#FF3B30", dateColor:"white", accent:"#FF3B30", bg:"#FFE8E8" };
+                if(deadline === today) return { label:"TODAY",   dateBg:"#FF9500", dateColor:"white", accent:"#FF9500", bg:PASTELS.received };
                 const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
-                if(diff === 1) return { label:"TOMORROW", color:"#FF9500", accent:"#FF9500", bg:PASTELS.received, dark:false };
-                if(diff <= 7)  return { label:`IN ${diff} DAYS`, color:"#007AFF", accent:"#007AFF", bg:PASTELS.inprogress, dark:false };
-                return { label:null, color:"#8E8E93", accent:"#8E8E93", bg:"#F5F5F3", dark:false };
+                if(diff === 1) return { label:"TOMORROW", dateBg:"#FF9500", dateColor:"white", accent:"#FF9500", bg:PASTELS.received };
+                if(diff <= 7)  return { label:`IN ${diff} DAYS`, dateBg:"#0A0A0A", dateColor:"white", accent:"#007AFF", bg:PASTELS.inprogress };
+                return { label:null, dateBg:"rgba(0,0,0,0.08)", dateColor:"#0A0A0A", accent:"#8E8E93", bg:cardBg };
               };
 
               const fmtDeadline = (deadline) => {
@@ -653,30 +655,30 @@ export default function App() {
                   {sorted.length === 0 && (
                     <div style={{ textAlign:"center", padding:"32px 0", color:"#ADADAD", fontSize:14, fontWeight:500 }}>No pending orders</div>
                   )}
-                  {sorted.map((o) => {
-                    const urg = getUrgency(o.deadline);
+                  {sorted.map((o, i) => {
+                    const urg = getUrgency(o.deadline, i);
                     const dateParts = fmtDeadline(o.deadline);
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:urg.bg, border:"none", borderRadius:20, padding:"0", marginBottom:10, display:"flex", alignItems:"stretch", cursor:"pointer", textAlign:"left", overflow:"hidden" }}>
-                        {/* Date block */}
-                        <div style={{ width:68, flexShrink:0, background: urg.dark ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.07)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"14px 0", gap:1 }}>
+                        {/* Date block — color signals urgency */}
+                        <div style={{ width:68, flexShrink:0, background:urg.dateBg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"16px 0", gap:1 }}>
                           {dateParts ? (
                             <>
-                              <span style={{ fontSize:9, fontWeight:800, color: urg.dark ? "rgba(255,255,255,0.7)" : "#ADADAD", letterSpacing:"0.1em" }}>{dateParts.weekday}</span>
-                              <span style={{ fontSize:28, fontWeight:900, color: urg.dark ? "white" : "#0A0A0A", lineHeight:1, letterSpacing:"-0.03em" }}>{dateParts.day}</span>
-                              <span style={{ fontSize:10, fontWeight:700, color: urg.dark ? "rgba(255,255,255,0.7)" : "#ADADAD", letterSpacing:"0.06em" }}>{dateParts.month}</span>
-                              {urg.label && <span style={{ fontSize:8, fontWeight:900, color: urg.dark ? "white" : urg.accent, letterSpacing:"0.06em", marginTop:4, background: urg.dark ? "rgba(255,255,255,0.2)" : `${urg.accent}20`, padding:"2px 6px", borderRadius:6 }}>{urg.label}</span>}
+                              <span style={{ fontSize:9, fontWeight:800, color: urg.dateColor==="white" ? "rgba(255,255,255,0.65)" : "#ADADAD", letterSpacing:"0.1em" }}>{dateParts.weekday}</span>
+                              <span style={{ fontSize:28, fontWeight:900, color:urg.dateColor, lineHeight:1, letterSpacing:"-0.03em" }}>{dateParts.day}</span>
+                              <span style={{ fontSize:10, fontWeight:700, color: urg.dateColor==="white" ? "rgba(255,255,255,0.65)" : "#ADADAD", letterSpacing:"0.06em" }}>{dateParts.month}</span>
+                              {urg.label && <span style={{ fontSize:8, fontWeight:900, color: urg.dateColor==="white" ? "white" : urg.accent, letterSpacing:"0.05em", marginTop:5, background: urg.dateColor==="white" ? "rgba(255,255,255,0.2)" : `${urg.accent}22`, padding:"2px 7px", borderRadius:6 }}>{urg.label}</span>}
                             </>
                           ) : (
-                            <span style={{ fontSize:10, fontWeight:700, color:"#ADADAD", letterSpacing:"0.04em", textAlign:"center", padding:"0 6px" }}>NO DATE</span>
+                            <span style={{ fontSize:9, fontWeight:700, color:"#ADADAD", letterSpacing:"0.04em", textAlign:"center", padding:"0 6px", lineHeight:1.4 }}>NO{"\n"}DATE</span>
                           )}
                         </div>
                         {/* Content */}
                         <div style={{ flex:1, minWidth:0, padding:"14px 14px 14px 16px", display:"flex", alignItems:"center", gap:10 }}>
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:14, fontWeight:800, color: urg.dark ? "white" : "#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `Order #${o.id}`}</div>
-                            <div style={{ fontSize:12, color: urg.dark ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.4)", fontWeight:500, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                            <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `Order #${o.id}`}</div>
+                            <div style={{ fontSize:12, color:"rgba(0,0,0,0.4)", fontWeight:500, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                               #{o.id}{o.description ? ` · ${o.description}` : ""}
                             </div>
                           </div>
