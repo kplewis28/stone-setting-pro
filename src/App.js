@@ -1155,9 +1155,9 @@ export default function App() {
                   </Card>
 
 
-                  {/* Manual items */}
+                  {/* Items — all, whether from order or manual */}
                   <SectionTitle>Items</SectionTitle>
-                  {items.filter(it=>!it.orderRef).map((it,idx)=>(
+                  {items.map((it,idx)=>(
                     <Card key={it.id}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
                         <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em" }}>Item {idx+1}</div>
@@ -1174,7 +1174,7 @@ export default function App() {
                   <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:16 }}>+ Add item</button>
 
                   {/* Live total */}
-                  {(items.some(it=>it.price)||draftPorto>0) && (
+                  {(draftSub>0||draftPorto>0) && (
                     <Card style={{ background:"#1C1C1E" }}>
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Subtotal</span><span>{C.currency} {fmt(draftSub)}</span></div>
                       {draftPorto>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Postage</span><span>{C.currency} {fmt(draftPorto)}</span></div>}
