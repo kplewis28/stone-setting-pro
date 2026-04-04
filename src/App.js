@@ -659,37 +659,22 @@ export default function App() {
                     const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#007AFF" : "#ADADAD";
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"none", borderRadius:20, padding:"0", marginBottom:8, display:"flex", alignItems:"stretch", cursor:"pointer", textAlign:"left", overflow:"hidden", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
-                        {/* Priority number */}
-                        <div style={{ width:48, flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, padding:"14px 0", borderRight:"1px solid #F2F2F7" }}>
-                          <span style={{ fontSize:9, fontWeight:700, color:"#ADADAD", letterSpacing:"0.08em", textTransform:"uppercase" }}>P</span>
-                          <span style={{ fontSize:22, fontWeight:900, color:priorityColor, lineHeight:1, letterSpacing:"-0.03em" }}>{i+1}</span>
-                        </div>
-                        {/* Date block */}
-                        <div style={{ width:60, flexShrink:0, background:"#0A0A0A", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"14px 0", gap:1 }}>
-                          {dateParts ? (
-                            <>
-                              <span style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.4)", letterSpacing:"0.08em" }}>{dateParts.weekday}</span>
-                              <span style={{ fontSize:22, fontWeight:900, color:"white", lineHeight:1, letterSpacing:"-0.02em" }}>{dateParts.day}</span>
-                              <span style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.4)", letterSpacing:"0.06em" }}>{dateParts.month}</span>
-                            </>
-                          ) : (
-                            <span style={{ fontSize:9, fontWeight:600, color:"rgba(255,255,255,0.3)", textAlign:"center", lineHeight:1.5 }}>{"NO\nDATE"}</span>
-                          )}
+                        style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
+                        {/* Priority circle */}
+                        <div style={{ width:40, height:40, borderRadius:12, background:"#F5F5F3", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{i+1}</span>
                         </div>
                         {/* Content */}
-                        <div style={{ flex:1, minWidth:0, padding:"13px 14px 13px 14px", display:"flex", alignItems:"center", gap:8 }}>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
-                              <span style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `Order #${o.id}`}</span>
-                              {urg.label && <span style={{ fontSize:10, fontWeight:800, color:urg.accent, flexShrink:0 }}>{urg.label}</span>}
-                            </div>
-                            <div style={{ fontSize:12, color:"rgba(0,0,0,0.38)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                              {o.description || `#${o.id}`}
-                            </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
+                            <span style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `Order #${o.id}`}</span>
+                            {urg.label && <span style={{ fontSize:10, fontWeight:800, color:urg.accent, flexShrink:0 }}>{urg.label}</span>}
                           </div>
-                          <StatusPill status={o.status}/>
+                          <div style={{ fontSize:12, color:"rgba(0,0,0,0.38)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                            {dateParts ? `${dateParts.weekday} ${dateParts.day} ${dateParts.month}` : "No delivery date"}{o.description ? ` · ${o.description}` : ""}
+                          </div>
                         </div>
+                        <StatusPill status={o.status}/>
                       </button>
                     );
                   })}
