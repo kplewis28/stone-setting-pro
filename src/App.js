@@ -1381,26 +1381,21 @@ export default function App() {
                 )}
                 {clients.map((c, idx) => {
                   const orderCount = orders.filter(o=>o.clientId===c.id||o.client===(c.company||c.name)).length;
-                  const pastelBg = [PASTELS.orders, PASTELS.invoice, PASTELS.scan, PASTELS.inprogress][idx % 4];
+                  const priorityColor = idx === 0 ? "#FF3B30" : idx === 1 ? "#FF9500" : idx === 2 ? "#007AFF" : "#ADADAD";
                   return (
-                    <Card key={c.id} style={{ background:pastelBg, border:"none", marginBottom:10 }} onClick={()=>{ setSelectedClientId(c.id); setClientView("detail"); }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                        <div style={{ width:44, height:44, borderRadius:13, background:"#0A0A0A", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                          <Icon name="person" size={22} color="white"/>
-                        </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:15, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em" }}>{c.company || c.name}</div>
-                          {c.company && c.name && <div style={{ fontSize:12, color:"#6B6B6B", marginTop:2 }}>{c.name}</div>}
-                          {c.address && <div style={{ fontSize:12, color:"#6B6B6B", marginTop:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{c.address.split("\n")[0]}</div>}
-                        </div>
-                        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, flexShrink:0 }}>
-                          {orderCount > 0 && <span style={{ fontSize:11, fontWeight:700, color:"#0A0A0A", background:"rgba(0,0,0,0.08)", padding:"3px 9px", borderRadius:8 }}>{orderCount} order{orderCount!==1?"s":""}</span>}
-                          <div style={{ width:28, height:28, borderRadius:8, background:"rgba(0,0,0,0.08)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-                          </div>
+                    <button key={c.id} onClick={()=>{ setSelectedClientId(c.id); setClientView("detail"); }}
+                      style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
+                      <div style={{ width:40, height:40, borderRadius:12, background:"#F5F5F3", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{idx+1}</span>
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.company || c.name}</div>
+                        <div style={{ fontSize:12, color:"rgba(0,0,0,0.38)", fontWeight:500, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {c.company && c.name ? c.name : c.address?.split("\n")[0] || ""}
                         </div>
                       </div>
-                    </Card>
+                      {orderCount > 0 && <span style={{ fontSize:11, fontWeight:700, color:"#6B6B6B", background:"#F0F0F0", padding:"3px 9px", borderRadius:8, flexShrink:0 }}>{orderCount} order{orderCount!==1?"s":""}</span>}
+                    </button>
                   );
                 })}
               </>
