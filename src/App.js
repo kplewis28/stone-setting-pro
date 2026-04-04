@@ -653,35 +653,39 @@ export default function App() {
                   {sorted.length === 0 && (
                     <div style={{ textAlign:"center", padding:"32px 0", color:"#ADADAD", fontSize:14, fontWeight:500 }}>No pending orders</div>
                   )}
-                  {sorted.map((o) => {
+                  {sorted.map((o, i) => {
                     const urg = getUrgency(o.deadline);
                     const dateParts = fmtDeadline(o.deadline);
+                    const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#007AFF" : "#ADADAD";
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:"white", border:"none", borderRadius:20, padding:"0", marginBottom:8, display:"flex", alignItems:"stretch", cursor:"pointer", textAlign:"left", overflow:"hidden", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
-                        {/* Urgency accent line */}
-                        <div style={{ width:4, flexShrink:0, background:urg.accent, borderRadius:"20px 0 0 20px" }}/>
-                        {/* Date block — always dark, consistent */}
-                        <div style={{ width:64, flexShrink:0, background:"#0A0A0A", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"16px 0", gap:1 }}>
+                        {/* Priority number */}
+                        <div style={{ width:48, flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, padding:"14px 0", borderRight:"1px solid #F2F2F7" }}>
+                          <span style={{ fontSize:9, fontWeight:700, color:"#ADADAD", letterSpacing:"0.08em", textTransform:"uppercase" }}>P</span>
+                          <span style={{ fontSize:22, fontWeight:900, color:priorityColor, lineHeight:1, letterSpacing:"-0.03em" }}>{i+1}</span>
+                        </div>
+                        {/* Date block */}
+                        <div style={{ width:60, flexShrink:0, background:"#0A0A0A", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"14px 0", gap:1 }}>
                           {dateParts ? (
                             <>
-                              <span style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.45)", letterSpacing:"0.1em" }}>{dateParts.weekday}</span>
-                              <span style={{ fontSize:26, fontWeight:900, color:"white", lineHeight:1, letterSpacing:"-0.02em" }}>{dateParts.day}</span>
-                              <span style={{ fontSize:10, fontWeight:700, color:"rgba(255,255,255,0.45)", letterSpacing:"0.06em" }}>{dateParts.month}</span>
+                              <span style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.4)", letterSpacing:"0.08em" }}>{dateParts.weekday}</span>
+                              <span style={{ fontSize:22, fontWeight:900, color:"white", lineHeight:1, letterSpacing:"-0.02em" }}>{dateParts.day}</span>
+                              <span style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.4)", letterSpacing:"0.06em" }}>{dateParts.month}</span>
                             </>
                           ) : (
-                            <span style={{ fontSize:9, fontWeight:600, color:"rgba(255,255,255,0.3)", textAlign:"center", lineHeight:1.4 }}>{"NO\nDATE"}</span>
+                            <span style={{ fontSize:9, fontWeight:600, color:"rgba(255,255,255,0.3)", textAlign:"center", lineHeight:1.5 }}>{"NO\nDATE"}</span>
                           )}
                         </div>
                         {/* Content */}
-                        <div style={{ flex:1, minWidth:0, padding:"13px 14px 13px 16px", display:"flex", alignItems:"center", gap:10 }}>
+                        <div style={{ flex:1, minWidth:0, padding:"13px 14px 13px 14px", display:"flex", alignItems:"center", gap:8 }}>
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:3 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
                               <span style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `Order #${o.id}`}</span>
                               {urg.label && <span style={{ fontSize:10, fontWeight:800, color:urg.accent, flexShrink:0 }}>{urg.label}</span>}
                             </div>
                             <div style={{ fontSize:12, color:"rgba(0,0,0,0.38)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                              #{o.id}{o.description ? ` · ${o.description}` : ""}
+                              {o.description || `#${o.id}`}
                             </div>
                           </div>
                           <StatusPill status={o.status}/>
