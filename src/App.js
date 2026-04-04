@@ -614,14 +614,20 @@ export default function App() {
               const noDeadline   = active.filter(o => !o.deadline);
               const sorted = [...withDeadline, ...noDeadline];
 
-              const getLabel = (deadline) => {
-                if(!deadline) return null;
-                if(deadline < today) return { text:"Overdue", color:"#FF3B30", bg:"#FFE5E5" };
-                if(deadline === today) return { text:"Today", color:"#FF9500", bg:PASTELS.received };
+              const getUrgency = (deadline) => {
+                if(!deadline) return { label:null, color:"#8E8E93", accent:"#8E8E93", bg:"#F5F5F3", dark:false };
+                if(deadline < today) return { label:"OVERDUE", color:"white", accent:"#FF3B30", bg:"#FF3B30", dark:true };
+                if(deadline === today) return { label:"TODAY", color:"white", accent:"#FF9500", bg:"#FF9500", dark:true };
                 const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
-                if(diff === 1) return { text:"Tomorrow", color:"#FF9500", bg:PASTELS.received };
-                if(diff <= 7)  return { text:`${diff}d`, color:"#007AFF", bg:PASTELS.inprogress };
-                return { text:`${diff}d`, color:"#8E8E93", bg:"#F5F5F3" };
+                if(diff === 1) return { label:"TOMORROW", color:"#FF9500", accent:"#FF9500", bg:PASTELS.received, dark:false };
+                if(diff <= 7)  return { label:`IN ${diff} DAYS`, color:"#007AFF", accent:"#007AFF", bg:PASTELS.inprogress, dark:false };
+                return { label:null, color:"#8E8E93", accent:"#8E8E93", bg:"#F5F5F3", dark:false };
+              };
+
+              const fmtDeadline = (deadline) => {
+                if(!deadline) return null;
+                const d = new Date(deadline+"T12:00:00");
+                return { day: d.getDate(), month: d.toLocaleDateString("en-GB",{month:"short"}).toUpperCase(), weekday: d.toLocaleDateString("en-GB",{weekday:"short"}).toUpperCase() };
               };
 
               const overdue = withDeadline.filter(o => o.deadline < today);
@@ -647,23 +653,33 @@ export default function App() {
                   {sorted.length === 0 && (
                     <div style={{ textAlign:"center", padding:"32px 0", color:"#ADADAD", fontSize:14, fontWeight:500 }}>No pending orders</div>
                   )}
-                  {sorted.map((o, i) => {
-                    const label = getLabel(o.deadline);
-                    const cardBg = label ? label.bg : [PASTELS.orders, PASTELS.invoice, PASTELS.scan][i%3];
+                  {sorted.map((o) => {
+                    const urg = getUrgency(o.deadline);
+                    const dateParts = fmtDeadline(o.deadline);
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:cardBg, border:"none", borderRadius:18, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left" }}>
-                        <div style={{ width:42, height:42, borderRadius:13, background:"#0A0A0A", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                          <Icon name="gem" size={18} color="white"/>
+                        style={{ width:"100%", background:urg.bg, border:"none", borderRadius:20, padding:"0", marginBottom:10, display:"flex", alignItems:"stretch", cursor:"pointer", textAlign:"left", overflow:"hidden" }}>
+                        {/* Date block */}
+                        <div style={{ width:68, flexShrink:0, background: urg.dark ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.07)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"14px 0", gap:1 }}>
+                          {dateParts ? (
+                            <>
+                              <span style={{ fontSize:9, fontWeight:800, color: urg.dark ? "rgba(255,255,255,0.7)" : "#ADADAD", letterSpacing:"0.1em" }}>{dateParts.weekday}</span>
+                              <span style={{ fontSize:28, fontWeight:900, color: urg.dark ? "white" : "#0A0A0A", lineHeight:1, letterSpacing:"-0.03em" }}>{dateParts.day}</span>
+                              <span style={{ fontSize:10, fontWeight:700, color: urg.dark ? "rgba(255,255,255,0.7)" : "#ADADAD", letterSpacing:"0.06em" }}>{dateParts.month}</span>
+                              {urg.label && <span style={{ fontSize:8, fontWeight:900, color: urg.dark ? "white" : urg.accent, letterSpacing:"0.06em", marginTop:4, background: urg.dark ? "rgba(255,255,255,0.2)" : `${urg.accent}20`, padding:"2px 6px", borderRadius:6 }}>{urg.label}</span>}
+                            </>
+                          ) : (
+                            <span style={{ fontSize:10, fontWeight:700, color:"#ADADAD", letterSpacing:"0.04em", textAlign:"center", padding:"0 6px" }}>NO DATE</span>
+                          )}
                         </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
-                          <div style={{ fontSize:12, color:"rgba(0,0,0,0.4)", fontWeight:500, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                            #{o.id}{o.description ? ` · ${o.description}` : ""}
+                        {/* Content */}
+                        <div style={{ flex:1, minWidth:0, padding:"14px 14px 14px 16px", display:"flex", alignItems:"center", gap:10 }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:14, fontWeight:800, color: urg.dark ? "white" : "#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `Order #${o.id}`}</div>
+                            <div style={{ fontSize:12, color: urg.dark ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.4)", fontWeight:500, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                              #{o.id}{o.description ? ` · ${o.description}` : ""}
+                            </div>
                           </div>
-                        </div>
-                        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:5, flexShrink:0 }}>
-                          {label && <span style={{ fontSize:11, fontWeight:800, color:label.color, background:"rgba(0,0,0,0.07)", padding:"4px 10px", borderRadius:100 }}>{label.text}</span>}
                           <StatusPill status={o.status}/>
                         </div>
                       </button>
