@@ -184,6 +184,8 @@ export default function App() {
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [clientDraft, setClientDraft] = useState(newClient());
   const [filterClient, setFilterClient] = useState("all");
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
   const [workOrderPreview, setWorkOrderPreview] = useState(null);
   const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
@@ -855,9 +857,17 @@ export default function App() {
                 </div>
               </div>
               {view==="list" && (
-                <button onClick={()=>setView("new")} style={{ width:38, height:38, borderRadius:12, background:"#0A0A0A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <Icon name="plus" size={18} color="white"/>
-                </button>
+                <div style={{ display:"flex", gap:8 }}>
+                  {selectMode
+                    ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F5F5F3", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#0A0A0A", fontFamily:"'DM Sans',sans-serif" }}>Cancel</button>
+                    : <>
+                        <button onClick={()=>setSelectMode(true)} style={{ padding:"9px 14px", background:"#F5F5F3", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#0A0A0A", fontFamily:"'DM Sans',sans-serif" }}>Select</button>
+                        <button onClick={()=>setView("new")} style={{ width:38, height:38, borderRadius:12, background:"#0A0A0A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          <Icon name="plus" size={18} color="white"/>
+                        </button>
+                      </>
+                  }
+                </div>
               )}
               {view==="detail" && selectedOrder && (
                 <div style={{ display:"flex", gap:8 }}>
@@ -912,11 +922,25 @@ export default function App() {
                   };
                   const urg = getUrgency(o.deadline);
                   const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#007AFF" : "#ADADAD";
+                  const isChecked = selectedOrderIds.has(o.id);
                   return (
-                    <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); }}
-                      style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
-                      <div style={{ width:40, height:40, borderRadius:12, background:"#F5F5F3", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{i+1}</span>
+                    <button key={o.id} onClick={()=>{
+                      if(selectMode) {
+                        setSelectedOrderIds(prev => {
+                          const next = new Set(prev);
+                          next.has(o.id) ? next.delete(o.id) : next.add(o.id);
+                          return next;
+                        });
+                      } else {
+                        setSelectedId(o.id); setView("detail");
+                      }
+                    }}
+                      style={{ width:"100%", background: isChecked ? "#FFF3F0" : "white", border: isChecked ? "1.5px solid #FF3B3030" : "1.5px solid transparent", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
+                      <div style={{ width:40, height:40, borderRadius:12, background: isChecked ? "#FF3B30" : "#F5F5F3", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s" }}>
+                        {isChecked
+                          ? <Icon name="check" size={18} color="white"/>
+                          : <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{i+1}</span>
+                        }
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", marginBottom:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", letterSpacing:"-0.01em" }}>{o.client || "—"}</div>
@@ -933,6 +957,20 @@ export default function App() {
                     </button>
                   );
                 })}
+
+                {/* Bulk delete bar */}
+                {selectMode && selectedOrderIds.size > 0 && (
+                  <div style={{ position:"fixed", bottom:"max(80px, calc(72px + env(safe-area-inset-bottom, 0px)))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200, animation:"fadeUp 0.2s ease" }}>
+                    <button onClick={()=>{
+                      setOrders(orders.filter(o=>!selectedOrderIds.has(o.id)));
+                      setSelectedOrderIds(new Set());
+                      setSelectMode(false);
+                      showToast(`${selectedOrderIds.size} order${selectedOrderIds.size>1?"s":""} deleted`, "#FF3B30");
+                    }} style={{ width:"100%", padding:"17px", background:"#FF3B30", color:"white", border:"none", borderRadius:18, fontFamily:"'DM Sans',sans-serif", fontSize:16, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 20px rgba(255,59,48,0.4)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      <Icon name="trash" size={18} color="white"/> Delete {selectedOrderIds.size} order{selectedOrderIds.size>1?"s":""}
+                    </button>
+                  </div>
+                )}
               </>
             )}
 
