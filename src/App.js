@@ -76,6 +76,20 @@ const genInvNumber = (existing) => {
   return `RS-${y}${m}-${seq}`;
 };
 
+const nextInvNumberForClient = (invoices, clientName) => {
+  if (!clientName) return genInvNumber(invoices);
+  // Find all invoices for this client, get the last one's number
+  const clientInvs = invoices.filter(i => i.client === clientName);
+  if (clientInvs.length === 0) return genInvNumber(invoices);
+  const last = clientInvs[clientInvs.length - 1].number || "";
+  // Try to parse trailing sequence number: RS-YYYYMM-NNN or any-NNN
+  const match = last.match(/^(.*?)(\d+)$/);
+  if (!match) return genInvNumber(invoices);
+  const prefix = match[1];
+  const seq = String(parseInt(match[2], 10) + 1).padStart(match[2].length, "0");
+  return `${prefix}${seq}`;
+};
+
 // ─── ICONS ──────────────────────────────────────────────
 const Icon = ({ name, size=22, color="#1C1C1E" }) => {
   const s = { width:size, height:size, display:"block", flexShrink:0 };
@@ -96,6 +110,8 @@ const Icon = ({ name, size=22, color="#1C1C1E" }) => {
     receipt:     <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 2 2 2-2 2 2 2-2 2 2 1-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>,
     checkCircle: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>,
     print:       <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>,
+    arrowUp:     <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>,
+    arrowDown:   <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>,
   };
   return icons[name] || null;
 };
@@ -319,7 +335,7 @@ export default function App() {
       ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }))
       : [{ id:Date.now()+Math.random(), desc: o.description||`Order #${o.id}`, qty:"1", unitPrice:String(o.amount||""), price:String(o.amount||""), orderRef:o.id }];
     setItems(invoiceItems);
-    setInvNumber(genInvNumber(invoices));
+    setInvNumber(nextInvNumberForClient(invoices, o.client));
     setTab("invoice");
     setInvView("new");
   };
@@ -335,7 +351,7 @@ export default function App() {
       const qty  = parseFloat(it.qty)||1;
       const unit = parseFloat(it.unitPrice)||parseFloat(it.price)||0;
       const tot  = qty * unit;
-      return `<tr><td>${it.desc || "—"}${it.orderRef ? `<br><span style="font-size:9.5pt;color:#777">Order #${it.orderRef}</span>` : ""}</td><td class="right">${qty}</td><td class="right">${fmtCHF(unit)}</td><td class="right">${fmtCHF(tot)}</td></tr>`;
+      return `<tr><td>${it.desc || "—"}</td><td class="right">${qty}</td><td class="right">${fmtCHF(unit)}</td><td class="right">${fmtCHF(tot)}</td></tr>`;
     }).join("");
 
     const html = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
@@ -1012,10 +1028,14 @@ export default function App() {
                 {/* Line items */}
                 <div style={{ marginTop:8, marginBottom:4 }}>
                   <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Items for invoice</div>
-                  {(draft.lineItems||[]).map((li,idx)=>(
+                  {(draft.lineItems||[]).map((li,idx)=>{ const mv=(a,f,t)=>{const b=[...a];const[x]=b.splice(f,1);b.splice(t,0,x);return b;}; return (
                     <div key={li.id} style={{ background:"#F5F5F3", borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-                        <span style={{ fontSize:12, fontWeight:700, color:"#8E8E93" }}>Item {idx+1}</span>
+                        <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                          <button onClick={()=>idx>0&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx-1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#8E8E93"/></button>
+                          <button onClick={()=>idx<draft.lineItems.length-1&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx+1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===draft.lineItems.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#8E8E93"/></button>
+                          <span style={{ fontSize:12, fontWeight:700, color:"#8E8E93" }}>Item {idx+1}</span>
+                        </div>
                         <button onClick={()=>setDraft({...draft, lineItems:draft.lineItems.filter(i=>i.id!==li.id)})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#FF3B30"/></button>
                       </div>
                       <Input placeholder="Description (e.g. Pavé setting – ring)" value={li.desc} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
@@ -1025,7 +1045,7 @@ export default function App() {
                       </div>
                       {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>Total: <strong style={{color:"#0A0A0A"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
                     </div>
-                  ))}
+                  );})}
                   <button onClick={()=>setDraft({...draft, lineItems:[...(draft.lineItems||[]), {id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#8E8E93", cursor:"pointer" }}>+ Add item</button>
                 </div>
 
@@ -1055,10 +1075,14 @@ export default function App() {
                 </Field>
                 <div style={{ marginTop:8, marginBottom:4 }}>
                   <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Items for invoice</div>
-                  {(draft.lineItems||[]).map((li,idx)=>(
+                  {(draft.lineItems||[]).map((li,idx)=>{ const mv=(a,f,t)=>{const b=[...a];const[x]=b.splice(f,1);b.splice(t,0,x);return b;}; return (
                     <div key={li.id} style={{ background:"#F5F5F3", borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-                        <span style={{ fontSize:12, fontWeight:700, color:"#8E8E93" }}>Item {idx+1}</span>
+                        <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                          <button onClick={()=>idx>0&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx-1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#8E8E93"/></button>
+                          <button onClick={()=>idx<draft.lineItems.length-1&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx+1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===draft.lineItems.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#8E8E93"/></button>
+                          <span style={{ fontSize:12, fontWeight:700, color:"#8E8E93" }}>Item {idx+1}</span>
+                        </div>
                         <button onClick={()=>setDraft({...draft,lineItems:draft.lineItems.filter(i=>i.id!==li.id)})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#FF3B30"/></button>
                       </div>
                       <Input placeholder="Description" value={li.desc} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
@@ -1068,7 +1092,7 @@ export default function App() {
                       </div>
                       {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>Total: <strong style={{color:"#0A0A0A"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
                     </div>
-                  ))}
+                  );})}
                   <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#8E8E93", cursor:"pointer" }}>+ Add item</button>
                 </div>
                 <BtnPrimary disabled={!draft.client} onClick={()=>{ setOrders(orders.map(o=>o.id===draft.id?{...draft}:o)); setView("detail"); showToast("Order updated"); }}>
@@ -1159,7 +1183,7 @@ export default function App() {
                     <div style={{ fontSize:24, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Invoices</div>
                     {invoices.length > 0 && <div style={{ fontSize:13, color:"#ADADAD", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
                   </div>
-                  <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(genInvNumber(invoices)); setInvView("new"); }}
+                  <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
                     style={{ background:"#0A0A0A", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", letterSpacing:"-0.01em" }}>
                     + New
                   </button>
@@ -1254,6 +1278,7 @@ export default function App() {
                             const sel = clients.find(c=>c.name===e.target.value || c.company===e.target.value);
                             setInvClient(e.target.value);
                             setInvClientAddress(sel ? [sel.company&&sel.name?sel.company:"", sel.address].filter(Boolean).join("\n") : "");
+                            setInvNumber(nextInvNumberForClient(invoices, e.target.value));
                           }}>
                             <option value="">— Select client —</option>
                             {clients.map(c=><option key={c.id} value={c.company||c.name}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
@@ -1273,10 +1298,14 @@ export default function App() {
 
                   {/* Items — all, whether from order or manual */}
                   <SectionTitle>Items</SectionTitle>
-                  {items.map((it,idx)=>(
+                  {items.map((it,idx)=>{ const mv=(a,f,t)=>{const b=[...a];const[x]=b.splice(f,1);b.splice(t,0,x);return b;}; return (
                     <Card key={it.id}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em" }}>Item {idx+1}</div>
+                        <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                          <button onClick={()=>idx>0&&setItems(mv(items,idx,idx-1))} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#8E8E93"/></button>
+                          <button onClick={()=>idx<items.length-1&&setItems(mv(items,idx,idx+1))} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===items.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#8E8E93"/></button>
+                          <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em" }}>Item {idx+1}</div>
+                        </div>
                         <button onClick={()=>setItems(items.filter(i=>i.id!==it.id))} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#FF3B30"/></button>
                       </div>
                       <Field label="Description"><Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
@@ -1286,7 +1315,8 @@ export default function App() {
                       </div>
                       {lineTotal(it) > 0 && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>Total: <strong style={{color:"#0A0A0A"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
                     </Card>
-                  ))}
+                  );})}
+
                   <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:10 }}>+ Add item</button>
 
                   {/* Add items from another order of the same client */}
@@ -1408,7 +1438,6 @@ export default function App() {
                             <tr key={i} style={{ borderBottom:"1px solid #F2F2F7" }}>
                               <td style={{ padding:"7px 4px 7px 0", verticalAlign:"top" }}>
                                 <div style={{ fontSize:12, fontWeight:600, color:"#1C1C1E", wordBreak:"break-word" }}>{it.desc||"—"}</div>
-                                {it.orderRef && <div style={{ fontSize:9, color:"#ADADAD", marginTop:2 }}>#{it.orderRef}</div>}
                               </td>
                               <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, color:"#8E8E93", verticalAlign:"top" }}>{qty}</td>
                               <td style={{ padding:"7px 0", textAlign:"right", fontSize:11, color:"#8E8E93", verticalAlign:"top" }}>{C.currency} {fmt(unit)}</td>
