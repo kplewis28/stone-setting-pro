@@ -202,6 +202,8 @@ export default function App() {
   const [filterClient, setFilterClient] = useState("all");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
+  const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
+  const showConfirm = (message, onConfirm) => setConfirmModal({ message, onConfirm });
   const [workOrderPreview, setWorkOrderPreview] = useState(null);
   const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
@@ -978,10 +980,13 @@ export default function App() {
                 {selectMode && selectedOrderIds.size > 0 && (
                   <div style={{ position:"fixed", bottom:"max(80px, calc(72px + env(safe-area-inset-bottom, 0px)))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200, animation:"fadeUp 0.2s ease" }}>
                     <button onClick={()=>{
-                      setOrders(orders.filter(o=>!selectedOrderIds.has(o.id)));
-                      setSelectedOrderIds(new Set());
-                      setSelectMode(false);
-                      showToast(`${selectedOrderIds.size} order${selectedOrderIds.size>1?"s":""} deleted`, "#FF3B30");
+                      const count = selectedOrderIds.size;
+                      showConfirm(`Delete ${count} order${count>1?"s":""}? This cannot be undone.`,()=>{
+                        setOrders(orders.filter(o=>!selectedOrderIds.has(o.id)));
+                        setSelectedOrderIds(new Set());
+                        setSelectMode(false);
+                        showToast(`${count} order${count>1?"s":""} deleted`, "#FF3B30");
+                      });
                     }} style={{ width:"100%", padding:"17px", background:"#FF3B30", color:"white", border:"none", borderRadius:18, fontFamily:"'DM Sans',sans-serif", fontSize:16, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 20px rgba(255,59,48,0.4)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                       <Icon name="trash" size={18} color="white"/> Delete {selectedOrderIds.size} order{selectedOrderIds.size>1?"s":""}
                     </button>
@@ -1036,7 +1041,10 @@ export default function App() {
                           <button onClick={()=>idx<draft.lineItems.length-1&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx+1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===draft.lineItems.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#8E8E93"/></button>
                           <span style={{ fontSize:12, fontWeight:700, color:"#8E8E93" }}>Item {idx+1}</span>
                         </div>
-                        <button onClick={()=>setDraft({...draft, lineItems:draft.lineItems.filter(i=>i.id!==li.id)})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#FF3B30"/></button>
+                        <div style={{ display:"flex", gap:4 }}>
+                          <button onClick={()=>setDraft({...draft, lineItems:[...draft.lineItems.slice(0,idx+1), {...li, id:Date.now()+Math.random()}, ...draft.lineItems.slice(idx+1)]})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.5 }} title="Duplicate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+                          <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setDraft({...draft, lineItems:draft.lineItems.filter(i=>i.id!==li.id)}))} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#FF3B30"/></button>
+                        </div>
                       </div>
                       <Input placeholder="Description (e.g. Pavé setting – ring)" value={li.desc} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
@@ -1083,7 +1091,10 @@ export default function App() {
                           <button onClick={()=>idx<draft.lineItems.length-1&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx+1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===draft.lineItems.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#8E8E93"/></button>
                           <span style={{ fontSize:12, fontWeight:700, color:"#8E8E93" }}>Item {idx+1}</span>
                         </div>
-                        <button onClick={()=>setDraft({...draft,lineItems:draft.lineItems.filter(i=>i.id!==li.id)})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#FF3B30"/></button>
+                        <div style={{ display:"flex", gap:4 }}>
+                          <button onClick={()=>setDraft({...draft,lineItems:[...draft.lineItems.slice(0,idx+1),{...li,id:Date.now()+Math.random()},...draft.lineItems.slice(idx+1)]})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.5 }} title="Duplicate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+                          <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setDraft({...draft,lineItems:draft.lineItems.filter(i=>i.id!==li.id)}))} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#FF3B30"/></button>
+                        </div>
                       </div>
                       <Input placeholder="Description" value={li.desc} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
@@ -1099,7 +1110,7 @@ export default function App() {
                   Save changes
                 </BtnPrimary>
                 <div style={{ height:10 }}/>
-                <button onClick={()=>{ setOrders(orders.filter(o=>o.id!==draft.id)); setView("list"); showToast("Order deleted","#FF3B30"); }} style={{ width:"100%", background:"none", border:"none", color:"#FF3B30", fontSize:13, fontWeight:600, cursor:"pointer", padding:"8px 0" }}>
+                <button onClick={()=>showConfirm("This order and all its items will be permanently deleted.",()=>{ setOrders(orders.filter(o=>o.id!==draft.id)); setView("list"); showToast("Order deleted","#FF3B30"); })} style={{ width:"100%", background:"none", border:"none", color:"#FF3B30", fontSize:13, fontWeight:600, cursor:"pointer", padding:"8px 0" }}>
                   Delete order
                 </button>
               </Card>
@@ -1158,10 +1169,10 @@ export default function App() {
                   })}
                 </div>
 
-                {/* Factura — only when done */}
-                {selectedOrder.status==="done" && (
+                {/* Factura — when done or already invoiced (re-create) */}
+                {(selectedOrder.status==="done" || selectedOrder.status==="invoiced") && (
                   <BtnPrimary onClick={()=>loadOrderIntoInvoice(selectedOrder)} style={{ marginTop:4 }}>
-                    <Icon name="invoice" size={16} color="white"/> Create invoice
+                    <Icon name="invoice" size={16} color="white"/> {selectedOrder.status==="invoiced" ? "Re-create invoice" : "Create invoice"}
                   </BtnPrimary>
                 )}
               </>
@@ -1306,7 +1317,10 @@ export default function App() {
                           <button onClick={()=>idx<items.length-1&&setItems(mv(items,idx,idx+1))} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===items.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#8E8E93"/></button>
                           <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em" }}>Item {idx+1}</div>
                         </div>
-                        <button onClick={()=>setItems(items.filter(i=>i.id!==it.id))} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#FF3B30"/></button>
+                        <div style={{ display:"flex", gap:4 }}>
+                          <button onClick={()=>setItems([...items.slice(0,idx+1),{...it,id:Date.now()+Math.random()},...items.slice(idx+1)])} style={{ background:"none", border:"none", cursor:"pointer", padding:4, opacity:0.5 }} title="Duplicate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+                          <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setItems(items.filter(i=>i.id!==it.id)))} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#FF3B30"/></button>
+                        </div>
                       </div>
                       <Field label="Description"><Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
@@ -1389,7 +1403,7 @@ export default function App() {
                       <div style={{ fontSize:22, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>{inv.number}</div>
                       {inv.client && <div style={{ fontSize:13, color:"#ADADAD", marginTop:2, fontWeight:500 }}>{inv.client}</div>}
                     </div>
-                    <button onClick={()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#FFF0EF", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#FF3B30"/></button>
+                    <button onClick={()=>showConfirm(`Delete invoice ${inv.number}? This cannot be undone.`,()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); showToast("Invoice deleted","#FF3B30"); })} style={{ width:36, height:36, borderRadius:11, background:"#FFF0EF", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#FF3B30"/></button>
                   </div>
                 </div>
                 <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
@@ -1560,7 +1574,7 @@ export default function App() {
                   </Field>
                 </div>
                 {clientView==="edit" && (
-                  <button onClick={()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Client deleted","#FF3B30"); }}
+                  <button onClick={()=>showConfirm("Delete this client? Their orders will remain but the client will be removed.",()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Client deleted","#FF3B30"); })}
                     style={{ background:"none", border:"none", color:"#FF3B30", fontSize:13, fontWeight:600, cursor:"pointer", padding:"4px 0", marginBottom:8 }}>
                     Delete client
                   </button>
@@ -1918,6 +1932,22 @@ export default function App() {
       {toast && (
         <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
           <Icon name="check" size={15} color="white"/> {toast.msg}
+        </div>
+      )}
+
+      {/* ── CONFIRM MODAL ── */}
+      {confirmModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:3000, display:"flex", alignItems:"flex-end", justifyContent:"center", padding:"0 16px 32px" }}>
+          <div style={{ background:"white", borderRadius:24, padding:"24px 24px 20px", width:"100%", maxWidth:468, animation:"fadeUp 0.2s ease" }}>
+            <div style={{ fontSize:16, fontWeight:700, color:"#0A0A0A", marginBottom:8, textAlign:"center", letterSpacing:"-0.01em" }}>Are you sure?</div>
+            <div style={{ fontSize:14, color:"#8E8E93", textAlign:"center", lineHeight:1.5, marginBottom:24 }}>{confirmModal.message}</div>
+            <button onClick={()=>{ confirmModal.onConfirm(); setConfirmModal(null); }} style={{ width:"100%", padding:"16px", background:"#FF3B30", color:"white", border:"none", borderRadius:16, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:10 }}>
+              Delete
+            </button>
+            <button onClick={()=>setConfirmModal(null)} style={{ width:"100%", padding:"15px", background:"#F5F5F3", color:"#0A0A0A", border:"none", borderRadius:16, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:600, cursor:"pointer" }}>
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
