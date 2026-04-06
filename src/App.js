@@ -12,7 +12,7 @@ const CONFIG = {
   currency: "CHF",
   taxLabel: "MWST.",
   taxRate: 0.081,
-  vatId: "CHE-137.031.745 MWST",
+  vatId: "CHE-307.800.003 MWST",
   paymentTerms: "Betrag zahlbar innerhalb von 10 Tagen.",
   bankDetails: "CH 40 0900 0000 1674 9039 3",
   porto: 0,
@@ -175,6 +175,7 @@ export default function App() {
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [invPorto, setInvPorto] = useState("");
   const [invClientAddress, setInvClientAddress] = useState("");
+  const [invNumber, setInvNumber] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [toast, setToast] = useState(null);
   const showToast = (msg, color="#34C759") => { setToast({msg,color}); setTimeout(()=>setToast(null), 2000); };
@@ -316,6 +317,7 @@ export default function App() {
       ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }))
       : [{ id:Date.now()+Math.random(), desc: o.description||`Order #${o.id}`, qty:"1", unitPrice:String(o.amount||""), price:String(o.amount||""), orderRef:o.id }];
     setItems(invoiceItems);
+    setInvNumber(genInvNumber(invoices));
     setTab("invoice");
     setInvView("new");
   };
@@ -516,9 +518,16 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&display=swap');
         @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-        * { -webkit-tap-highlight-color: transparent; }
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        input, select, textarea { font-size: 16px !important; }
         input:focus, select:focus, textarea:focus { outline: 2px solid ${ACCENT} !important; outline-offset: 0px; background:white !important; }
         ::-webkit-scrollbar { display: none; }
+        .safe-top { padding-top: max(56px, env(safe-area-inset-top, 56px)); }
+        .safe-bottom { padding-bottom: max(100px, calc(72px + env(safe-area-inset-bottom, 0px))); }
+        @media (max-width: 375px) {
+          .two-col { grid-template-columns: 1fr !important; }
+          .filter-row { flex-wrap: wrap; }
+        }
       `}</style>
 
       {/* ── DESKTOP SIDEBAR ── */}
@@ -547,14 +556,14 @@ export default function App() {
       )}
 
       {/* ── CONTENT WRAPPER ── */}
-      <div style={ isDesktop ? { marginLeft:220, minHeight:"100vh" } : { maxWidth:430, margin:"0 auto" } }>
+      <div style={ isDesktop ? { marginLeft:220, minHeight:"100vh" } : { maxWidth:500, margin:"0 auto" } }>
 
       {/* ── HOME TAB ── */}
       {tab==="home" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
 
           {/* TOP BAR — editorial */}
-          <div style={{ padding: isDesktop ? "36px 40px 24px" : "56px 22px 20px", background:"white" }}>
+          <div style={{ padding: isDesktop ? "36px 40px 24px" : "max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"#ADADAD", fontWeight:500 }}>{greeting},</div>
@@ -574,7 +583,7 @@ export default function App() {
                   <Icon name="gem" size={24} color="white"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:20, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>New Order</div>
+                  <div style={{ fontSize:20, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Create New Order</div>
                   <div style={{ fontSize:13, color:"rgba(0,0,0,0.4)", fontWeight:500, marginTop:2 }}>Create a work order manually</div>
                 </div>
               </div>
@@ -625,7 +634,7 @@ export default function App() {
             );
           })()}
 
-          <div style={{ padding: isDesktop ? "16px 40px 60px" : "12px 22px 100px" }}>
+          <div style={{ padding: isDesktop ? "16px 40px 60px" : "12px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
             {(() => {
               const today = new Date().toISOString().split("T")[0];
               const active = orders.filter(o => o.status !== "done" && o.status !== "invoiced");
@@ -669,8 +678,12 @@ export default function App() {
                   )}
 
                   {/* Sorted order list */}
+                  <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:12, marginTop:4 }}>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Upcoming deliveries</div>
+                    {sorted.length > 0 && <div style={{ fontSize:12, fontWeight:500, color:"#ADADAD" }}>{sorted.length} pending</div>}
+                  </div>
                   {sorted.length === 0 && (
-                    <div style={{ textAlign:"center", padding:"32px 0", color:"#ADADAD", fontSize:14, fontWeight:500 }}>No pending orders</div>
+                    <div style={{ textAlign:"center", padding:"24px 0", color:"#ADADAD", fontSize:14, fontWeight:500 }}>No pending orders</div>
                   )}
                   {sorted.map((o, i) => {
                     const urg = getUrgency(o.deadline);
@@ -717,12 +730,12 @@ export default function App() {
       {/* ── SCAN TAB ── */}
       {tab==="scan" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
-          <div style={{ padding: isDesktop?"32px 40px 20px":"56px 22px 20px", background:"white", display:"flex", alignItems:"center", gap:14 }}>
+          <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white", display:"flex", alignItems:"center", gap:14 }}>
             <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
             <div style={{ fontSize:24, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Scan Delivery Note</div>
           </div>
 
-          <div style={{ padding: isDesktop?"0 40px 60px":"0 22px 100px" }}>
+          <div style={{ padding: isDesktop?"0 40px 60px":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
             <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ setImgData(c); setPhotoStep("preview"); }); }; r.readAsDataURL(f); }}/>
 
             {photoStep==="capture" && (
@@ -830,15 +843,15 @@ export default function App() {
       {tab==="orders" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* HEADER */}
-          <div style={{ padding: isDesktop?"32px 40px 20px":"56px 22px 20px", background:"white" }}>
+          <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {view!=="list"
-                  ? <button onClick={()=>setView("list")} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
+                  ? <button onClick={()=>view==="edit" ? setView("detail") : setView("list")} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
                   : <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
                 }
                 <div style={{ fontSize:24, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>
-                  {view==="new" ? "New Order" : view==="detail" ? selectedOrder?.client : "Orders"}
+                  {view==="new" ? "New Order" : view==="edit" ? "Edit Order" : view==="detail" ? selectedOrder?.client : "Orders"}
                 </div>
               </div>
               {view==="list" && (
@@ -847,14 +860,17 @@ export default function App() {
                 </button>
               )}
               {view==="detail" && selectedOrder && (
-                <button onClick={()=>setWorkOrderPreview(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", background:"#F5F5F3", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#0A0A0A", fontFamily:"'DM Sans',sans-serif" }}>
-                  <Icon name="print" size={15} color="#0A0A0A"/> Print
-                </button>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>{ setDraft({...selectedOrder}); setView("edit"); }} style={{ padding:"9px 14px", background:"#F5F5F3", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#0A0A0A", fontFamily:"'DM Sans',sans-serif" }}>Edit</button>
+                  <button onClick={()=>setWorkOrderPreview(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", background:"#F5F5F3", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#0A0A0A", fontFamily:"'DM Sans',sans-serif" }}>
+                    <Icon name="print" size={15} color="#0A0A0A"/> Print
+                  </button>
+                </div>
               )}
             </div>
           </div>
 
-          <div style={{ padding: isDesktop?"16px 40px 60px":"16px 22px 100px" }}>
+          <div style={{ padding: isDesktop?"16px 40px 60px":"16px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
 
             {/* ── LIST ── */}
             {view==="list" && (
@@ -981,6 +997,52 @@ export default function App() {
               </Card>
             )}
 
+            {/* ── EDIT ORDER ── */}
+            {view==="edit" && (
+              <Card>
+                <Field label="Client *">
+                  {clients.length > 0
+                    ? <Select value={draft.clientId} onChange={e=>{ const c=clients.find(x=>x.id===e.target.value); setDraft({...draft,clientId:e.target.value,client:c?(c.company||c.name):""}); }}>
+                        <option value="">— Select client —</option>
+                        {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
+                      </Select>
+                    : <Input placeholder="Client or company" value={draft.client} onChange={e=>setDraft({...draft,client:e.target.value})}/>
+                  }
+                </Field>
+                <Field label="Work description">
+                  <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Work description…"/>
+                </Field>
+                <Field label="Delivery date">
+                  <Input type="date" value={draft.deadline} onChange={e=>setDraft({...draft,deadline:e.target.value})}/>
+                </Field>
+                <div style={{ marginTop:8, marginBottom:4 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Items for invoice</div>
+                  {(draft.lineItems||[]).map((li,idx)=>(
+                    <div key={li.id} style={{ background:"#F5F5F3", borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                        <span style={{ fontSize:12, fontWeight:700, color:"#8E8E93" }}>Item {idx+1}</span>
+                        <button onClick={()=>setDraft({...draft,lineItems:draft.lineItems.filter(i=>i.id!==li.id)})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#FF3B30"/></button>
+                      </div>
+                      <Input placeholder="Description" value={li.desc} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                        <Input type="number" placeholder="Qty" value={li.qty||""} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,qty:e.target.value}:i)})}/>
+                        <Input type="number" placeholder={`Unit price (${C.currency})`} value={li.unitPrice||""} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,unitPrice:e.target.value}:i)})}/>
+                      </div>
+                      {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>Total: <strong style={{color:"#0A0A0A"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
+                    </div>
+                  ))}
+                  <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#8E8E93", cursor:"pointer" }}>+ Add item</button>
+                </div>
+                <BtnPrimary disabled={!draft.client} onClick={()=>{ setOrders(orders.map(o=>o.id===draft.id?{...draft}:o)); setView("detail"); showToast("Order updated"); }}>
+                  Save changes
+                </BtnPrimary>
+                <div style={{ height:10 }}/>
+                <button onClick={()=>{ setOrders(orders.filter(o=>o.id!==draft.id)); setView("list"); showToast("Order deleted","#FF3B30"); }} style={{ width:"100%", background:"none", border:"none", color:"#FF3B30", fontSize:13, fontWeight:600, cursor:"pointer", padding:"8px 0" }}>
+                  Delete order
+                </button>
+              </Card>
+            )}
+
             {/* ── DETAIL ── */}
             {view==="detail" && selectedOrder && (
               <>
@@ -1053,19 +1115,19 @@ export default function App() {
           {/* ── LIST VIEW ── */}
           {invView==="list" && (
             <>
-              <div style={{ padding: isDesktop?"32px 40px 20px":"56px 22px 20px", background:"white" }}>
+              <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
                     <div style={{ fontSize:24, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Invoices</div>
                     {invoices.length > 0 && <div style={{ fontSize:13, color:"#ADADAD", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
                   </div>
-                  <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvView("new"); }}
+                  <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(genInvNumber(invoices)); setInvView("new"); }}
                     style={{ background:"#0A0A0A", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", letterSpacing:"-0.01em" }}>
                     + New
                   </button>
                 </div>
               </div>
-              <div style={{ padding: isDesktop?"0 40px 60px":"0 22px 100px" }}>
+              <div style={{ padding: isDesktop?"0 40px 60px":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
                 {invoices.length === 0 && (
                   <div style={{ textAlign:"center", padding:"48px 24px" }}>
                     <div style={{ width:72, height:72, borderRadius:22, background:PASTELS.invoice, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}><Icon name="receipt" size={32} color="#8E8E93"/></div>
@@ -1108,7 +1170,7 @@ export default function App() {
               const validItems = items.filter(it=>it.desc||it.unitPrice||it.price).map(it=>({...it, price: String(lineTotal(it))}));
               const inv = {
                 id: Date.now(),
-                number: genInvNumber(invoices),
+                number: invNumber || genInvNumber(invoices),
                 client: invClient,
                 clientAddress: invClientAddress,
                 date: invDate,
@@ -1128,7 +1190,7 @@ export default function App() {
             return (
               <>
                 {/* Header with live total */}
-                <div style={{ padding: isDesktop?"32px 40px 20px":"56px 22px 20px", background:"white" }}>
+                <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
                     <div style={{ flex:1 }}>
@@ -1144,7 +1206,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div style={{ padding: isDesktop?"0 40px 60px":"0 22px 100px" }}>
+                <div style={{ padding: isDesktop?"0 40px 60px":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
 
                   {/* Client + date */}
                   <Card>
@@ -1160,6 +1222,9 @@ export default function App() {
                           </Select>
                         : <Input placeholder="Company name" value={invClient} onChange={e=>setInvClient(e.target.value)}/>
                       }
+                    </Field>
+                    <Field label="Invoice number">
+                      <Input placeholder="RS-202601-001" value={invNumber} onChange={e=>setInvNumber(e.target.value)}/>
                     </Field>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                       <Field label="Date"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
@@ -1249,7 +1314,7 @@ export default function App() {
             const invTotal = invSub + invPortoVal + invMwst;
             return (
               <>
-                <div style={{ padding: isDesktop?"32px 40px 20px":"56px 22px 20px", background:"white" }}>
+                <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
                     <div style={{ flex:1 }}>
@@ -1259,7 +1324,7 @@ export default function App() {
                     <button onClick={()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#FFF0EF", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#FF3B30"/></button>
                   </div>
                 </div>
-                <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
+                <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
 
                   {/* ── INVOICE PREVIEW CARD ── */}
                   <div style={{ background:"white", border:"1.5px solid #E5E5EA", borderRadius:16, padding:"28px 24px", marginBottom:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
@@ -1267,7 +1332,7 @@ export default function App() {
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
                       <img src="/logo.png" alt={C.businessName} style={{ height:52, objectFit:"contain" }}/>
                       <div style={{ textAlign:"right" }}>
-                        <div style={{ fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700 }}>Rechnung</div>
+                        <div style={{ fontSize:10, color:"#C7C7CC", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700 }}>Rechnung</div>
                         <div style={{ fontSize:13, fontFamily:"monospace", fontWeight:700, color:"#1C1C1E", marginTop:2 }}>{inv.number}</div>
                         <div style={{ fontSize:11, color:"#8E8E93" }}>{new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
                         <div style={{ fontSize:11, marginTop:6, padding:"2px 8px", borderRadius:6, display:"inline-block", background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:700 }}>{inv.printed?"Printed":"Saved"}</div>
@@ -1281,13 +1346,19 @@ export default function App() {
                     </div>
 
                     {/* Items table */}
-                    <table style={{ width:"100%", borderCollapse:"collapse", marginBottom:12 }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse", marginBottom:12, tableLayout:"fixed" }}>
+                      <colgroup>
+                        <col style={{ width:"46%" }}/>
+                        <col style={{ width:"10%" }}/>
+                        <col style={{ width:"22%" }}/>
+                        <col style={{ width:"22%" }}/>
+                      </colgroup>
                       <thead>
                         <tr style={{ borderBottom:"1.5px solid #E5E5EA" }}>
-                          <th style={{ textAlign:"left", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Description</th>
-                          <th style={{ textAlign:"right", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Qty</th>
-                          <th style={{ textAlign:"right", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Unit</th>
-                          <th style={{ textAlign:"right", fontSize:10, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", padding:"4px 0 8px", fontWeight:700 }}>Total</th>
+                          <th style={{ textAlign:"left", fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 4px 7px 0", fontWeight:700 }}>Description</th>
+                          <th style={{ textAlign:"right", fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Qty</th>
+                          <th style={{ textAlign:"right", fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Unit</th>
+                          <th style={{ textAlign:"right", fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1297,13 +1368,13 @@ export default function App() {
                           const tot = qty * unit;
                           return (
                             <tr key={i} style={{ borderBottom:"1px solid #F2F2F7" }}>
-                              <td style={{ padding:"9px 0", verticalAlign:"top" }}>
-                                <div style={{ fontSize:13, fontWeight:600, color:"#1C1C1E" }}>{it.desc||"—"}</div>
-                                {it.orderRef && <div style={{ fontSize:10, color:"#8E8E93" }}>Order #{it.orderRef}</div>}
+                              <td style={{ padding:"7px 4px 7px 0", verticalAlign:"top" }}>
+                                <div style={{ fontSize:12, fontWeight:600, color:"#1C1C1E", wordBreak:"break-word" }}>{it.desc||"—"}</div>
+                                {it.orderRef && <div style={{ fontSize:9, color:"#ADADAD", marginTop:2 }}>#{it.orderRef}</div>}
                               </td>
-                              <td style={{ padding:"9px 0", textAlign:"right", fontSize:13, color:"#8E8E93" }}>{qty}</td>
-                              <td style={{ padding:"9px 0", textAlign:"right", fontSize:13, color:"#8E8E93" }}>{C.currency} {fmt(unit)}</td>
-                              <td style={{ padding:"9px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1C1C1E" }}>{C.currency} {fmt(tot)}</td>
+                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, color:"#8E8E93", verticalAlign:"top" }}>{qty}</td>
+                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:11, color:"#8E8E93", verticalAlign:"top" }}>{C.currency} {fmt(unit)}</td>
+                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, fontWeight:700, color:"#1C1C1E", verticalAlign:"top" }}>{C.currency} {fmt(tot)}</td>
                             </tr>
                           );
                         })}
@@ -1342,7 +1413,7 @@ export default function App() {
       {tab==="clients" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* Header */}
-          <div style={{ padding: isDesktop?"32px 40px 20px":"56px 22px 20px", background:"white" }}>
+          <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {clientView!=="list" && (
@@ -1366,7 +1437,7 @@ export default function App() {
             </div>
           </div>
 
-          <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px 100px" }}>
+          <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
 
             {/* ── LIST ── */}
             {clientView==="list" && (
@@ -1505,7 +1576,7 @@ export default function App() {
 
       {/* ── BOTTOM NAV (mobile only) ── */}
       {!isDesktop && (
-        <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:430, background:"white", borderTop:"1px solid #EBEBEB", display:"flex", padding:"10px 0 28px", zIndex:100 }}>
+        <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"white", borderTop:"1px solid #EBEBEB", display:"flex", padding:"10px 0 max(28px, env(safe-area-inset-bottom, 28px))", zIndex:100 }}>
           {[
             { key:"home",    icon:"orders",  label:"Home"    },
             { key:"scan",    icon:"scan",    label:"Scan"    },
