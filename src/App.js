@@ -1422,9 +1422,10 @@ export default function App() {
                     </div>
 
                     {/* To */}
-                    <div style={{ background:"#F2F2F7", borderRadius:10, padding:"10px 14px", marginBottom:18 }}>
+                    <div style={{ background:"#F2F2F7", borderRadius:10, padding:"10px 14px", marginBottom:18, textAlign:"left" }}>
                       <div style={{ fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:700, marginBottom:3 }}>To</div>
                       <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E" }}>{inv.client}</div>
+                      {inv.clientAddress && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2, whiteSpace:"pre-line", lineHeight:1.5 }}>{inv.clientAddress}</div>}
                     </div>
 
                     {/* Items table */}
@@ -1938,7 +1939,7 @@ export default function App() {
       {/* ── CONFIRM MODAL ── */}
       {confirmModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:3000, display:"flex", alignItems:"flex-end", justifyContent:"center", padding:"0 16px 32px" }}>
-          <div style={{ background:"white", borderRadius:24, padding:"24px 24px 20px", width:"100%", maxWidth:468, animation:"fadeUp 0.2s ease" }}>
+          <div style={{ background:"white", borderRadius:24, padding:"24px 24px 20px", width:"100%", maxWidth:468, animation:"fadeUp 0.2s ease", textAlign:"left" }}>
             <div style={{ fontSize:16, fontWeight:700, color:"#0A0A0A", marginBottom:8, textAlign:"center", letterSpacing:"-0.01em" }}>Are you sure?</div>
             <div style={{ fontSize:14, color:"#8E8E93", textAlign:"center", lineHeight:1.5, marginBottom:24 }}>{confirmModal.message}</div>
             <button onClick={()=>{ confirmModal.onConfirm(); setConfirmModal(null); }} style={{ width:"100%", padding:"16px", background:"#FF3B30", color:"white", border:"none", borderRadius:16, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:10 }}>
