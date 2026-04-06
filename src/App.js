@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
+import { dbGet, dbSet } from './supabase';
 
 // ─── CLIENT CONFIG — only this changes per client ───────
 const CONFIG = {
@@ -229,13 +230,47 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // ── LOAD FROM SUPABASE ON MOUNT (cloud overrides local cache) ──
+  const [dbLoaded, setDbLoaded] = useState(false);
   useEffect(() => {
+    const load = async () => {
+      try {
+        const [o, inv, cl, dn] = await Promise.all([
+          dbGet('orders'), dbGet('invoices'), dbGet('clients'), dbGet('day_notes')
+        ]);
+        if (o   != null) setOrders(o);
+        if (inv != null) setInvoices(inv);
+        if (cl  != null) setClients(cl);
+        if (dn  != null) setDayNotes(dn);
+      } catch(_) {}
+      setDbLoaded(true);
+    };
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── SAVE TO LOCALSTORAGE + SUPABASE ──
+  useEffect(() => {
+    if (!dbLoaded) return;
     try { localStorage.setItem("ssp_orders", JSON.stringify(orders)); }
     catch(e) { try { localStorage.setItem("ssp_orders", JSON.stringify(orders.map(o=>({...o,photo:null})))); } catch(_) {} }
-  }, [orders]);
-  useEffect(() => { try { localStorage.setItem("ssp_invoices", JSON.stringify(invoices)); } catch(_) {} }, [invoices]);
-  useEffect(() => { try { localStorage.setItem("ssp_clients", JSON.stringify(clients)); } catch(_) {} }, [clients]);
-  useEffect(() => { try { localStorage.setItem("ssp_day_notes", JSON.stringify(dayNotes)); } catch(_) {} }, [dayNotes]);
+    dbSet('orders', orders).catch(()=>{});
+  }, [orders, dbLoaded]);
+  useEffect(() => {
+    if (!dbLoaded) return;
+    try { localStorage.setItem("ssp_invoices", JSON.stringify(invoices)); } catch(_) {}
+    dbSet('invoices', invoices).catch(()=>{});
+  }, [invoices, dbLoaded]);
+  useEffect(() => {
+    if (!dbLoaded) return;
+    try { localStorage.setItem("ssp_clients", JSON.stringify(clients)); } catch(_) {}
+    dbSet('clients', clients).catch(()=>{});
+  }, [clients, dbLoaded]);
+  useEffect(() => {
+    if (!dbLoaded) return;
+    try { localStorage.setItem("ssp_day_notes", JSON.stringify(dayNotes)); } catch(_) {}
+    dbSet('day_notes', dayNotes).catch(()=>{});
+  }, [dayNotes, dbLoaded]);
 
   // Scroll calendar strip to today on mount
   useEffect(() => {
