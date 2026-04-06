@@ -344,7 +344,7 @@ export default function App() {
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #222; padding: 40px 50px; max-width: 800px; margin: 0 auto; }
   .address { font-size:10pt; color:#444; margin-bottom:28px; line-height:1.7; }
-  .rechnung-title { font-size:21pt; font-weight:bold; letter-spacing:4px; color:${ACCENT}; border:3px solid ${ACCENT}; display:inline-block; padding:4px 14px; margin-bottom:6px; text-transform:uppercase; }
+  .rechnung-title { font-size:21pt; font-weight:bold; letter-spacing:4px; color:#8E8E93; border:3px solid #C7C7CC; display:inline-block; padding:4px 14px; margin-bottom:6px; text-transform:uppercase; }
   .datum { font-size:11pt; font-weight:bold; margin-bottom:28px; }
   .recipient-block { float:right; text-align:left; font-size:11pt; line-height:1.8; margin-top:-80px; margin-bottom:32px; }
   .clearfix::after { content:""; display:table; clear:both; }
