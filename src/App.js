@@ -17,7 +17,7 @@ const CONFIG = {
   paymentTerms: "Betrag zahlbar innerhalb von 10 Tagen.",
   bankDetails: "CH 40 0900 0000 1674 9039 3",
   porto: 0,
-  accentColor: "#FF6B2B",
+  accentColor: "#F5C200",
   serviceTypes: ["Pavé", "Bezel", "Prong", "Channel", "Flush", "Invisible"],
   itemCategories: ["Diamond", "Ruby", "Emerald", "Sapphire", "Amethyst", "Other"],
   fieldLabel: "Stone",
@@ -25,7 +25,7 @@ const CONFIG = {
   piecesLabel: "Pieces",
   statuses: {
     received:   { label: "Received",    color: "#FF9500" },
-    inprogress: { label: "In Progress", color: "#007AFF" },
+    inprogress: { label: "In Progress", color: "#F5C200" },
     done:       { label: "Done",        color: "#34C759" },
     invoiced:   { label: "Invoiced",    color: "#8E8E93" },
   },
@@ -40,7 +40,7 @@ const PASTELS = {
   orders:     "#D8F0EC",
   invoice:    "#EDE9FF",
   received:   "#FFF3DC",
-  inprogress: "#D8EEFF",
+  inprogress: "#FFF8D0",
   done:       "#D8F5E0",
   invoiced:   "#EFEFEF",
 };
@@ -678,7 +678,7 @@ export default function App() {
                         <span style={{ fontSize:18, fontWeight:800, color: isSelected ? "white" : isPast ? "#D0D0D0" : "#0A0A0A", lineHeight:1, letterSpacing:"-0.01em" }}>{date.getDate()}</span>
                         <div style={{ display:"flex", gap:3, height:5, alignItems:"center" }}>
                           {hasOrders && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.7)":ACCENT }}/>}
-                          {hasNote   && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.5)":"#007AFF" }}/>}
+                          {hasNote   && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.5)":"#F5C200" }}/>}
                         </div>
                       </button>
                     );
@@ -703,7 +703,7 @@ export default function App() {
                 if(deadline === today) return { accent:"#FF9500", label:"Today" };
                 const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
                 if(diff === 1) return { accent:"#FF9500", label:"Tomorrow" };
-                if(diff <= 7)  return { accent:"#007AFF", label:null };
+                if(diff <= 7)  return { accent:"#F5C200", label:null };
                 return { accent:"transparent", label:null };
               };
 
@@ -743,7 +743,7 @@ export default function App() {
                   {sorted.map((o, i) => {
                     const urg = getUrgency(o.deadline);
                     const dateParts = fmtDeadline(o.deadline);
-                    const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#007AFF" : "#ADADAD";
+                    const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#F5C200" : "#ADADAD";
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
@@ -970,11 +970,11 @@ export default function App() {
                     if(deadline === today) return { accent:"#FF9500", label:"Today" };
                     const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
                     if(diff === 1) return { accent:"#FF9500", label:"Tomorrow" };
-                    if(diff <= 7)  return { accent:"#007AFF", label:null };
+                    if(diff <= 7)  return { accent:"#F5C200", label:null };
                     return { accent:"transparent", label:null };
                   };
                   const urg = getUrgency(o.deadline);
-                  const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#007AFF" : "#ADADAD";
+                  const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#F5C200" : "#ADADAD";
                   const isChecked = selectedOrderIds.has(o.id);
                   return (
                     <button key={o.id} onClick={()=>{
@@ -1184,7 +1184,7 @@ export default function App() {
 
                 {/* Status selector — compact horizontal, only 3 main statuses */}
                 <div style={{ display:"flex", gap:8, marginBottom:20 }}>
-                  {[["received","Received","#FF9500"],["inprogress","In Progress","#007AFF"],["done","Done","#34C759"]].map(([key,label,color])=>{
+                  {[["received","Received","#FF9500"],["inprogress","In Progress","#F5C200"],["done","Done","#34C759"]].map(([key,label,color])=>{
                     const active = selectedOrder.status===key || (selectedOrder.status==="invoiced" && key==="done");
                     return (
                       <button key={key} onClick={()=>{
@@ -1245,7 +1245,7 @@ export default function App() {
                 )}
                 {[...invoices].reverse().map((inv,i) => {
                   const invTotal = inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate) + (parseFloat(inv.porto)||0);
-                  const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#007AFF" : "#ADADAD";
+                  const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#F5C200" : "#ADADAD";
                   return (
                     <button key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); }}
                       style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
@@ -1569,7 +1569,7 @@ export default function App() {
                 )}
                 {clients.map((c, idx) => {
                   const orderCount = orders.filter(o=>o.clientId===c.id||o.client===(c.company||c.name)).length;
-                  const priorityColor = idx === 0 ? "#FF3B30" : idx === 1 ? "#FF9500" : idx === 2 ? "#007AFF" : "#ADADAD";
+                  const priorityColor = idx === 0 ? "#FF3B30" : idx === 1 ? "#FF9500" : idx === 2 ? "#F5C200" : "#ADADAD";
                   return (
                     <button key={c.id} onClick={()=>{ setSelectedClientId(c.id); setClientView("detail"); }}
                       style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
