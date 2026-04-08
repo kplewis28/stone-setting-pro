@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { dbGet, dbSet } from './supabase';
+import { Button, TextInput, TextArea } from '@carbon/react';
 
 // ─── CLIENT CONFIG — only this changes per client ───────
 const CONFIG = {
@@ -17,32 +18,33 @@ const CONFIG = {
   paymentTerms: "Betrag zahlbar innerhalb von 10 Tagen.",
   bankDetails: "CH 40 0900 0000 1674 9039 3",
   porto: 0,
-  accentColor: "#F5C200",
+  accentColor: "#f1c21b",  // $support-warning (Carbon token)
   serviceTypes: ["Pavé", "Bezel", "Prong", "Channel", "Flush", "Invisible"],
   itemCategories: ["Diamond", "Ruby", "Emerald", "Sapphire", "Amethyst", "Other"],
   fieldLabel: "Stone",
   subFieldLabel: "Setting",
   piecesLabel: "Pieces",
   statuses: {
-    received:   { label: "Received",    color: "#FF9500" },
-    inprogress: { label: "In Progress", color: "#F5C200" },
-    done:       { label: "Done",        color: "#34C759" },
-    invoiced:   { label: "Invoiced",    color: "#8E8E93" },
+    received:   { label: "Received",    color: "#f1c21b" },  // $support-warning
+    inprogress: { label: "In Progress", color: "#161616" },  // $text-primary (black)
+    done:       { label: "Done",        color: "#24a148" },  // $support-success
+    invoiced:   { label: "Invoiced",    color: "#8d8d8d" },  // $border-strong
   },
 };
 
 const C = CONFIG;
 const ACCENT = C.accentColor;
 
-// ─── PASTEL PALETTE ─────────────────────────────────────
+// ─── CARBON TOKEN PALETTE ───────────────────────────────
+// layer-01: #f4f4f4 | layer-02: #ffffff | border-subtle: #e0e0e0
 const PASTELS = {
-  scan:       "#FFF3DC",
-  orders:     "#D8F0EC",
-  invoice:    "#EDE9FF",
-  received:   "#FFF3DC",
-  inprogress: "#FFF8D0",
-  done:       "#D8F5E0",
-  invoiced:   "#EFEFEF",
+  scan:       "#fdf6d3",  // warm yellow tint
+  orders:     "#defbe6",  // $support-success tint ($layer-01 + green)
+  invoice:    "#f4f4f4",  // $layer-01
+  received:   "#fdf6d3",  // $support-warning tint
+  inprogress: "#f4f4f4",  // $layer-01 neutral
+  done:       "#defbe6",  // $support-success tint
+  invoiced:   "#f4f4f4",  // $layer-01
 };
 
 const SAMPLE_ORDERS = [
@@ -92,7 +94,7 @@ const nextInvNumberForClient = (invoices, clientName) => {
 };
 
 // ─── ICONS ──────────────────────────────────────────────
-const Icon = ({ name, size=22, color="#1C1C1E" }) => {
+const Icon = ({ name, size=22, color="#161616" }) => {
   const s = { width:size, height:size, display:"block", flexShrink:0 };
   const icons = {
     scan: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 12h10M12 7v10"/><rect x="7" y="7" width="4" height="4" rx="1"/><rect x="13" y="13" width="4" height="4" rx="1"/></svg>,
@@ -122,7 +124,7 @@ const StatusPill = ({ status }) => {
   const st = C.statuses[status];
   if(!st) return null;
   return (
-    <span style={{ background:`${st.color}18`, color:st.color, border:`1px solid ${st.color}30`, borderRadius:100, padding:"3px 10px", fontSize:11, fontWeight:700, fontFamily:"'DM Sans','Helvetica',sans-serif", letterSpacing:"0.02em", whiteSpace:"nowrap" }}>
+    <span style={{ background:`${st.color}22`, color: st.color === "#161616" ? "#161616" : st.color, border:`1px solid ${st.color}44`, borderRadius:2, padding:"2px 8px", fontSize:11, fontWeight:600, fontFamily:"'IBM Plex Sans', sans-serif", letterSpacing:"0.04em", whiteSpace:"nowrap" }}>
       {st.label}
     </span>
   );
@@ -130,48 +132,81 @@ const StatusPill = ({ status }) => {
 
 const Field = ({ label, children }) => (
   <div style={{ marginBottom:16 }}>
-    <div style={{ fontSize:11, fontWeight:600, color:"#8E8E93", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:6, fontFamily:"'DM Sans','Helvetica',sans-serif" }}>{label}</div>
+    <div style={{ fontSize:"0.75rem", fontWeight:600, color:"#525252", letterSpacing:"0.04em", textTransform:"uppercase", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{label}</div>
     {children}
   </div>
 );
 
-const inputBase = { width:"100%", padding:"13px 14px", border:"none", borderRadius:14, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:14, color:"#1C1C1E", background:"#F5F5F3", outline:"none", boxSizing:"border-box" };
-const Input = ({ ...props }) => (
-  <input {...props} style={{ ...inputBase, ...props.style }} />
-);
+// Carbon TextInput wrapper — generates stable id per instance
+const Input = ({ labelText = "", id: providedId, ...props }) => {
+  const idRef = useRef(null);
+  if (!idRef.current) idRef.current = providedId || `ssp-input-${Math.random().toString(36).slice(2, 8)}`;
+  return (
+    <TextInput
+      id={idRef.current}
+      labelText={labelText}
+      hideLabel
+      {...props}
+    />
+  );
+};
 
-const CHEVRON_URL = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C%2Fsvg%3E\")";
+const CHEVRON_URL = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23525252' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C%2Fsvg%3E\")";
+const selectBase = { width:"100%", padding:"13px 40px 13px 14px", border:"none", borderBottom:"1px solid #8d8d8d", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, color:"#161616", background:"#f4f4f4", outline:"none", boxSizing:"border-box", appearance:"none", WebkitAppearance:"none", backgroundImage:CHEVRON_URL, backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center" };
 const Select = ({ children, ...props }) => (
-  <select {...props} style={{ ...inputBase, padding:"13px 40px 13px 14px", color: props.value ? "#1C1C1E" : "#8E8E93", appearance:"none", WebkitAppearance:"none", backgroundImage:CHEVRON_URL, backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center", ...props.style }}>
+  <select {...props} style={{ ...selectBase, color: props.value ? "#161616" : "#525252", ...props.style }}>
     {children}
   </select>
 );
 
+// Carbon TextArea wrapper
+const Textarea = ({ id: providedId, labelText = "", rows = 3, ...props }) => {
+  const idRef = useRef(null);
+  if (!idRef.current) idRef.current = providedId || `ssp-textarea-${Math.random().toString(36).slice(2, 8)}`;
+  return (
+    <TextArea
+      id={idRef.current}
+      labelText={labelText}
+      hideLabel
+      rows={rows}
+      {...props}
+    />
+  );
+};
 
-const Textarea = ({ ...props }) => (
-  <textarea {...props} style={{ ...inputBase, resize:"none", height:80, ...props.style }} />
-);
-
+// Carbon Button wrappers
 const BtnPrimary = ({ children, onClick, disabled, style={} }) => (
-  <button onClick={onClick} disabled={disabled} style={{ width:"100%", padding:"17px", background: disabled ? "#E5E5EA" : ACCENT, color: disabled ? "#999" : "white", border:"none", borderRadius:18, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:16, fontWeight:800, cursor: disabled ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, letterSpacing:"-0.01em", ...style }}>
+  <Button
+    kind="primary"
+    onClick={onClick}
+    disabled={disabled}
+    style={{ display:"flex", alignItems:"center", gap:8, ...style }}
+  >
     {children}
-  </button>
+  </Button>
 );
 
 const BtnGhost = ({ children, onClick, disabled, style={} }) => (
-  <button onClick={onClick} disabled={disabled} style={{ width:"100%", padding:"15px", background:"white", color: disabled?"#999":"#1C1C1E", border:"1.5px solid #E5E5EA", borderRadius:18, fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:15, fontWeight:600, cursor: disabled?"not-allowed":"pointer", opacity: disabled?0.6:1, ...style }}>
+  <Button
+    kind="ghost"
+    onClick={onClick}
+    disabled={disabled}
+    style={{ display:"flex", alignItems:"center", gap:8, ...style }}
+  >
     {children}
-  </button>
+  </Button>
 );
 
+// Carbon $layer-02 card (white, no border-radius per Carbon guidelines)
 const Card = ({ children, onClick, style={} }) => (
-  <div onClick={onClick} style={{ background:"white", borderRadius:20, padding:"18px 20px", marginBottom:12, boxShadow:"0 2px 12px rgba(0,0,0,0.06)", cursor: onClick ? "pointer" : "default", ...style }}>
+  <div onClick={onClick} style={{ background:"#ffffff", padding:"16px 20px", marginBottom:12, borderLeft:"4px solid #e0e0e0", boxShadow:"0 1px 4px rgba(0,0,0,0.08)", cursor: onClick ? "pointer" : "default", ...style }}>
     {children}
   </div>
 );
 
+// Body short 02 label (0.75rem / 400 per Carbon typography scale)
 const SectionTitle = ({ children }) => (
-  <div style={{ fontSize:13, fontWeight:700, color:"#8E8E93", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:12, fontFamily:"'DM Sans','Helvetica',sans-serif" }}>
+  <div style={{ fontSize:"0.75rem", fontWeight:600, color:"#525252", letterSpacing:"0.04em", textTransform:"uppercase", marginBottom:12, fontFamily:"'IBM Plex Sans', sans-serif" }}>
     {children}
   </div>
 );
@@ -195,7 +230,7 @@ export default function App() {
   const [invNumber, setInvNumber] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [toast, setToast] = useState(null);
-  const showToast = (msg, color="#34C759") => { setToast({msg,color}); setTimeout(()=>setToast(null), 2000); };
+  const showToast = (msg, color="#24a148") => { setToast({msg,color}); setTimeout(()=>setToast(null), 2000); };
   const [clients, setClients]     = useState(() => { try { const s = localStorage.getItem("ssp_clients"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [clientView, setClientView] = useState("list"); // "list" | "new" | "edit" | "detail"
   const [selectedClientId, setSelectedClientId] = useState(null);
@@ -568,14 +603,13 @@ export default function App() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <div style={{ fontFamily:"'DM Sans','Helvetica',sans-serif", background:"#F5F5F3", minHeight:"100vh" }}>
+    <div style={{ fontFamily:"'IBM Plex Sans', sans-serif", background:"#f4f4f4", minHeight:"100vh" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&display=swap');
         @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        input, select, textarea { font-size: 16px !important; }
-        input:focus, select:focus, textarea:focus { outline: 2px solid ${ACCENT} !important; outline-offset: 0px; background:white !important; }
+        input, select, textarea { font-size: 16px !important; font-family: 'IBM Plex Sans', sans-serif !important; }
+        select:focus { outline: 2px solid ${ACCENT} !important; outline-offset: 0px; background: #ffffff !important; }
         ::-webkit-scrollbar { display: none; }
         .safe-top { padding-top: max(56px, env(safe-area-inset-top, 56px)); }
         .safe-bottom { padding-bottom: max(100px, calc(72px + env(safe-area-inset-bottom, 0px))); }
@@ -587,10 +621,10 @@ export default function App() {
 
       {/* ── DESKTOP SIDEBAR ── */}
       {isDesktop && (
-        <div style={{ width:240, minHeight:"100vh", background:"white", borderRight:"1px solid #EBEBEB", position:"fixed", top:0, left:0, display:"flex", flexDirection:"column", paddingTop:40, zIndex:50 }}>
-          <div style={{ padding:"0 28px 40px" }}>
-            <div style={{ fontSize:19, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Stone Art</div>
-            <div style={{ fontSize:11, color:"#ADADAD", fontWeight:500, marginTop:2 }}>Precision GmbH</div>
+        <div style={{ width:240, minHeight:"100vh", background:"#ffffff", borderRight:"1px solid #e0e0e0", position:"fixed", top:0, left:0, display:"flex", flexDirection:"column", paddingTop:32, zIndex:50 }}>
+          <div style={{ padding:"0 24px 24px", borderBottom:"1px solid #e0e0e0", marginBottom:8 }}>
+            <div style={{ fontSize:"1.25rem", fontWeight:600, color:"#161616", fontFamily:"'IBM Plex Sans', sans-serif" }}>Stone Art</div>
+            <div style={{ fontSize:"0.75rem", color:"#525252", fontWeight:400, marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>Precision GmbH</div>
           </div>
           {[
             { key:"home",    icon:"orders",  label:"Home"    },
@@ -600,11 +634,9 @@ export default function App() {
             { key:"invoice", icon:"invoice", label:"Invoice" },
           ].map(({ key, icon, label }) => (
             <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); if(key==="clients")setClientView("list"); }}
-              style={{ width:"100%", background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:14, padding:"12px 20px 12px 28px", transition:"all 0.15s" }}>
-              <div style={{ width:40, height:40, borderRadius:13, background: tab===key ? "#0A0A0A" : "#F5F5F3", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}>
-                <Icon name={icon} size={19} color={tab===key ? "white" : "#8E8E93"}/>
-              </div>
-              <span style={{ fontSize:14, fontWeight: tab===key ? 700 : 500, color: tab===key ? "#0A0A0A" : "#ADADAD" }}>{label}</span>
+              style={{ width:"100%", background: tab===key ? "#f4f4f4" : "none", borderLeft: tab===key ? `4px solid ${ACCENT}` : "4px solid transparent", borderTop:"none", borderRight:"none", borderBottom:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:12, padding:"14px 20px 14px 20px", transition:"all 0.1s" }}>
+              <Icon name={icon} size={20} color={tab===key ? "#161616" : "#525252"}/>
+              <span style={{ fontSize:"0.875rem", fontWeight: tab===key ? 600 : 400, color: tab===key ? "#161616" : "#525252", fontFamily:"'IBM Plex Sans', sans-serif" }}>{label}</span>
             </button>
           ))}
         </div>
@@ -621,9 +653,9 @@ export default function App() {
           <div style={{ padding: isDesktop ? "36px 40px 24px" : "max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
               <div>
-                <div style={{ fontSize:13, color:"#ADADAD", fontWeight:500 }}>{greeting},</div>
-                <div style={{ fontSize:36, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.03em", lineHeight:1.05 }}>{C.ownerName.split(" ")[0]}</div>
-                <div style={{ fontSize:13, color:"#ADADAD", fontWeight:500, marginTop:5 }}>
+                <div style={{ fontSize:13, color:"#8d8d8d", fontWeight:500 }}>{greeting},</div>
+                <div style={{ fontSize:36, fontWeight:900, color:"#161616", letterSpacing:"-0.03em", lineHeight:1.05 }}>{C.ownerName.split(" ")[0]}</div>
+                <div style={{ fontSize:13, color:"#8d8d8d", fontWeight:500, marginTop:5 }}>
                   {orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} active order{orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length!==1?"s":""}
                 </div>
               </div>
@@ -634,24 +666,24 @@ export default function App() {
           <div style={{ padding: isDesktop ? "0 40px 24px" : "0 22px 20px", background:"white" }}>
             <button onClick={()=>{ setTab("orders"); setView("new"); }} style={{ width:"100%", background:PASTELS.orders, border:"none", borderRadius:22, padding:"22px 22px 24px", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
               <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-                <div style={{ width:52, height:52, borderRadius:16, background:"#0A0A0A", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <div style={{ width:52, height:52, borderRadius:16, background:"#161616", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   <Icon name="gem" size={24} color="white"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:20, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Create New Order</div>
+                  <div style={{ fontSize:20, fontWeight:900, color:"#161616", letterSpacing:"-0.02em" }}>Create New Order</div>
                   <div style={{ fontSize:13, color:"rgba(0,0,0,0.4)", fontWeight:500, marginTop:2 }}>Create a work order manually</div>
                 </div>
               </div>
               <div style={{ width:36, height:36, borderRadius:11, background:"rgba(0,0,0,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#161616" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg>
               </div>
             </button>
           </div>
 
           {/* ── CALENDAR STRIP ── */}
           <div style={{ padding:"20px 22px 4px", background:"white" }}>
-            <div style={{ fontSize:20, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Pending Tasks</div>
-            <div style={{ fontSize:13, color:"#ADADAD", fontWeight:500, marginTop:3 }}>Tap a day to see or add orders</div>
+            <div style={{ fontSize:20, fontWeight:800, color:"#161616", letterSpacing:"-0.02em" }}>Pending Tasks</div>
+            <div style={{ fontSize:13, color:"#8d8d8d", fontWeight:500, marginTop:3 }}>Tap a day to see or add orders</div>
           </div>
           {(() => {
             const days = [];
@@ -673,12 +705,12 @@ export default function App() {
                     const isPast    = d < TODAY;
                     return (
                       <button key={d} data-today={isToday||undefined} onClick={()=>{ setSelectedDate(d); setDayModal(d); }}
-                        style={{ flexShrink:0, width:54, padding:"10px 4px", borderRadius:18, border:"none", background: isSelected ? "#0A0A0A" : isToday ? `${ACCENT}18` : "transparent", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                        <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", color: isSelected ? "rgba(255,255,255,0.6)" : "#ADADAD", letterSpacing:"0.08em" }}>{DAYS_ES[date.getDay()]}</span>
-                        <span style={{ fontSize:18, fontWeight:800, color: isSelected ? "white" : isPast ? "#D0D0D0" : "#0A0A0A", lineHeight:1, letterSpacing:"-0.01em" }}>{date.getDate()}</span>
+                        style={{ flexShrink:0, width:54, padding:"10px 4px", borderRadius:18, border:"none", background: isSelected ? "#161616" : isToday ? `${ACCENT}18` : "transparent", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                        <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", color: isSelected ? "rgba(255,255,255,0.6)" : "#8d8d8d", letterSpacing:"0.08em" }}>{DAYS_ES[date.getDay()]}</span>
+                        <span style={{ fontSize:18, fontWeight:800, color: isSelected ? "white" : isPast ? "#c6c6c6" : "#161616", lineHeight:1, letterSpacing:"-0.01em" }}>{date.getDate()}</span>
                         <div style={{ display:"flex", gap:3, height:5, alignItems:"center" }}>
                           {hasOrders && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.7)":ACCENT }}/>}
-                          {hasNote   && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.5)":"#F5C200" }}/>}
+                          {hasNote   && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.5)":"#f1c21b" }}/>}
                         </div>
                       </button>
                     );
@@ -699,11 +731,11 @@ export default function App() {
 
               const getUrgency = (deadline) => {
                 if(!deadline) return { accent:"transparent", label:null };
-                if(deadline < today) return { accent:"#FF3B30", label:"Overdue" };
-                if(deadline === today) return { accent:"#FF9500", label:"Today" };
+                if(deadline < today) return { accent:"#da1e28", label:"Overdue" };
+                if(deadline === today) return { accent:"#f1c21b", label:"Today" };
                 const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
-                if(diff === 1) return { accent:"#FF9500", label:"Tomorrow" };
-                if(diff <= 7)  return { accent:"#F5C200", label:null };
+                if(diff === 1) return { accent:"#f1c21b", label:"Tomorrow" };
+                if(diff <= 7)  return { accent:"#f1c21b", label:null };
                 return { accent:"transparent", label:null };
               };
 
@@ -719,7 +751,7 @@ export default function App() {
                 <>
                   {/* Overdue alert */}
                   {overdue.length > 0 && (
-                    <div style={{ background:"#FF3B30", borderRadius:18, padding:"14px 18px", marginBottom:14, display:"flex", alignItems:"center", gap:12 }}>
+                    <div style={{ background:"#da1e28", borderRadius:18, padding:"14px 18px", marginBottom:14, display:"flex", alignItems:"center", gap:12 }}>
                       <div style={{ width:38, height:38, borderRadius:12, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                         <Icon name="bell" size={18} color="white"/>
                       </div>
@@ -734,33 +766,33 @@ export default function App() {
 
                   {/* Sorted order list */}
                   <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:12, marginTop:4 }}>
-                    <div style={{ fontSize:16, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Upcoming deliveries</div>
-                    {sorted.length > 0 && <div style={{ fontSize:12, fontWeight:500, color:"#ADADAD" }}>{sorted.length} pending</div>}
+                    <div style={{ fontSize:16, fontWeight:800, color:"#161616", letterSpacing:"-0.02em" }}>Upcoming deliveries</div>
+                    {sorted.length > 0 && <div style={{ fontSize:12, fontWeight:500, color:"#8d8d8d" }}>{sorted.length} pending</div>}
                   </div>
                   {sorted.length === 0 && (
-                    <div style={{ textAlign:"center", padding:"24px 0", color:"#ADADAD", fontSize:14, fontWeight:500 }}>No pending orders</div>
+                    <div style={{ textAlign:"center", padding:"24px 0", color:"#8d8d8d", fontSize:14, fontWeight:500 }}>No pending orders</div>
                   )}
                   {sorted.map((o, i) => {
                     const urg = getUrgency(o.deadline);
                     const dateParts = fmtDeadline(o.deadline);
-                    const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#F5C200" : "#ADADAD";
+                    const priorityColor = i === 0 ? "#da1e28" : i === 1 ? "#f1c21b" : i === 2 ? "#f1c21b" : "#8d8d8d";
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
                         {/* Priority circle */}
-                        <div style={{ width:40, height:40, borderRadius:12, background:"#F5F5F3", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <div style={{ width:40, height:40, borderRadius:12, background:"#f4f4f4", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                           <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{i+1}</span>
                         </div>
                         {/* Content */}
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:6 }}>{o.client || `Order #${o.id}`}</div>
+                          <div style={{ fontSize:14, fontWeight:800, color:"#161616", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:6 }}>{o.client || `Order #${o.id}`}</div>
                           <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
                             {dateParts ? (
-                              <span style={{ fontSize:11, fontWeight:700, color:urg.accent !== "transparent" ? urg.accent : "#6B6B6B", background:urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F0F0", padding:"3px 9px", borderRadius:8 }}>
+                              <span style={{ fontSize:11, fontWeight:700, color:urg.accent !== "transparent" ? urg.accent : "#525252", background:urg.accent !== "transparent" ? `${urg.accent}18` : "#f4f4f4", padding:"3px 9px", borderRadius:8 }}>
                                 {urg.label ? `${urg.label} · ` : ""}{dateParts.weekday} {dateParts.day} {dateParts.month}
                               </span>
                             ) : (
-                              <span style={{ fontSize:11, fontWeight:600, color:"#ADADAD", background:"#F5F5F3", padding:"3px 9px", borderRadius:8 }}>No date</span>
+                              <span style={{ fontSize:11, fontWeight:600, color:"#8d8d8d", background:"#f4f4f4", padding:"3px 9px", borderRadius:8 }}>No date</span>
                             )}
                             {o.description && <span style={{ fontSize:11, color:"rgba(0,0,0,0.35)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</span>}
                           </div>
@@ -771,7 +803,7 @@ export default function App() {
                   })}
 
                   {sorted.length > 0 && (
-                    <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"13px", background:"#F5F5F3", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:"#0A0A0A", cursor:"pointer", marginTop:4 }}>
+                    <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"13px", background:"#f4f4f4", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, color:"#161616", cursor:"pointer", marginTop:4 }}>
                       View all orders
                     </button>
                   )}
@@ -786,8 +818,8 @@ export default function App() {
       {tab==="scan" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white", display:"flex", alignItems:"center", gap:14 }}>
-            <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
-            <div style={{ fontSize:24, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Scan Delivery Note</div>
+            <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#f4f4f4", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#161616"/></button>
+            <div style={{ fontSize:24, fontWeight:900, color:"#161616", letterSpacing:"-0.02em" }}>Scan Delivery Note</div>
           </div>
 
           <div style={{ padding: isDesktop?"0 40px 60px":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
@@ -796,11 +828,11 @@ export default function App() {
             {photoStep==="capture" && (
               <>
                 <div style={{ background:"white", borderRadius:24, padding:"40px 24px", textAlign:"center", marginBottom:16, border:"1.5px solid #F2F2F7" }}>
-                  <div style={{ width:80, height:80, background:"#F2F2F7", borderRadius:24, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
-                    <Icon name="camera" size={36} color="#1C1C1E"/>
+                  <div style={{ width:80, height:80, background:"#f4f4f4", borderRadius:24, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
+                    <Icon name="camera" size={36} color="#161616"/>
                   </div>
-                  <div style={{ fontSize:20, fontWeight:700, color:"#1C1C1E", marginBottom:8 }}>Take a photo</div>
-                  <div style={{ fontSize:14, color:"#8E8E93", lineHeight:1.6, marginBottom:28 }}>Point your camera at the printed sheet inside the box. The AI reads everything automatically.</div>
+                  <div style={{ fontSize:20, fontWeight:700, color:"#161616", marginBottom:8 }}>Take a photo</div>
+                  <div style={{ fontSize:14, color:"#525252", lineHeight:1.6, marginBottom:28 }}>Point your camera at the printed sheet inside the box. The AI reads everything automatically.</div>
                   <BtnPrimary onClick={()=>{ fileRef.current.setAttribute("capture","environment"); fileRef.current.click(); }}>
                     <Icon name="camera" size={18} color="white"/> Open Camera
                   </BtnPrimary>
@@ -811,7 +843,7 @@ export default function App() {
                 {[["Good lighting","Natural light, no shadows on the document"],["Keep it flat","Place sheet on flat surface"],["Full document","Entire sheet visible in frame"]].map(([t,d])=>(
                   <div key={t} style={{ display:"flex", gap:12, marginBottom:10, alignItems:"flex-start" }}>
                     <div style={{ width:6, height:6, borderRadius:"50%", background:ACCENT, marginTop:6, flexShrink:0 }}/>
-                    <div><div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E" }}>{t}</div><div style={{ fontSize:13, color:"#8E8E93" }}>{d}</div></div>
+                    <div><div style={{ fontSize:14, fontWeight:600, color:"#161616" }}>{t}</div><div style={{ fontSize:13, color:"#525252" }}>{d}</div></div>
                   </div>
                 ))}
               </>
@@ -823,12 +855,12 @@ export default function App() {
                 {aiLoading ? (
                   <Card style={{ textAlign:"center", padding:"32px" }}>
                     <div style={{ width:36, height:36, border:`3px solid #F2F2F7`, borderTopColor:ACCENT, borderRadius:"50%", animation:"spin 0.7s linear infinite", margin:"0 auto 16px" }}/>
-                    <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:4 }}>{aiMsg}</div>
-                    <div style={{ fontSize:13, color:"#8E8E93" }}>AI is reading the document</div>
+                    <div style={{ fontSize:15, fontWeight:600, color:"#161616", marginBottom:4 }}>{aiMsg}</div>
+                    <div style={{ fontSize:13, color:"#525252" }}>AI is reading the document</div>
                   </Card>
                 ) : (
                   <>
-                    {aiError && <div style={{ background:"#FF3B3015", border:"1px solid #FF3B3030", borderRadius:12, padding:"12px 14px", marginBottom:12, fontSize:13, color:"#FF3B30", lineHeight:1.5 }}>{aiError}</div>}
+                    {aiError && <div style={{ background:"#FF3B3015", border:"1px solid #FF3B3030", borderRadius:12, padding:"12px 14px", marginBottom:12, fontSize:13, color:"#da1e28", lineHeight:1.5 }}>{aiError}</div>}
                     <BtnPrimary onClick={analyzePhoto}><Icon name="scan" size={18} color="white"/> Analyze with AI</BtnPrimary>
                     <div style={{ height:10 }}/>
                     <BtnGhost onClick={resetPhoto}>↩ Retake photo</BtnGhost>
@@ -841,7 +873,7 @@ export default function App() {
               <>
                 <Card style={{ marginBottom:16 }}>
                   <div style={{ fontSize:11, fontWeight:700, color:ACCENT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:8 }}>AI read this</div>
-                  <div style={{ fontSize:14, color:"#3C3C43", lineHeight:1.6, fontStyle:"italic" }}>"{extracted.summary}"</div>
+                  <div style={{ fontSize:14, color:"#525252", lineHeight:1.6, fontStyle:"italic" }}>"{extracted.summary}"</div>
                 </Card>
                 <SectionTitle>Confirm details</SectionTitle>
                 <Card>
@@ -883,8 +915,8 @@ export default function App() {
                 <div style={{ width:72, height:72, background:`${ACCENT}15`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
                   <Icon name="check" size={32} color={ACCENT}/>
                 </div>
-                <div style={{ fontSize:24, fontWeight:700, color:"#1C1C1E", marginBottom:8 }}>Order created!</div>
-                <div style={{ fontSize:15, color:"#8E8E93", marginBottom:32 }}>It's now in your orders list.</div>
+                <div style={{ fontSize:24, fontWeight:700, color:"#161616", marginBottom:8 }}>Order created!</div>
+                <div style={{ fontSize:15, color:"#525252", marginBottom:32 }}>It's now in your orders list.</div>
                 <BtnPrimary onClick={()=>{ setTab("orders"); setView("list"); resetPhoto(); }}>Go to Orders →</BtnPrimary>
                 <div style={{ height:10 }}/>
                 <BtnGhost onClick={resetPhoto}>Scan another</BtnGhost>
@@ -902,20 +934,20 @@ export default function App() {
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {view!=="list"
-                  ? <button onClick={()=>view==="edit" ? setView("detail") : setView("list")} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
-                  : <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
+                  ? <button onClick={()=>view==="edit" ? setView("detail") : setView("list")} style={{ width:36, height:36, borderRadius:11, background:"#f4f4f4", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#161616"/></button>
+                  : <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#f4f4f4", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#161616"/></button>
                 }
-                <div style={{ fontSize:24, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>
+                <div style={{ fontSize:24, fontWeight:900, color:"#161616", letterSpacing:"-0.02em" }}>
                   {view==="new" ? "New Order" : view==="edit" ? "Edit Order" : view==="detail" ? selectedOrder?.client : "Orders"}
                 </div>
               </div>
               {view==="list" && (
                 <div style={{ display:"flex", gap:8 }}>
                   {selectMode
-                    ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F5F5F3", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#0A0A0A", fontFamily:"'DM Sans',sans-serif" }}>Cancel</button>
+                    ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#f4f4f4", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#161616", fontFamily:"'IBM Plex Sans', sans-serif" }}>Cancel</button>
                     : <>
-                        <button onClick={()=>setSelectMode(true)} style={{ padding:"9px 14px", background:"#F5F5F3", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#0A0A0A", fontFamily:"'DM Sans',sans-serif" }}>Select</button>
-                        <button onClick={()=>setView("new")} style={{ width:38, height:38, borderRadius:12, background:"#0A0A0A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <button onClick={()=>setSelectMode(true)} style={{ padding:"9px 14px", background:"#f4f4f4", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#161616", fontFamily:"'IBM Plex Sans', sans-serif" }}>Select</button>
+                        <button onClick={()=>setView("new")} style={{ width:38, height:38, borderRadius:12, background:"#161616", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           <Icon name="plus" size={18} color="white"/>
                         </button>
                       </>
@@ -924,9 +956,9 @@ export default function App() {
               )}
               {view==="detail" && selectedOrder && (
                 <div style={{ display:"flex", gap:8 }}>
-                  <button onClick={()=>{ setDraft({...selectedOrder}); setView("edit"); }} style={{ padding:"9px 14px", background:"#F5F5F3", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#0A0A0A", fontFamily:"'DM Sans',sans-serif" }}>Edit</button>
-                  <button onClick={()=>setWorkOrderPreview(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", background:"#F5F5F3", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#0A0A0A", fontFamily:"'DM Sans',sans-serif" }}>
-                    <Icon name="print" size={15} color="#0A0A0A"/> Print
+                  <button onClick={()=>{ setDraft({...selectedOrder}); setView("edit"); }} style={{ padding:"9px 14px", background:"#f4f4f4", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#161616", fontFamily:"'IBM Plex Sans', sans-serif" }}>Edit</button>
+                  <button onClick={()=>setWorkOrderPreview(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", background:"#f4f4f4", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#161616", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                    <Icon name="print" size={15} color="#161616"/> Print
                   </button>
                 </div>
               )}
@@ -941,7 +973,7 @@ export default function App() {
                 {/* Status filter pills */}
                 <div style={{ display:"flex", gap:6, overflowX:"auto", marginBottom:16, paddingBottom:2 }}>
                   {[["all","All",orders.length], ...Object.entries(C.statuses).map(([k,v])=>[k,v.label,counts[k]])].map(([key,label,cnt])=>(
-                    <button key={key} style={{ padding:"8px 16px", borderRadius:100, border:"none", background: filterStatus===key ? "#0A0A0A" : "white", fontFamily:"'DM Sans','Helvetica',sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterStatus===key ? "white" : "#ADADAD", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }} onClick={()=>setFilterStatus(key)}>
+                    <button key={key} style={{ padding:"8px 16px", borderRadius:100, border:"none", background: filterStatus===key ? "#161616" : "white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterStatus===key ? "white" : "#8d8d8d", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }} onClick={()=>setFilterStatus(key)}>
                       {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
                     </button>
                   ))}
@@ -950,31 +982,31 @@ export default function App() {
                 {/* Client + Date filters */}
                 <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
                   {clients.length > 0 && (
-                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ flex:1, minWidth:140, fontSize:13, padding:"10px 36px 10px 12px", color: filterClient!=="all"?"#0A0A0A":"#ADADAD" }}>
+                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ flex:1, minWidth:140, fontSize:13, padding:"10px 36px 10px 12px", color: filterClient!=="all"?"#161616":"#8d8d8d" }}>
                       <option value="all">All clients</option>
                       {[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
                     </Select>
                   )}
                   <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:140 }}>
-                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ fontSize:13, padding:"10px 12px", color: filterDate?"#0A0A0A":"#ADADAD" }}/>
-                    {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:12, background:"#F5F5F3", fontSize:12, fontWeight:700, color:"#8E8E93", cursor:"pointer", whiteSpace:"nowrap" }}>✕</button>}
+                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ fontSize:13, padding:"10px 12px", color: filterDate?"#161616":"#8d8d8d" }}/>
+                    {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:12, background:"#f4f4f4", fontSize:12, fontWeight:700, color:"#525252", cursor:"pointer", whiteSpace:"nowrap" }}>✕</button>}
                   </div>
-                  <button onClick={exportToExcel} style={{ padding:"10px 14px", border:"none", borderRadius:12, background:"#F5F5F3", fontSize:12, fontWeight:700, color:"#0A0A0A", cursor:"pointer", whiteSpace:"nowrap" }}>↓ Excel</button>
+                  <button onClick={exportToExcel} style={{ padding:"10px 14px", border:"none", borderRadius:12, background:"#f4f4f4", fontSize:12, fontWeight:700, color:"#161616", cursor:"pointer", whiteSpace:"nowrap" }}>↓ Excel</button>
                 </div>
                 {/* Order rows */}
                 {filteredOrders.map((o, i) => {
                   const today = new Date().toISOString().split("T")[0];
                   const getUrgency = (deadline) => {
                     if(!deadline) return { accent:"transparent", label:null };
-                    if(deadline < today) return { accent:"#FF3B30", label:"Overdue" };
-                    if(deadline === today) return { accent:"#FF9500", label:"Today" };
+                    if(deadline < today) return { accent:"#da1e28", label:"Overdue" };
+                    if(deadline === today) return { accent:"#f1c21b", label:"Today" };
                     const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
-                    if(diff === 1) return { accent:"#FF9500", label:"Tomorrow" };
-                    if(diff <= 7)  return { accent:"#F5C200", label:null };
+                    if(diff === 1) return { accent:"#f1c21b", label:"Tomorrow" };
+                    if(diff <= 7)  return { accent:"#f1c21b", label:null };
                     return { accent:"transparent", label:null };
                   };
                   const urg = getUrgency(o.deadline);
-                  const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#F5C200" : "#ADADAD";
+                  const priorityColor = i === 0 ? "#da1e28" : i === 1 ? "#f1c21b" : i === 2 ? "#f1c21b" : "#8d8d8d";
                   const isChecked = selectedOrderIds.has(o.id);
                   return (
                     <button key={o.id} onClick={()=>{
@@ -989,17 +1021,17 @@ export default function App() {
                       }
                     }}
                       style={{ width:"100%", background: isChecked ? "#FFF3F0" : "white", border: isChecked ? "1.5px solid #FF3B3030" : "1.5px solid transparent", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
-                      <div style={{ width:40, height:40, borderRadius:12, background: isChecked ? "#FF3B30" : "#F5F5F3", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s" }}>
+                      <div style={{ width:40, height:40, borderRadius:12, background: isChecked ? "#da1e28" : "#f4f4f4", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s" }}>
                         {isChecked
                           ? <Icon name="check" size={18} color="white"/>
                           : <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{i+1}</span>
                         }
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", marginBottom:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", letterSpacing:"-0.01em" }}>{o.client || "—"}</div>
+                        <div style={{ fontSize:14, fontWeight:800, color:"#161616", marginBottom:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", letterSpacing:"-0.01em" }}>{o.client || "—"}</div>
                         <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
                           {o.deadline && (
-                            <span style={{ fontSize:11, fontWeight:700, color: urg.accent !== "transparent" ? urg.accent : "#6B6B6B", background: urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F0F0", padding:"3px 9px", borderRadius:8 }}>
+                            <span style={{ fontSize:11, fontWeight:700, color: urg.accent !== "transparent" ? urg.accent : "#525252", background: urg.accent !== "transparent" ? `${urg.accent}18` : "#f4f4f4", padding:"3px 9px", borderRadius:8 }}>
                               {urg.label ? `${urg.label} · ` : ""}{new Date(o.deadline+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}
                             </span>
                           )}
@@ -1020,9 +1052,9 @@ export default function App() {
                         setOrders(orders.filter(o=>!selectedOrderIds.has(o.id)));
                         setSelectedOrderIds(new Set());
                         setSelectMode(false);
-                        showToast(`${count} order${count>1?"s":""} deleted`, "#FF3B30");
+                        showToast(`${count} order${count>1?"s":""} deleted`, "#da1e28");
                       });
-                    }} style={{ width:"100%", padding:"17px", background:"#FF3B30", color:"white", border:"none", borderRadius:18, fontFamily:"'DM Sans',sans-serif", fontSize:16, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 20px rgba(255,59,48,0.4)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                    }} style={{ width:"100%", padding:"17px", background:"#da1e28", color:"white", border:"none", borderRadius:18, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 20px rgba(255,59,48,0.4)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                       <Icon name="trash" size={18} color="white"/> Delete {selectedOrderIds.size} order{selectedOrderIds.size>1?"s":""}
                     </button>
                   </div>
@@ -1041,8 +1073,8 @@ export default function App() {
                       <img src={draft.photo} alt="product" style={{ width:"100%", borderRadius:12, objectFit:"cover", maxHeight:200, display:"block" }}/>
                       <button onClick={()=>setDraft(d=>({...d,photo:null}))} style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:28, height:28, color:"white", fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
                     </div>
-                  : <button onClick={()=>draftPhotoRef.current.click()} style={{ width:"100%", padding:"14px", background:"#F2F2F7", border:"2px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                      <Icon name="camera" size={18} color="#8E8E93"/> Add product photo
+                  : <button onClick={()=>draftPhotoRef.current.click()} style={{ width:"100%", padding:"14px", background:"#f4f4f4", border:"2px dashed #E5E5EA", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:600, color:"#525252", cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      <Icon name="camera" size={18} color="#525252"/> Add product photo
                     </button>
                 }
                 <Field label="Client *">
@@ -1067,18 +1099,18 @@ export default function App() {
 
                 {/* Line items */}
                 <div style={{ marginTop:8, marginBottom:4 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Items for invoice</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#525252", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Items for invoice</div>
                   {(draft.lineItems||[]).map((li,idx)=>{ const mv=(a,f,t)=>{const b=[...a];const[x]=b.splice(f,1);b.splice(t,0,x);return b;}; return (
-                    <div key={li.id} style={{ background:"#F5F5F3", borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
+                    <div key={li.id} style={{ background:"#f4f4f4", borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                          <button onClick={()=>idx>0&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx-1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#8E8E93"/></button>
-                          <button onClick={()=>idx<draft.lineItems.length-1&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx+1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===draft.lineItems.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#8E8E93"/></button>
-                          <span style={{ fontSize:12, fontWeight:700, color:"#8E8E93" }}>Item {idx+1}</span>
+                          <button onClick={()=>idx>0&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx-1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#525252"/></button>
+                          <button onClick={()=>idx<draft.lineItems.length-1&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx+1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===draft.lineItems.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#525252"/></button>
+                          <span style={{ fontSize:12, fontWeight:700, color:"#525252" }}>Item {idx+1}</span>
                         </div>
                         <div style={{ display:"flex", gap:4 }}>
-                          <button onClick={()=>setDraft({...draft, lineItems:[...draft.lineItems.slice(0,idx+1), {...li, id:Date.now()+Math.random()}, ...draft.lineItems.slice(idx+1)]})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.5 }} title="Duplicate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
-                          <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setDraft({...draft, lineItems:draft.lineItems.filter(i=>i.id!==li.id)}))} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#FF3B30"/></button>
+                          <button onClick={()=>setDraft({...draft, lineItems:[...draft.lineItems.slice(0,idx+1), {...li, id:Date.now()+Math.random()}, ...draft.lineItems.slice(idx+1)]})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.5 }} title="Duplicate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#525252" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+                          <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setDraft({...draft, lineItems:draft.lineItems.filter(i=>i.id!==li.id)}))} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#da1e28"/></button>
                         </div>
                       </div>
                       <Input placeholder="Description (e.g. Pavé setting – ring)" value={li.desc} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
@@ -1086,10 +1118,10 @@ export default function App() {
                         <Input type="number" placeholder="Qty" value={li.qty||""} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,qty:e.target.value}:i)})}/>
                         <Input type="number" placeholder={`Unit price (${C.currency})`} value={li.unitPrice||""} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,unitPrice:e.target.value}:i)})}/>
                       </div>
-                      {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>Total: <strong style={{color:"#0A0A0A"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
+                      {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#525252", marginTop:6 }}>Total: <strong style={{color:"#161616"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
                     </div>
                   );})}
-                  <button onClick={()=>setDraft({...draft, lineItems:[...(draft.lineItems||[]), {id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#8E8E93", cursor:"pointer" }}>+ Add item</button>
+                  <button onClick={()=>setDraft({...draft, lineItems:[...(draft.lineItems||[]), {id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E5E5EA", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#525252", cursor:"pointer" }}>+ Add item</button>
                 </div>
 
                 <BtnPrimary disabled={!draft.client} onClick={()=>{ if(draft.client){ setOrders([{...draft},...orders]); syncToSheets(draft); setDraft(newOrder()); setView("list"); } }}>
@@ -1117,18 +1149,18 @@ export default function App() {
                   <Input type="date" value={draft.deadline} onChange={e=>setDraft({...draft,deadline:e.target.value})}/>
                 </Field>
                 <div style={{ marginTop:8, marginBottom:4 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Items for invoice</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#525252", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Items for invoice</div>
                   {(draft.lineItems||[]).map((li,idx)=>{ const mv=(a,f,t)=>{const b=[...a];const[x]=b.splice(f,1);b.splice(t,0,x);return b;}; return (
-                    <div key={li.id} style={{ background:"#F5F5F3", borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
+                    <div key={li.id} style={{ background:"#f4f4f4", borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                          <button onClick={()=>idx>0&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx-1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#8E8E93"/></button>
-                          <button onClick={()=>idx<draft.lineItems.length-1&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx+1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===draft.lineItems.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#8E8E93"/></button>
-                          <span style={{ fontSize:12, fontWeight:700, color:"#8E8E93" }}>Item {idx+1}</span>
+                          <button onClick={()=>idx>0&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx-1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#525252"/></button>
+                          <button onClick={()=>idx<draft.lineItems.length-1&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx+1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===draft.lineItems.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#525252"/></button>
+                          <span style={{ fontSize:12, fontWeight:700, color:"#525252" }}>Item {idx+1}</span>
                         </div>
                         <div style={{ display:"flex", gap:4 }}>
-                          <button onClick={()=>setDraft({...draft,lineItems:[...draft.lineItems.slice(0,idx+1),{...li,id:Date.now()+Math.random()},...draft.lineItems.slice(idx+1)]})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.5 }} title="Duplicate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
-                          <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setDraft({...draft,lineItems:draft.lineItems.filter(i=>i.id!==li.id)}))} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#FF3B30"/></button>
+                          <button onClick={()=>setDraft({...draft,lineItems:[...draft.lineItems.slice(0,idx+1),{...li,id:Date.now()+Math.random()},...draft.lineItems.slice(idx+1)]})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.5 }} title="Duplicate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#525252" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+                          <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setDraft({...draft,lineItems:draft.lineItems.filter(i=>i.id!==li.id)}))} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#da1e28"/></button>
                         </div>
                       </div>
                       <Input placeholder="Description" value={li.desc} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
@@ -1136,16 +1168,16 @@ export default function App() {
                         <Input type="number" placeholder="Qty" value={li.qty||""} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,qty:e.target.value}:i)})}/>
                         <Input type="number" placeholder={`Unit price (${C.currency})`} value={li.unitPrice||""} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,unitPrice:e.target.value}:i)})}/>
                       </div>
-                      {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>Total: <strong style={{color:"#0A0A0A"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
+                      {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#525252", marginTop:6 }}>Total: <strong style={{color:"#161616"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
                     </div>
                   );})}
-                  <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E5E5EA", borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#8E8E93", cursor:"pointer" }}>+ Add item</button>
+                  <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E5E5EA", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#525252", cursor:"pointer" }}>+ Add item</button>
                 </div>
                 <BtnPrimary disabled={!draft.client} onClick={()=>{ setOrders(orders.map(o=>o.id===draft.id?{...draft}:o)); setView("detail"); showToast("Order updated"); }}>
                   Save changes
                 </BtnPrimary>
                 <div style={{ height:10 }}/>
-                <button onClick={()=>showConfirm("This order and all its items will be permanently deleted.",()=>{ setOrders(orders.filter(o=>o.id!==draft.id)); setView("list"); showToast("Order deleted","#FF3B30"); })} style={{ width:"100%", background:"none", border:"none", color:"#FF3B30", fontSize:13, fontWeight:600, cursor:"pointer", padding:"8px 0" }}>
+                <button onClick={()=>showConfirm("This order and all its items will be permanently deleted.",()=>{ setOrders(orders.filter(o=>o.id!==draft.id)); setView("list"); showToast("Order deleted","#da1e28"); })} style={{ width:"100%", background:"none", border:"none", color:"#da1e28", fontSize:13, fontWeight:600, cursor:"pointer", padding:"8px 0" }}>
                   Delete order
                 </button>
               </Card>
@@ -1169,22 +1201,22 @@ export default function App() {
                       [C.piecesLabel, selectedOrder.pieces],
                     ].filter(([,v])=>v).map(([l,v])=>(
                       <div key={l}>
-                        <div style={{ fontSize:11, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:600, marginBottom:4 }}>{l}</div>
-                        <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E" }}>{v}</div>
+                        <div style={{ fontSize:11, color:"#525252", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:600, marginBottom:4 }}>{l}</div>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#161616" }}>{v}</div>
                       </div>
                     ))}
                   </div>
                   {selectedOrder.description && (
                     <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F2F2F7" }}>
-                      <div style={{ fontSize:11, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:600, marginBottom:6 }}>Description</div>
-                      <div style={{ fontSize:14, color:"#1C1C1E", lineHeight:1.5 }}>{selectedOrder.description}</div>
+                      <div style={{ fontSize:11, color:"#525252", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:600, marginBottom:6 }}>Description</div>
+                      <div style={{ fontSize:14, color:"#161616", lineHeight:1.5 }}>{selectedOrder.description}</div>
                     </div>
                   )}
                 </Card>
 
                 {/* Status selector — compact horizontal, only 3 main statuses */}
                 <div style={{ display:"flex", gap:8, marginBottom:20 }}>
-                  {[["received","Received","#FF9500"],["inprogress","In Progress","#F5C200"],["done","Done","#34C759"]].map(([key,label,color])=>{
+                  {[["received","Received","#f1c21b"],["inprogress","In Progress","#161616"],["done","Done","#24a148"]].map(([key,label,color])=>{
                     const active = selectedOrder.status===key || (selectedOrder.status==="invoiced" && key==="done");
                     return (
                       <button key={key} onClick={()=>{
@@ -1196,9 +1228,9 @@ export default function App() {
                           showToast(`${label}`, color);
                         }
                       }}
-                        style={{ flex:1, padding:"10px 6px", borderRadius:12, border:`1.5px solid ${active?color:"#E5E5EA"}`, background: active?`${color}18`:"white", cursor: active?"default":"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:5, transition:"all 0.15s" }}>
-                        <div style={{ width:8, height:8, borderRadius:"50%", background: active?color:"#C7C7CC" }}/>
-                        <span style={{ fontSize:11, fontWeight: active?700:500, color: active?color:"#8E8E93", fontFamily:"'DM Sans',sans-serif" }}>{label}</span>
+                        style={{ flex:1, padding:"10px 6px", borderRadius:12, border:`1.5px solid ${active?color:"#e0e0e0"}`, background: active?`${color}18`:"white", cursor: active?"default":"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:5, transition:"all 0.15s" }}>
+                        <div style={{ width:8, height:8, borderRadius:"50%", background: active?color:"#e0e0e0" }}/>
+                        <span style={{ fontSize:11, fontWeight: active?700:500, color: active?color:"#525252", fontFamily:"'IBM Plex Sans', sans-serif" }}>{label}</span>
                       </button>
                     );
                   })}
@@ -1226,11 +1258,11 @@ export default function App() {
               <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
-                    <div style={{ fontSize:24, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>Invoices</div>
-                    {invoices.length > 0 && <div style={{ fontSize:13, color:"#ADADAD", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
+                    <div style={{ fontSize:24, fontWeight:900, color:"#161616", letterSpacing:"-0.02em" }}>Invoices</div>
+                    {invoices.length > 0 && <div style={{ fontSize:13, color:"#8d8d8d", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
                   </div>
                   <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
-                    style={{ background:"#0A0A0A", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", letterSpacing:"-0.01em" }}>
+                    style={{ background:"#161616", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", letterSpacing:"-0.01em" }}>
                     + New
                   </button>
                 </div>
@@ -1238,27 +1270,27 @@ export default function App() {
               <div style={{ padding: isDesktop?"0 40px 60px":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
                 {invoices.length === 0 && (
                   <div style={{ textAlign:"center", padding:"48px 24px" }}>
-                    <div style={{ width:72, height:72, borderRadius:22, background:PASTELS.invoice, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}><Icon name="receipt" size={32} color="#8E8E93"/></div>
-                    <div style={{ fontSize:17, fontWeight:800, color:"#0A0A0A", marginBottom:6, letterSpacing:"-0.01em" }}>No invoices yet</div>
-                    <div style={{ fontSize:13, color:"#ADADAD", lineHeight:1.6 }}>Invoices created from orders appear here.<br/>You can also create one manually.</div>
+                    <div style={{ width:72, height:72, borderRadius:22, background:PASTELS.invoice, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}><Icon name="receipt" size={32} color="#525252"/></div>
+                    <div style={{ fontSize:17, fontWeight:800, color:"#161616", marginBottom:6, letterSpacing:"-0.01em" }}>No invoices yet</div>
+                    <div style={{ fontSize:13, color:"#8d8d8d", lineHeight:1.6 }}>Invoices created from orders appear here.<br/>You can also create one manually.</div>
                   </div>
                 )}
                 {[...invoices].reverse().map((inv,i) => {
                   const invTotal = inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate) + (parseFloat(inv.porto)||0);
-                  const priorityColor = i === 0 ? "#FF3B30" : i === 1 ? "#FF9500" : i === 2 ? "#F5C200" : "#ADADAD";
+                  const priorityColor = i === 0 ? "#da1e28" : i === 1 ? "#f1c21b" : i === 2 ? "#f1c21b" : "#8d8d8d";
                   return (
                     <button key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); }}
                       style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
-                      <div style={{ width:40, height:40, borderRadius:12, background:"#F5F5F3", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <div style={{ width:40, height:40, borderRadius:12, background:"#f4f4f4", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                         <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{i+1}</span>
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.client}</div>
+                        <div style={{ fontSize:14, fontWeight:800, color:"#161616", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.client}</div>
                         <div style={{ fontSize:12, color:"rgba(0,0,0,0.38)", fontWeight:500, marginTop:3 }}>{inv.number} · {new Date(inv.date+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div>
                       </div>
                       <div style={{ textAlign:"right", flexShrink:0 }}>
-                        <div style={{ fontSize:15, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.01em" }}>{C.currency} {fmt(invTotal)}</div>
-                        <span style={{ fontSize:10, fontWeight:700, color: inv.printed?"#34C759":"#FF9500" }}>{inv.printed?"Printed":"Saved"}</span>
+                        <div style={{ fontSize:15, fontWeight:900, color:"#161616", letterSpacing:"-0.01em" }}>{C.currency} {fmt(invTotal)}</div>
+                        <span style={{ fontSize:10, fontWeight:700, color: inv.printed?"#24a148":"#f1c21b" }}>{inv.printed?"Printed":"Saved"}</span>
                       </div>
                     </button>
                   );
@@ -1293,20 +1325,20 @@ export default function App() {
               setInvoices([...invoices, inv]);
               if(print) printInvoiceDoc(inv);
               setInvView("list");
-              showToast("Invoice saved","#34C759");
+              showToast("Invoice saved","#24a148");
             };
             return (
               <>
                 {/* Header with live total */}
                 <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                    <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
+                    <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#f4f4f4", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#161616"/></button>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:24, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>New Invoice</div>
-                      {invClient && <div style={{ fontSize:13, color:"#ADADAD", marginTop:2, fontWeight:500 }}>{invClient}</div>}
+                      <div style={{ fontSize:24, fontWeight:900, color:"#161616", letterSpacing:"-0.02em" }}>New Invoice</div>
+                      {invClient && <div style={{ fontSize:13, color:"#8d8d8d", marginTop:2, fontWeight:500 }}>{invClient}</div>}
                     </div>
                     {draftTotal > 0 && (
-                      <div style={{ background:"#0A0A0A", borderRadius:14, padding:"8px 14px", textAlign:"right" }}>
+                      <div style={{ background:"#161616", borderRadius:14, padding:"8px 14px", textAlign:"right" }}>
                         <div style={{ fontSize:10, color:"rgba(255,255,255,0.5)", fontWeight:700, letterSpacing:"0.06em" }}>TOTAL</div>
                         <div style={{ fontSize:16, fontWeight:900, color:"white", letterSpacing:"-0.01em" }}>{C.currency} {fmt(draftTotal)}</div>
                       </div>
@@ -1348,13 +1380,13 @@ export default function App() {
                     <Card key={it.id}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                          <button onClick={()=>idx>0&&setItems(mv(items,idx,idx-1))} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#8E8E93"/></button>
-                          <button onClick={()=>idx<items.length-1&&setItems(mv(items,idx,idx+1))} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===items.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#8E8E93"/></button>
-                          <div style={{ fontSize:12, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em" }}>Item {idx+1}</div>
+                          <button onClick={()=>idx>0&&setItems(mv(items,idx,idx-1))} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#525252"/></button>
+                          <button onClick={()=>idx<items.length-1&&setItems(mv(items,idx,idx+1))} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===items.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#525252"/></button>
+                          <div style={{ fontSize:12, fontWeight:700, color:"#525252", textTransform:"uppercase", letterSpacing:"0.08em" }}>Item {idx+1}</div>
                         </div>
                         <div style={{ display:"flex", gap:4 }}>
-                          <button onClick={()=>setItems([...items.slice(0,idx+1),{...it,id:Date.now()+Math.random()},...items.slice(idx+1)])} style={{ background:"none", border:"none", cursor:"pointer", padding:4, opacity:0.5 }} title="Duplicate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
-                          <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setItems(items.filter(i=>i.id!==it.id)))} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#FF3B30"/></button>
+                          <button onClick={()=>setItems([...items.slice(0,idx+1),{...it,id:Date.now()+Math.random()},...items.slice(idx+1)])} style={{ background:"none", border:"none", cursor:"pointer", padding:4, opacity:0.5 }} title="Duplicate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#525252" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+                          <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setItems(items.filter(i=>i.id!==it.id)))} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#da1e28"/></button>
                         </div>
                       </div>
                       <Field label="Description"><Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
@@ -1362,11 +1394,11 @@ export default function App() {
                         <Field label="Qty"><Input type="number" placeholder="1" value={it.qty||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,qty:e.target.value}:i))}/></Field>
                         <Field label={`Unit price (${C.currency})`}><Input type="number" placeholder="0.00" value={it.unitPrice||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,unitPrice:e.target.value}:i))}/></Field>
                       </div>
-                      {lineTotal(it) > 0 && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2 }}>Total: <strong style={{color:"#0A0A0A"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
+                      {lineTotal(it) > 0 && <div style={{ fontSize:12, color:"#525252", marginTop:2 }}>Total: <strong style={{color:"#161616"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
                     </Card>
                   );})}
 
-                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:600, color:"#8E8E93", cursor:"pointer", marginBottom:10 }}>+ Add item</button>
+                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E5E5EA", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:600, color:"#525252", cursor:"pointer", marginBottom:10 }}>+ Add item</button>
 
                   {/* Add items from another order of the same client */}
                   {(() => {
@@ -1399,7 +1431,7 @@ export default function App() {
 
                   {/* Live total */}
                   {(draftSub>0||draftPorto>0) && (
-                    <Card style={{ background:"#1C1C1E" }}>
+                    <Card style={{ background:"#161616" }}>
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Subtotal</span><span>{C.currency} {fmt(draftSub)}</span></div>
                       {draftPorto>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Postage</span><span>{C.currency} {fmt(draftPorto)}</span></div>}
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(draftTax)}</span></div>
@@ -1433,12 +1465,12 @@ export default function App() {
               <>
                 <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                    <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
+                    <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#f4f4f4", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#161616"/></button>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:22, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em" }}>{inv.number}</div>
-                      {inv.client && <div style={{ fontSize:13, color:"#ADADAD", marginTop:2, fontWeight:500 }}>{inv.client}</div>}
+                      <div style={{ fontSize:22, fontWeight:900, color:"#161616", letterSpacing:"-0.02em" }}>{inv.number}</div>
+                      {inv.client && <div style={{ fontSize:13, color:"#8d8d8d", marginTop:2, fontWeight:500 }}>{inv.client}</div>}
                     </div>
-                    <button onClick={()=>showConfirm(`Delete invoice ${inv.number}? This cannot be undone.`,()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); showToast("Invoice deleted","#FF3B30"); })} style={{ width:36, height:36, borderRadius:11, background:"#FFF0EF", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#FF3B30"/></button>
+                    <button onClick={()=>showConfirm(`Delete invoice ${inv.number}? This cannot be undone.`,()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); showToast("Invoice deleted","#da1e28"); })} style={{ width:36, height:36, borderRadius:11, background:"#fff1f1", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#da1e28"/></button>
                   </div>
                 </div>
                 <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
@@ -1449,18 +1481,18 @@ export default function App() {
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
                       <img src="/logo.png" alt={C.businessName} style={{ height:52, objectFit:"contain" }}/>
                       <div style={{ textAlign:"right" }}>
-                        <div style={{ fontSize:10, color:"#C7C7CC", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700 }}>Rechnung</div>
-                        <div style={{ fontSize:13, fontFamily:"monospace", fontWeight:700, color:"#1C1C1E", marginTop:2 }}>{inv.number}</div>
-                        <div style={{ fontSize:11, color:"#8E8E93" }}>{new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
-                        <div style={{ fontSize:11, marginTop:6, padding:"2px 8px", borderRadius:6, display:"inline-block", background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#34C759":"#FF9500", fontWeight:700 }}>{inv.printed?"Printed":"Saved"}</div>
+                        <div style={{ fontSize:10, color:"#e0e0e0", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700 }}>Rechnung</div>
+                        <div style={{ fontSize:13, fontFamily:"monospace", fontWeight:700, color:"#161616", marginTop:2 }}>{inv.number}</div>
+                        <div style={{ fontSize:11, color:"#525252" }}>{new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
+                        <div style={{ fontSize:11, marginTop:6, padding:"2px 8px", borderRadius:6, display:"inline-block", background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#24a148":"#f1c21b", fontWeight:700 }}>{inv.printed?"Printed":"Saved"}</div>
                       </div>
                     </div>
 
                     {/* To */}
-                    <div style={{ background:"#F2F2F7", borderRadius:10, padding:"10px 14px", marginBottom:18, textAlign:"left" }}>
-                      <div style={{ fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:700, marginBottom:3 }}>To</div>
-                      <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E" }}>{inv.client}</div>
-                      {inv.clientAddress && <div style={{ fontSize:12, color:"#8E8E93", marginTop:2, whiteSpace:"pre-line", lineHeight:1.5 }}>{inv.clientAddress}</div>}
+                    <div style={{ background:"#f4f4f4", borderRadius:10, padding:"10px 14px", marginBottom:18, textAlign:"left" }}>
+                      <div style={{ fontSize:9, color:"#525252", textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:700, marginBottom:3 }}>To</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:"#161616" }}>{inv.client}</div>
+                      {inv.clientAddress && <div style={{ fontSize:12, color:"#525252", marginTop:2, whiteSpace:"pre-line", lineHeight:1.5 }}>{inv.clientAddress}</div>}
                     </div>
 
                     {/* Items table */}
@@ -1473,10 +1505,10 @@ export default function App() {
                       </colgroup>
                       <thead>
                         <tr style={{ borderBottom:"1.5px solid #E5E5EA" }}>
-                          <th style={{ textAlign:"left", fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 4px 7px 0", fontWeight:700 }}>Description</th>
-                          <th style={{ textAlign:"right", fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Qty</th>
-                          <th style={{ textAlign:"right", fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Unit</th>
-                          <th style={{ textAlign:"right", fontSize:9, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Total</th>
+                          <th style={{ textAlign:"left", fontSize:9, color:"#525252", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 4px 7px 0", fontWeight:700 }}>Description</th>
+                          <th style={{ textAlign:"right", fontSize:9, color:"#525252", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Qty</th>
+                          <th style={{ textAlign:"right", fontSize:9, color:"#525252", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Unit</th>
+                          <th style={{ textAlign:"right", fontSize:9, color:"#525252", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1487,11 +1519,11 @@ export default function App() {
                           return (
                             <tr key={i} style={{ borderBottom:"1px solid #F2F2F7" }}>
                               <td style={{ padding:"7px 4px 7px 0", verticalAlign:"top" }}>
-                                <div style={{ fontSize:12, fontWeight:600, color:"#1C1C1E", wordBreak:"break-word" }}>{it.desc||"—"}</div>
+                                <div style={{ fontSize:12, fontWeight:600, color:"#161616", wordBreak:"break-word" }}>{it.desc||"—"}</div>
                               </td>
-                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, color:"#8E8E93", verticalAlign:"top" }}>{qty}</td>
-                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:11, color:"#8E8E93", verticalAlign:"top" }}>{C.currency} {fmt(unit)}</td>
-                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, fontWeight:700, color:"#1C1C1E", verticalAlign:"top" }}>{C.currency} {fmt(tot)}</td>
+                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, color:"#525252", verticalAlign:"top" }}>{qty}</td>
+                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:11, color:"#525252", verticalAlign:"top" }}>{C.currency} {fmt(unit)}</td>
+                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, fontWeight:700, color:"#161616", verticalAlign:"top" }}>{C.currency} {fmt(tot)}</td>
                             </tr>
                           );
                         })}
@@ -1500,17 +1532,17 @@ export default function App() {
 
                     {/* Totals */}
                     <div style={{ borderTop:"1px solid #E5E5EA", paddingTop:10 }}>
-                      {invPortoVal>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#8E8E93", marginBottom:4 }}><span>Postage</span><span>{C.currency} {fmt(invPortoVal)}</span></div>}
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#8E8E93", marginBottom:4 }}><span>Subtotal</span><span>{C.currency} {fmt(invSub)}</span></div>
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#8E8E93", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(invMwst)}</span></div>
+                      {invPortoVal>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#525252", marginBottom:4 }}><span>Postage</span><span>{C.currency} {fmt(invPortoVal)}</span></div>}
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#525252", marginBottom:4 }}><span>Subtotal</span><span>{C.currency} {fmt(invSub)}</span></div>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#525252", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(invMwst)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", borderTop:"2px solid #1C1C1E", paddingTop:10 }}>
-                        <span style={{ fontSize:15, fontWeight:700, color:"#1C1C1E" }}>Total</span>
+                        <span style={{ fontSize:15, fontWeight:700, color:"#161616" }}>Total</span>
                         <span style={{ fontSize:18, fontWeight:800, color:ACCENT }}>{C.currency} {fmt(invTotal)}</span>
                       </div>
                     </div>
 
                     {/* Footer */}
-                    <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F2F2F7", fontSize:10, color:"#8E8E93", lineHeight:1.7 }}>
+                    <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #F2F2F7", fontSize:10, color:"#525252", lineHeight:1.7 }}>
                       {C.paymentTerms}<br/>{C.bankDetails}<br/>MWST-Nr. {C.vatId}
                     </div>
                   </div>
@@ -1534,22 +1566,22 @@ export default function App() {
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {clientView!=="list" && (
-                  <button onClick={()=>setClientView("list")} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#0A0A0A"/></button>
+                  <button onClick={()=>setClientView("list")} style={{ width:36, height:36, borderRadius:11, background:"#f4f4f4", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#161616"/></button>
                 )}
                 <div>
-                  <div style={{ fontSize: clientView==="list"?28:22, fontWeight:900, color:"#0A0A0A", letterSpacing:"-0.02em", lineHeight:1.1 }}>
+                  <div style={{ fontSize: clientView==="list"?28:22, fontWeight:900, color:"#161616", letterSpacing:"-0.02em", lineHeight:1.1 }}>
                     {clientView==="list" ? "Clients" : clientView==="new" ? "New Client" : clientView==="edit" ? "Edit Client" : (clients.find(c=>c.id===selectedClientId)?.company || clients.find(c=>c.id===selectedClientId)?.name || "Client")}
                   </div>
-                  {clientView==="list" && <div style={{ fontSize:13, color:"#ADADAD", marginTop:3, fontWeight:500 }}>{clients.length} client{clients.length!==1?"s":""}</div>}
+                  {clientView==="list" && <div style={{ fontSize:13, color:"#8d8d8d", marginTop:3, fontWeight:500 }}>{clients.length} client{clients.length!==1?"s":""}</div>}
                 </div>
               </div>
               {clientView==="list" && (
-                <button onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ width:40, height:40, borderRadius:12, background:"#0A0A0A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <button onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ width:40, height:40, borderRadius:12, background:"#161616", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <Icon name="plus" size={18} color="white"/>
                 </button>
               )}
               {clientView==="detail" && (
-                <button onClick={()=>{ setClientDraft({...clients.find(c=>c.id===selectedClientId)}); setClientView("edit"); }} style={{ background:"#F5F5F3", border:"none", cursor:"pointer", padding:"8px 14px", borderRadius:10, fontSize:13, fontWeight:700, color:"#0A0A0A" }}>Edit</button>
+                <button onClick={()=>{ setClientDraft({...clients.find(c=>c.id===selectedClientId)}); setClientView("edit"); }} style={{ background:"#f4f4f4", border:"none", cursor:"pointer", padding:"8px 14px", borderRadius:10, fontSize:13, fontWeight:700, color:"#161616" }}>Edit</button>
               )}
             </div>
           </div>
@@ -1561,28 +1593,28 @@ export default function App() {
               <>
                 {clients.length === 0 && (
                   <div style={{ textAlign:"center", padding:"48px 24px" }}>
-                    <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}><Icon name="users" size={48} color="#C7C7CC"/></div>
-                    <div style={{ fontSize:15, fontWeight:600, color:"#1C1C1E", marginBottom:6 }}>No clients yet</div>
-                    <div style={{ fontSize:13, color:"#8E8E93", lineHeight:1.6, marginBottom:24 }}>Add your clients to assign them to orders and invoices automatically.</div>
+                    <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}><Icon name="users" size={48} color="#e0e0e0"/></div>
+                    <div style={{ fontSize:15, fontWeight:600, color:"#161616", marginBottom:6 }}>No clients yet</div>
+                    <div style={{ fontSize:13, color:"#525252", lineHeight:1.6, marginBottom:24 }}>Add your clients to assign them to orders and invoices automatically.</div>
                     <BtnPrimary onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ maxWidth:220, margin:"0 auto" }}>+ Add client</BtnPrimary>
                   </div>
                 )}
                 {clients.map((c, idx) => {
                   const orderCount = orders.filter(o=>o.clientId===c.id||o.client===(c.company||c.name)).length;
-                  const priorityColor = idx === 0 ? "#FF3B30" : idx === 1 ? "#FF9500" : idx === 2 ? "#F5C200" : "#ADADAD";
+                  const priorityColor = idx === 0 ? "#da1e28" : idx === 1 ? "#f1c21b" : idx === 2 ? "#f1c21b" : "#8d8d8d";
                   return (
                     <button key={c.id} onClick={()=>{ setSelectedClientId(c.id); setClientView("detail"); }}
                       style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
-                      <div style={{ width:40, height:40, borderRadius:12, background:"#F5F5F3", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <div style={{ width:40, height:40, borderRadius:12, background:"#f4f4f4", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                         <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{idx+1}</span>
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.company || c.name}</div>
+                        <div style={{ fontSize:14, fontWeight:800, color:"#161616", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.company || c.name}</div>
                         <div style={{ fontSize:12, color:"rgba(0,0,0,0.38)", fontWeight:500, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                           {c.company && c.name ? c.name : c.address?.split("\n")[0] || ""}
                         </div>
                       </div>
-                      {orderCount > 0 && <span style={{ fontSize:11, fontWeight:700, color:"#6B6B6B", background:"#F0F0F0", padding:"3px 9px", borderRadius:8, flexShrink:0 }}>{orderCount} order{orderCount!==1?"s":""}</span>}
+                      {orderCount > 0 && <span style={{ fontSize:11, fontWeight:700, color:"#525252", background:"#f4f4f4", padding:"3px 9px", borderRadius:8, flexShrink:0 }}>{orderCount} order{orderCount!==1?"s":""}</span>}
                     </button>
                   );
                 })}
@@ -1610,8 +1642,8 @@ export default function App() {
                   </Field>
                 </div>
                 {clientView==="edit" && (
-                  <button onClick={()=>showConfirm("Delete this client? Their orders will remain but the client will be removed.",()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Client deleted","#FF3B30"); })}
-                    style={{ background:"none", border:"none", color:"#FF3B30", fontSize:13, fontWeight:600, cursor:"pointer", padding:"4px 0", marginBottom:8 }}>
+                  <button onClick={()=>showConfirm("Delete this client? Their orders will remain but the client will be removed.",()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Client deleted","#da1e28"); })}
+                    style={{ background:"none", border:"none", color:"#da1e28", fontSize:13, fontWeight:600, cursor:"pointer", padding:"4px 0", marginBottom:8 }}>
                     Delete client
                   </button>
                 )}
@@ -1642,42 +1674,42 @@ export default function App() {
                 <>
                   <Card style={{ background:PASTELS.orders, border:"none" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:16 }}>
-                      <div style={{ width:52, height:52, borderRadius:16, background:"#0A0A0A", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <div style={{ width:52, height:52, borderRadius:16, background:"#161616", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                         <Icon name="person" size={26} color="white"/>
                       </div>
                       <div>
-                        <div style={{ fontSize:17, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em" }}>{c.company || c.name}</div>
-                        {c.company && c.name && <div style={{ fontSize:13, color:"#6B6B6B" }}>{c.name}</div>}
+                        <div style={{ fontSize:17, fontWeight:800, color:"#161616", letterSpacing:"-0.01em" }}>{c.company || c.name}</div>
+                        {c.company && c.name && <div style={{ fontSize:13, color:"#525252" }}>{c.name}</div>}
                       </div>
                     </div>
                     {c.address && (
                       <div style={{ marginBottom:12 }}>
-                        <div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Address</div>
-                        <div style={{ fontSize:13, color:"#1C1C1E", lineHeight:1.6, whiteSpace:"pre-line" }}>{c.address}</div>
+                        <div style={{ fontSize:11, color:"#525252", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Address</div>
+                        <div style={{ fontSize:13, color:"#161616", lineHeight:1.6, whiteSpace:"pre-line" }}>{c.address}</div>
                       </div>
                     )}
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                      {c.phone && <div><div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Phone</div><div style={{ fontSize:13, color:"#1C1C1E" }}>{c.phone}</div></div>}
-                      {c.email && <div><div style={{ fontSize:11, color:"#8E8E93", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Email</div><div style={{ fontSize:13, color:"#1C1C1E", wordBreak:"break-all" }}>{c.email}</div></div>}
+                      {c.phone && <div><div style={{ fontSize:11, color:"#525252", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Phone</div><div style={{ fontSize:13, color:"#161616" }}>{c.phone}</div></div>}
+                      {c.email && <div><div style={{ fontSize:11, color:"#525252", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Email</div><div style={{ fontSize:13, color:"#161616", wordBreak:"break-all" }}>{c.email}</div></div>}
                     </div>
                   </Card>
 
                   <SectionTitle>Orders ({clientOrders.length})</SectionTitle>
                   {clientOrders.length === 0 && (
-                    <div style={{ textAlign:"center", padding:"24px", color:"#8E8E93", fontSize:13 }}>No orders for this client yet.</div>
+                    <div style={{ textAlign:"center", padding:"24px", color:"#525252", fontSize:13 }}>No orders for this client yet.</div>
                   )}
                   {clientOrders.map(o=>(
                     <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                       style={{ width:"100%", background:"white", border:"1.5px solid #F2F2F7", borderRadius:16, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", textAlign:"left" }}>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:600, color:"#1C1C1E", marginBottom:3 }}>#{o.id}{o.deadline ? ` · Delivery: ${o.deadline}` : ""}</div>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#161616", marginBottom:3 }}>#{o.id}{o.deadline ? ` · Delivery: ${o.deadline}` : ""}</div>
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                           <div style={{ width:6, height:6, borderRadius:"50%", background:C.statuses[o.status]?.color, flexShrink:0 }}/>
-                          <span style={{ fontSize:12, color:"#8E8E93" }}>{C.statuses[o.status]?.label}</span>
+                          <span style={{ fontSize:12, color:"#525252" }}>{C.statuses[o.status]?.label}</span>
                           {o.amount > 0 && <span style={{ fontSize:12, fontWeight:700, color:ACCENT }}>· {C.currency} {fmt(o.amount)}</span>}
                         </div>
                       </div>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e0e0e0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                     </button>
                   ))}
                   <BtnPrimary onClick={()=>{ setView("new"); setDraft({...newOrder(), clientId:c.id, client: c.company||c.name}); setTab("orders"); }} style={{ marginTop:8 }}>
@@ -1693,7 +1725,7 @@ export default function App() {
 
       {/* ── BOTTOM NAV (mobile only) ── */}
       {!isDesktop && (
-        <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"white", borderTop:"1px solid #EBEBEB", display:"flex", padding:"10px 0 max(28px, env(safe-area-inset-bottom, 28px))", zIndex:100 }}>
+        <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#ffffff", borderTop:`2px solid ${ACCENT}`, display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
           {[
             { key:"home",    icon:"orders",  label:"Home"    },
             { key:"scan",    icon:"scan",    label:"Scan"    },
@@ -1701,11 +1733,11 @@ export default function App() {
             { key:"clients", icon:"person",  label:"Clients" },
             { key:"invoice", icon:"invoice", label:"Invoice" },
           ].map(({ key, icon, label }) => (
-            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice"){ setInvView("list"); setSelectedInvoice(null); } if(key==="clients"){ setClientView("list"); } }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, padding:"4px 0" }}>
-              <div style={{ width:44, height:34, borderRadius:11, background: tab===key ? "#0A0A0A" : "transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s" }}>
-                <Icon name={icon} size={20} color={tab===key ? "white" : "#ADADAD"}/>
+            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice"){ setInvView("list"); setSelectedInvoice(null); } if(key==="clients"){ setClientView("list"); } }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"4px 0" }}>
+              <div style={{ width:44, height:32, background:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <Icon name={icon} size={20} color={tab===key ? "#161616" : "#8d8d8d"}/>
               </div>
-              <span style={{ fontSize:10, fontWeight: tab===key ? 700 : 500, color: tab===key ? "#0A0A0A" : "#ADADAD" }}>{label}</span>
+              <span style={{ fontSize:"0.625rem", fontWeight: tab===key ? 600 : 400, color: tab===key ? "#161616" : "#8d8d8d", fontFamily:"'IBM Plex Sans', sans-serif" }}>{label}</span>
             </button>
           ))}
         </div>
@@ -1717,15 +1749,15 @@ export default function App() {
         const o = workOrderPreview;
         const GOLD = "#B8960C";
         const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("de-CH") : "—";
-        const labelStyle = { fontSize:9, fontWeight:700, color:GOLD, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:5, fontFamily:"'DM Sans',sans-serif" };
-        const lineStyle  = { borderBottom:`1px solid #ccc`, paddingBottom:4, minHeight:24, fontSize:13, fontWeight:600, color:"#1a1a1a", fontFamily:"'DM Sans',sans-serif" };
+        const labelStyle = { fontSize:9, fontWeight:700, color:GOLD, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:5, fontFamily:"'IBM Plex Sans', sans-serif" };
+        const lineStyle  = { borderBottom:`1px solid #ccc`, paddingBottom:4, minHeight:24, fontSize:13, fontWeight:600, color:"#1a1a1a", fontFamily:"'IBM Plex Sans', sans-serif" };
         return (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1000, overflowY:"auto", display:"flex", flexDirection:"column" }}>
             {/* Sticky top bar */}
             <div style={{ position:"sticky", top:0, background:"white", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", borderBottom:"1px solid #E5E5EA", zIndex:10, flexShrink:0 }}>
-              <button onClick={()=>setWorkOrderPreview(null)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#1C1C1E", padding:"0 4px", lineHeight:1 }}>×</button>
-              <span style={{ fontWeight:700, fontSize:15, fontFamily:"'DM Sans',sans-serif" }}>Vorschau Arbeitsauftrag</span>
-              <button onClick={()=>printWorkOrder(o)} style={{ background:GOLD, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
+              <button onClick={()=>setWorkOrderPreview(null)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#161616", padding:"0 4px", lineHeight:1 }}>×</button>
+              <span style={{ fontWeight:700, fontSize:15, fontFamily:"'IBM Plex Sans', sans-serif" }}>Vorschau Arbeitsauftrag</span>
+              <button onClick={()=>printWorkOrder(o)} style={{ background:GOLD, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:6 }}>
                 <Icon name="print" size={14} color="white"/> Drucken / PDF
               </button>
             </div>
@@ -1811,21 +1843,21 @@ export default function App() {
 
               {/* Header */}
               <div style={{ padding:"16px 22px 18px", flexShrink:0 }}>
-                <div style={{ width:40, height:4, background:"#E5E5EA", borderRadius:2, margin:"0 auto 18px" }}/>
+                <div style={{ width:40, height:4, background:"#e0e0e0", borderRadius:2, margin:"0 auto 18px" }}/>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div>
-                    <div style={{ fontSize:22, fontWeight:900, color:"#0A0A0A", textTransform:"capitalize", letterSpacing:"-0.02em" }}>{dayLabel}</div>
-                    <div style={{ fontSize:13, color:"#ADADAD", marginTop:3, fontWeight:500 }}>
+                    <div style={{ fontSize:22, fontWeight:900, color:"#161616", textTransform:"capitalize", letterSpacing:"-0.02em" }}>{dayLabel}</div>
+                    <div style={{ fontSize:13, color:"#8d8d8d", marginTop:3, fontWeight:500 }}>
                       {dateObj.toLocaleDateString("en-GB",{ day:"numeric", month:"long", year:"numeric" })}
                     </div>
                   </div>
                   <div style={{ display:"flex", gap:8, alignItems:"center" }}>
                     {/* Alert toggle */}
                     <button onClick={()=>setDayNotes(n=>({...n,[d]:{...(n[d]||{}),alert:!alertOn}}))}
-                      style={{ width:36, height:36, borderRadius:11, background: alertOn?"#0A0A0A":"#F5F5F3", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      <Icon name="bell" size={18} color={alertOn?"white":"#ADADAD"}/>
+                      style={{ width:36, height:36, borderRadius:11, background: alertOn?"#161616":"#f4f4f4", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <Icon name="bell" size={18} color={alertOn?"white":"#8d8d8d"}/>
                     </button>
-                    <button onClick={()=>setDayModal(null)} style={{ width:36, height:36, borderRadius:11, background:"#F5F5F3", border:"none", cursor:"pointer", fontSize:20, color:"#0A0A0A", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+                    <button onClick={()=>setDayModal(null)} style={{ width:36, height:36, borderRadius:11, background:"#f4f4f4", border:"none", cursor:"pointer", fontSize:20, color:"#161616", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
                   </div>
                 </div>
               </div>
@@ -1835,7 +1867,7 @@ export default function App() {
 
                 {/* Delivery alert banner */}
                 {hasPendingDelivery && (
-                  <div style={{ background: isPast&&!isToday?"#FF3B30":"#FF9500", borderRadius:14, padding:"14px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ background: isPast&&!isToday?"#da1e28":"#f1c21b", borderRadius:14, padding:"14px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:12 }}>
                     <Icon name="bell" size={20} color="white"/>
                     <div>
                       <div style={{ fontSize:14, fontWeight:700, color:"white" }}>
@@ -1849,18 +1881,18 @@ export default function App() {
                 {/* Pending orders */}
                 {dayOrders.length > 0 && (
                   <>
-                    <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'DM Sans',sans-serif" }}>Pending · {dayOrders.length}</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#525252", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'IBM Plex Sans', sans-serif" }}>Pending · {dayOrders.length}</div>
                     {dayOrders.map(o=>(
                       <button key={o.id} onClick={()=>{ setDayModal(null); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:PASTELS.inprogress, border:"none", borderRadius:14, padding:"13px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left" }}>
                         {o.photo && <img src={o.photo} alt="" style={{ width:38, height:38, borderRadius:9, objectFit:"cover", flexShrink:0 }}/>}
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:14, fontWeight:700, color:"#1C1C1E", marginBottom:2 }}>{o.client || `#${o.id}`}</div>
-                          {o.description && <div style={{ fontSize:12, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
+                          <div style={{ fontSize:14, fontWeight:700, color:"#161616", marginBottom:2 }}>{o.client || `#${o.id}`}</div>
+                          {o.description && <div style={{ fontSize:12, color:"#525252", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
                         </div>
                         <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4, flexShrink:0 }}>
                           <StatusPill status={o.status}/>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e0e0e0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                         </div>
                       </button>
                     ))}
@@ -1870,13 +1902,13 @@ export default function App() {
                 {/* Done orders for this day */}
                 {doneOrders.length > 0 && (
                   <>
-                    <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, marginTop:4, fontFamily:"'DM Sans',sans-serif" }}>Completed · {doneOrders.length}</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#525252", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, marginTop:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Completed · {doneOrders.length}</div>
                     {doneOrders.map(o=>(
                       <button key={o.id} onClick={()=>{ setDayModal(null); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:PASTELS.done, border:"none", borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", opacity:0.8 }}>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:13, fontWeight:600, color:"#1C1C1E" }}>{o.client || `#${o.id}`}</div>
-                          {o.description && <div style={{ fontSize:11, color:"#8E8E93", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
+                          <div style={{ fontSize:13, fontWeight:600, color:"#161616" }}>{o.client || `#${o.id}`}</div>
+                          {o.description && <div style={{ fontSize:11, color:"#525252", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
                         </div>
                         <StatusPill status={o.status}/>
                       </button>
@@ -1885,28 +1917,28 @@ export default function App() {
                 )}
 
                 {dayOrders.length===0 && doneOrders.length===0 && (
-                  <div style={{ textAlign:"center", padding:"20px 0 8px", color:"#C7C7CC", fontSize:13 }}>No orders for this day</div>
+                  <div style={{ textAlign:"center", padding:"20px 0 8px", color:"#e0e0e0", fontSize:13 }}>No orders for this day</div>
                 )}
 
                 {/* Add order for this day */}
                 <button onClick={()=>{ setDayModal(null); setDraft({...newOrder(), deadline:d}); setView("new"); setTab("orders"); }}
-                  style={{ width:"100%", padding:"13px", background:"#F5F5F3", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:"#0A0A0A", cursor:"pointer", marginTop:4, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                  <Icon name="plus" size={16} color="#0A0A0A"/> Add order for this day
+                  style={{ width:"100%", padding:"13px", background:"#f4f4f4", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, color:"#161616", cursor:"pointer", marginTop:4, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                  <Icon name="plus" size={16} color="#161616"/> Add order for this day
                 </button>
 
                 {/* Notes */}
                 <div style={{ marginTop:16 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:"#8E8E93", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:"#525252", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:6 }}>
                     Notes
                     {alertOn && <span style={{ fontSize:10, color:ACCENT, background:`${ACCENT}15`, padding:"2px 7px", borderRadius:6, fontWeight:700 }}>Active alert</span>}
                   </div>
-                  <textarea
+                  <Textarea
                     placeholder="Write a note for this day…"
                     value={noteText}
                     onChange={e=>setDayNotes(n=>({...n,[d]:{...(n[d]||{}),text:e.target.value}}))}
-                    style={{ width:"100%", padding:"12px 14px", border:"none", borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:14, color:"#1C1C1E", background:"#F5F5F3", outline:"none", resize:"none", height:90, boxSizing:"border-box" }}
+                    rows={3}
                   />
-                  {alertOn && <div style={{ fontSize:11, color:"#8E8E93", marginTop:6 }}>An alert will be shown when the app is opened on this day.</div>}
+                  {alertOn && <div style={{ fontSize:11, color:"#525252", marginTop:6 }}>An alert will be shown when the app is opened on this day.</div>}
                 </div>
               </div>
             </div>
@@ -1918,18 +1950,18 @@ export default function App() {
       {noteAlert && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:2100, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
           <div style={{ background:"white", borderRadius:"28px 28px 0 0", padding:"24px 24px 44px", width:"100%", maxWidth:480, animation:"fadeUp 0.25s ease" }}>
-            <div style={{ width:40, height:4, background:"#E5E5EA", borderRadius:2, margin:"0 auto 22px" }}/>
+            <div style={{ width:40, height:4, background:"#e0e0e0", borderRadius:2, margin:"0 auto 22px" }}/>
             <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
-              <div style={{ width:44, height:44, borderRadius:13, background:"#0A0A0A", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <div style={{ width:44, height:44, borderRadius:13, background:"#161616", display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <Icon name="bell" size={20} color="white"/>
               </div>
               <div>
-                <div style={{ fontSize:17, fontWeight:800, color:"#0A0A0A", letterSpacing:"-0.01em" }}>Note for today</div>
-                <div style={{ fontSize:12, color:"#ADADAD", fontWeight:500 }}>{new Date(noteAlert.date+"T12:00:00").toLocaleDateString("en-GB",{ weekday:"long", day:"numeric", month:"long" })}</div>
+                <div style={{ fontSize:17, fontWeight:800, color:"#161616", letterSpacing:"-0.01em" }}>Note for today</div>
+                <div style={{ fontSize:12, color:"#8d8d8d", fontWeight:500 }}>{new Date(noteAlert.date+"T12:00:00").toLocaleDateString("en-GB",{ weekday:"long", day:"numeric", month:"long" })}</div>
               </div>
             </div>
-            <div style={{ background:PASTELS.scan, borderRadius:14, padding:"14px 16px", fontSize:14, color:"#0A0A0A", lineHeight:1.6, marginBottom:20, whiteSpace:"pre-wrap", fontWeight:500 }}>{noteAlert.text}</div>
-            <button onClick={()=>setNoteAlert(null)} style={{ width:"100%", padding:"16px", background:"#0A0A0A", color:"white", border:"none", borderRadius:16, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>Got it</button>
+            <div style={{ background:PASTELS.scan, borderRadius:14, padding:"14px 16px", fontSize:14, color:"#161616", lineHeight:1.6, marginBottom:20, whiteSpace:"pre-wrap", fontWeight:500 }}>{noteAlert.text}</div>
+            <button onClick={()=>setNoteAlert(null)} style={{ width:"100%", padding:"16px", background:"#161616", color:"white", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>Got it</button>
           </div>
         </div>
       )}
@@ -1938,17 +1970,17 @@ export default function App() {
       {doneModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
           <div style={{ background:"white", borderRadius:"28px 28px 0 0", padding:"28px 24px 44px", width:"100%", maxWidth:430, animation:"fadeUp 0.2s ease" }}>
-            <div style={{ width:40, height:4, background:"#E5E5EA", borderRadius:2, margin:"0 auto 28px" }}/>
+            <div style={{ width:40, height:4, background:"#e0e0e0", borderRadius:2, margin:"0 auto 28px" }}/>
             <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}>
               <div style={{ width:64, height:64, borderRadius:20, background:PASTELS.done, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <Icon name="checkCircle" size={32} color="#34C759"/>
+                <Icon name="checkCircle" size={32} color="#24a148"/>
               </div>
             </div>
-            <div style={{ fontSize:22, fontWeight:900, color:"#0A0A0A", textAlign:"center", marginBottom:8, letterSpacing:"-0.02em" }}>Order completed!</div>
-            <div style={{ fontSize:14, color:"#ADADAD", textAlign:"center", marginBottom:28, lineHeight:1.6, fontWeight:500 }}>Would you like to create an invoice for this order now?</div>
+            <div style={{ fontSize:22, fontWeight:900, color:"#161616", textAlign:"center", marginBottom:8, letterSpacing:"-0.02em" }}>Order completed!</div>
+            <div style={{ fontSize:14, color:"#8d8d8d", textAlign:"center", marginBottom:28, lineHeight:1.6, fontWeight:500 }}>Would you like to create an invoice for this order now?</div>
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              <button onClick={()=>{ setDoneModal(null); setView("detail"); showToast("Marked as Done","#34C759"); }}
-                style={{ width:"100%", padding:"16px", background:"#F5F5F3", border:"none", borderRadius:16, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, color:"#0A0A0A", cursor:"pointer" }}>
+              <button onClick={()=>{ setDoneModal(null); setView("detail"); showToast("Marked as Done","#24a148"); }}
+                style={{ width:"100%", padding:"16px", background:"#f4f4f4", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, color:"#161616", cursor:"pointer" }}>
                 Not now
               </button>
               <button onClick={()=>{
@@ -1956,7 +1988,7 @@ export default function App() {
                 setDoneModal(null);
                 if(o) loadOrderIntoInvoice(o);
               }}
-                style={{ width:"100%", padding:"16px", background:"#0A0A0A", border:"none", borderRadius:16, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, color:"white", cursor:"pointer" }}>
+                style={{ width:"100%", padding:"16px", background:"#161616", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, color:"white", cursor:"pointer" }}>
                 Yes, create invoice
               </button>
             </div>
@@ -1966,7 +1998,7 @@ export default function App() {
 
       {/* ── TOAST ── */}
       {toast && (
-        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"'IBM Plex Sans', sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
           <Icon name="check" size={15} color="white"/> {toast.msg}
         </div>
       )}
@@ -1975,12 +2007,12 @@ export default function App() {
       {confirmModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:3000, display:"flex", alignItems:"flex-end", justifyContent:"center", padding:"0 16px 32px" }}>
           <div style={{ background:"white", borderRadius:24, padding:"24px 24px 20px", width:"100%", maxWidth:468, animation:"fadeUp 0.2s ease", textAlign:"left" }}>
-            <div style={{ fontSize:16, fontWeight:700, color:"#0A0A0A", marginBottom:8, textAlign:"center", letterSpacing:"-0.01em" }}>Are you sure?</div>
-            <div style={{ fontSize:14, color:"#8E8E93", textAlign:"center", lineHeight:1.5, marginBottom:24 }}>{confirmModal.message}</div>
-            <button onClick={()=>{ confirmModal.onConfirm(); setConfirmModal(null); }} style={{ width:"100%", padding:"16px", background:"#FF3B30", color:"white", border:"none", borderRadius:16, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:10 }}>
+            <div style={{ fontSize:16, fontWeight:700, color:"#161616", marginBottom:8, textAlign:"center", letterSpacing:"-0.01em" }}>Are you sure?</div>
+            <div style={{ fontSize:14, color:"#525252", textAlign:"center", lineHeight:1.5, marginBottom:24 }}>{confirmModal.message}</div>
+            <button onClick={()=>{ confirmModal.onConfirm(); setConfirmModal(null); }} style={{ width:"100%", padding:"16px", background:"#da1e28", color:"white", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:10 }}>
               Delete
             </button>
-            <button onClick={()=>setConfirmModal(null)} style={{ width:"100%", padding:"15px", background:"#F5F5F3", color:"#0A0A0A", border:"none", borderRadius:16, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:600, cursor:"pointer" }}>
+            <button onClick={()=>setConfirmModal(null)} style={{ width:"100%", padding:"15px", background:"#f4f4f4", color:"#161616", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:600, cursor:"pointer" }}>
               Cancel
             </button>
           </div>
@@ -2004,13 +2036,13 @@ export default function App() {
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1000, overflowY:"auto", display:"flex", flexDirection:"column" }}>
             {/* top bar */}
             <div style={{ position:"sticky", top:0, background:"white", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", borderBottom:"1px solid #E5E5EA", zIndex:10, flexShrink:0 }}>
-              <button onClick={()=>setRechnungData(null)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#1C1C1E", padding:"0 4px" }}>×</button>
-              <span style={{ fontWeight:700, fontSize:15, fontFamily:"'DM Sans',sans-serif" }}>Rechnung Vorschau</span>
-              <button onClick={()=>printRechnung(order, unitPrice, porto)} style={{ background:ACCENT, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>⎙ Drucken / PDF</button>
+              <button onClick={()=>setRechnungData(null)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#161616", padding:"0 4px" }}>×</button>
+              <span style={{ fontWeight:700, fontSize:15, fontFamily:"'IBM Plex Sans', sans-serif" }}>Rechnung Vorschau</span>
+              <button onClick={()=>printRechnung(order, unitPrice, porto)} style={{ background:ACCENT, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif" }}>⎙ Drucken / PDF</button>
             </div>
 
             {/* invoice paper */}
-            <div style={{ background:"#F2F2F7", flex:1, padding:"24px 16px 40px" }}>
+            <div style={{ background:"#f4f4f4", flex:1, padding:"24px 16px 40px" }}>
               <div style={{ background:"white", maxWidth:640, margin:"0 auto", padding:"40px 44px", boxShadow:"0 4px 24px rgba(0,0,0,0.12)", borderRadius:4, fontFamily:"Arial, Helvetica, sans-serif" }}>
 
                 {/* LOGO */}
