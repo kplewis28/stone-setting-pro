@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@supabase/supabase-js": "^2.101.1",
+    "@carbon/icons-react": "^11.78.0",
+    "@carbon/react": "^1.105.0",
+    "@supabase/supabase-js": "^2.102.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
