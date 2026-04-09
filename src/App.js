@@ -657,8 +657,8 @@ export default function App() {
       {tab==="home" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
 
-          {/* TOP BAR — editorial */}
-          <div style={{ padding: isDesktop ? "36px 40px 24px" : "max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
+          {/* ── S1: HEADER ── */}
+          <div style={{ padding: isDesktop ? "36px 40px 20px" : "max(56px, env(safe-area-inset-top, 56px)) 22px 18px", background:"white" }}>
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{greeting},</div>
@@ -667,31 +667,88 @@ export default function App() {
                   {orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} active order{orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length!==1?"s":""}
                 </div>
               </div>
+              {/* Bell + Avatar */}
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:4 }}>
+                <button onClick={()=>{}} style={{ width:40, height:40, borderRadius:12, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
+                  <Icon name="bell" size={20} color="#1B3F45"/>
+                  {orders.filter(o=>o.deadline===TODAY&&o.status!=="done"&&o.status!=="invoiced").length > 0 && (
+                    <div style={{ position:"absolute", top:8, right:8, width:7, height:7, borderRadius:"50%", background:"#da1e28", border:"1.5px solid white" }}/>
+                  )}
+                </button>
+                <div style={{ width:40, height:40, borderRadius:12, background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ fontSize:14, fontWeight:700, color:"white" }}>{C.ownerName.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* QUICK ACTION — New Order */}
-          <div style={{ padding: isDesktop ? "0 40px 24px" : "0 22px 20px", background:"white" }}>
-            <button onClick={()=>{ setTab("orders"); setView("new"); }} style={{ width:"100%", background:PASTELS.orders, border:"none", borderRadius:22, padding:"22px 22px 24px", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
+          {/* ── S2: CTA PRINCIPAL ── */}
+          <div style={{ padding: isDesktop ? "0 40px 20px" : "0 22px 18px", background:"white" }}>
+            <button onClick={()=>{ setTab("orders"); setView("new"); }} style={{ width:"100%", background:PASTELS.orders, border:"none", borderRadius:20, padding:"20px 20px 22px", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
               <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-                <div style={{ width:52, height:52, borderRadius:16, background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <Icon name="gem" size={24} color="white"/>
+                <div style={{ width:60, height:60, borderRadius:18, background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <Icon name="gem" size={28} color="white"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:20, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>Create New Order</div>
-                  <div style={{ fontSize:13, color:"rgba(0,0,0,0.4)", fontWeight:500, marginTop:2 }}>Create a work order manually</div>
+                  <div style={{ fontSize:18, fontWeight:600, color:"#1B3F45", letterSpacing:"-0.01em" }}>Nueva orden</div>
+                  <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:3 }}>Crear orden de trabajo</div>
                 </div>
               </div>
-              <div style={{ width:36, height:36, borderRadius:11, background:"rgba(0,0,0,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              <div style={{ width:36, height:36, borderRadius:10, background:"rgba(27,63,69,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg>
               </div>
             </button>
           </div>
 
-          {/* ── CALENDAR STRIP ── */}
-          <div style={{ padding:"20px 22px 4px", background:"white" }}>
-            <div style={{ fontSize:20, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.02em" }}>Pending Tasks</div>
-            <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:3 }}>Tap a day to see or add orders</div>
+          {/* ── S3: URGENTES (solo si hay órdenes hoy o mañana) ── */}
+          {(() => {
+            const todayStr = new Date().toISOString().split("T")[0];
+            const tmrw = new Date(); tmrw.setDate(tmrw.getDate()+1);
+            const tmrwStr = tmrw.toISOString().split("T")[0];
+            const urgentes = orders.filter(o =>
+              o.status !== "done" && o.status !== "invoiced" &&
+              (o.deadline === todayStr || o.deadline === tmrwStr)
+            );
+            if(urgentes.length === 0) return null;
+            return (
+              <div style={{ padding: isDesktop ? "0 40px 20px" : "0 22px 18px" }}>
+                <div style={{ border:"1.5px solid #E8BE7A", borderRadius:16, overflow:"hidden" }}>
+                  {/* Header del bloque */}
+                  <div style={{ background:"#FBF5E8", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, borderBottom:"1px solid #E8BE7A" }}>
+                    <Icon name="bell" size={16} color="#C9933A"/>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#C9933A", letterSpacing:"0.06em", textTransform:"uppercase" }}>
+                      Requieren atención · {urgentes.length}
+                    </span>
+                  </div>
+                  {/* Filas */}
+                  {urgentes.map((o, idx) => {
+                    const isToday = o.deadline === todayStr;
+                    const desc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || "—";
+                    return (
+                      <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                        style={{ width:"100%", background: idx%2===0 ? "white" : "#FDFAF5", border:"none", borderTop: idx>0 ? "1px solid #E8E4DC" : "none", padding:"12px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
+                          <div style={{ fontSize:12, color:"#5A7A80", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Espera: {desc}</div>
+                        </div>
+                        <div style={{ textAlign:"right", flexShrink:0 }}>
+                          <span style={{ fontSize:11, fontWeight:700, color: isToday ? "#da1e28" : "#C9933A", background: isToday ? "#ffd7d9" : "#FBF5E8", padding:"3px 9px", borderRadius:6, display:"block", marginBottom:2 }}>
+                            {isToday ? "Hoy" : "Mañana"}
+                          </span>
+                          <StatusPill status={o.status}/>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── S4: CALENDAR STRIP ── */}
+          <div style={{ padding: isDesktop ? "16px 40px 4px" : "16px 22px 4px", background:"white" }}>
+            <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", letterSpacing:"-0.01em" }}>Agenda</div>
+            <div style={{ fontSize:12, color:"#5A7A80", fontWeight:500, marginTop:2 }}>Toca un día para ver sus órdenes</div>
           </div>
           {(() => {
             const days = [];
@@ -701,37 +758,34 @@ export default function App() {
             }
             const DAYS_ES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
             return (
-              <>
-                {/* Scrollable day pills */}
-                <div ref={calStripRef} style={{ overflowX:"auto", display:"flex", gap:8, padding:"14px 22px 20px", background:"white", scrollbarWidth:"none" }}>
-                  {days.map(d => {
-                    const date = new Date(d+"T12:00:00");
-                    const isToday   = d === TODAY;
-                    const isSelected = d === selectedDate;
-                    const hasOrders = orders.some(o => o.deadline === d && o.status !== "done" && o.status !== "invoiced");
-                    const hasNote   = dayNotes[d]?.text;
-                    const isPast    = d < TODAY;
-                    return (
-                      <button key={d} data-today={isToday||undefined} onClick={()=>{ setSelectedDate(d); setDayModal(d); }}
-                        style={{ flexShrink:0, width:54, padding:"10px 4px", borderRadius:18, border:"none", background: isSelected ? "#1B3F45" : isToday ? `${ACCENT}18` : "transparent", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                        <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", color: isSelected ? "rgba(255,255,255,0.6)" : "#5A7A80", letterSpacing:"0.08em" }}>{DAYS_ES[date.getDay()]}</span>
-                        <span style={{ fontSize:18, fontWeight:800, color: isSelected ? "white" : isPast ? "#c6c6c6" : "#1B3F45", lineHeight:1, letterSpacing:"-0.01em" }}>{date.getDate()}</span>
-                        <div style={{ display:"flex", gap:3, height:5, alignItems:"center" }}>
-                          {hasOrders && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.7)":ACCENT }}/>}
-                          {hasNote   && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.5)":"#C9933A" }}/>}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-              </>
+              <div ref={calStripRef} style={{ overflowX:"auto", display:"flex", gap:8, padding:"12px 22px 16px", background:"white", scrollbarWidth:"none" }}>
+                {days.map(d => {
+                  const date = new Date(d+"T12:00:00");
+                  const isToday    = d === TODAY;
+                  const isSelected = d === selectedDate;
+                  const hasOrders  = orders.some(o => o.deadline === d && o.status !== "done" && o.status !== "invoiced");
+                  const hasNote    = dayNotes[d]?.text;
+                  const isPast     = d < TODAY;
+                  return (
+                    <button key={d} data-today={isToday||undefined} onClick={()=>{ setSelectedDate(d); setDayModal(d); }}
+                      style={{ flexShrink:0, width:54, padding:"10px 4px", borderRadius:18, border:"none", background: isSelected ? "#1B3F45" : isToday ? `${ACCENT}18` : "transparent", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                      <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", color: isSelected ? "rgba(255,255,255,0.6)" : "#5A7A80", letterSpacing:"0.08em" }}>{DAYS_ES[date.getDay()]}</span>
+                      <span style={{ fontSize:18, fontWeight:800, color: isSelected ? "white" : isPast ? "#c6c6c6" : "#1B3F45", lineHeight:1, letterSpacing:"-0.01em" }}>{date.getDate()}</span>
+                      <div style={{ display:"flex", gap:3, height:5, alignItems:"center" }}>
+                        {hasOrders && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.7)":ACCENT }}/>}
+                        {hasNote   && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.5)":"#C9933A" }}/>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             );
           })()}
 
-          <div style={{ padding: isDesktop ? "16px 40px 60px" : "12px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+          {/* ── S5: ÓRDENES DEL DÍA ── */}
+          <div style={{ padding: isDesktop ? "16px 40px 60px" : "16px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
             {(() => {
-              const today = new Date().toISOString().split("T")[0];
+              const todayStr = new Date().toISOString().split("T")[0];
               const active = orders.filter(o => o.status !== "done" && o.status !== "invoiced");
               const withDeadline = active.filter(o => o.deadline).sort((a,b) => a.deadline.localeCompare(b.deadline));
               const noDeadline   = active.filter(o => !o.deadline);
@@ -739,80 +793,61 @@ export default function App() {
 
               const getUrgency = (deadline) => {
                 if(!deadline) return { accent:"transparent", label:null };
-                if(deadline < today) return { accent:"#da1e28", label:"Overdue" };
-                if(deadline === today) return { accent:"#C9933A", label:"Today" };
-                const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
-                if(diff === 1) return { accent:"#C9933A", label:"Tomorrow" };
+                if(deadline < todayStr) return { accent:"#da1e28", label:"Vencida" };
+                if(deadline === todayStr) return { accent:"#C9933A", label:"Hoy" };
+                const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(todayStr+"T12:00:00"))/(864e5));
+                if(diff === 1) return { accent:"#C9933A", label:"Mañana" };
                 if(diff <= 7)  return { accent:"#C9933A", label:null };
                 return { accent:"transparent", label:null };
               };
 
-              const fmtDeadline = (deadline) => {
-                if(!deadline) return null;
-                const d = new Date(deadline+"T12:00:00");
-                return { day: d.getDate(), month: d.toLocaleDateString("en-GB",{month:"short"}).toUpperCase(), weekday: d.toLocaleDateString("en-GB",{weekday:"short"}).toUpperCase() };
-              };
-
-              const overdue = withDeadline.filter(o => o.deadline < today);
+              // Color del borde izquierdo según estado
+              const statusBorderColor = { received:"#C9933A", inprogress:"#1B3F45", done:"#198038", invoiced:"#5A7A80" };
 
               return (
                 <>
-                  {/* Overdue alert */}
-                  {overdue.length > 0 && (
-                    <div style={{ background:"#da1e28", borderRadius:18, padding:"14px 18px", marginBottom:14, display:"flex", alignItems:"center", gap:12 }}>
-                      <div style={{ width:38, height:38, borderRadius:12, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <Icon name="bell" size={18} color="white"/>
-                      </div>
-                      <div>
-                        <div style={{ fontSize:14, fontWeight:800, color:"white", letterSpacing:"-0.01em" }}>
-                          {overdue.length} overdue order{overdue.length>1?"s":""}
-                        </div>
-                        <div style={{ fontSize:12, color:"rgba(255,255,255,0.75)", fontWeight:500 }}>These need to go out immediately</div>
-                      </div>
-                    </div>
+                  <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:12 }}>
+                    <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", letterSpacing:"-0.01em" }}>Pendientes</div>
+                    {sorted.length > 0 && <div style={{ fontSize:12, fontWeight:500, color:"#5A7A80" }}>{sorted.length} en proceso</div>}
+                  </div>
+
+                  {sorted.length === 0 && (
+                    <div style={{ textAlign:"center", padding:"28px 0", color:"#5A7A80", fontSize:14, fontWeight:500 }}>Sin órdenes pendientes</div>
                   )}
 
-                  {/* Sorted order list */}
-                  <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:12, marginTop:4 }}>
-                    <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.02em" }}>Upcoming deliveries</div>
-                    {sorted.length > 0 && <div style={{ fontSize:12, fontWeight:500, color:"#5A7A80" }}>{sorted.length} pending</div>}
-                  </div>
-                  {sorted.length === 0 && (
-                    <div style={{ textAlign:"center", padding:"24px 0", color:"#5A7A80", fontSize:14, fontWeight:500 }}>No pending orders</div>
-                  )}
-                  {sorted.map((o, i) => {
+                  {sorted.map(o => {
                     const urg = getUrgency(o.deadline);
-                    const dateParts = fmtDeadline(o.deadline);
-                    const priorityColor = i === 0 ? "#da1e28" : i === 1 ? "#C9933A" : i === 2 ? "#C9933A" : "#5A7A80";
+                    const borderColor = statusBorderColor[o.status] || "#E8E4DC";
+                    const desc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || null;
+                    const fmtDl = o.deadline ? new Date(o.deadline+"T12:00:00").toLocaleDateString("es-CH",{day:"numeric",month:"short"}) : null;
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
-                        {/* Priority circle */}
-                        <div style={{ width:40, height:40, borderRadius:12, background:"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                          <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{i+1}</span>
+                        style={{ width:"100%", background:"white", border:"0.5px solid #E8E4DC", borderLeft:`4px solid ${borderColor}`, borderRadius:12, padding:"14px 16px", marginBottom:10, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 4px rgba(27,63,69,0.06)", display:"block" }}>
+                        {/* Fila 1: cliente + monto */}
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: desc||fmtDl ? 6 : 0 }}>
+                          <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `Orden #${o.id}`}</div>
+                          {o.amount > 0 && <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(o.amount)}</div>}
                         </div>
-                        {/* Content */}
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:14, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:6 }}>{o.client || `Order #${o.id}`}</div>
-                          <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                            {dateParts ? (
-                              <span style={{ fontSize:11, fontWeight:700, color:urg.accent !== "transparent" ? urg.accent : "#5A7A80", background:urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F6F7", padding:"3px 9px", borderRadius:8 }}>
-                                {urg.label ? `${urg.label} · ` : ""}{dateParts.weekday} {dateParts.day} {dateParts.month}
-                              </span>
-                            ) : (
-                              <span style={{ fontSize:11, fontWeight:600, color:"#5A7A80", background:"#F0F6F7", padding:"3px 9px", borderRadius:8 }}>No date</span>
-                            )}
-                            {o.description && <span style={{ fontSize:11, color:"rgba(0,0,0,0.35)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</span>}
-                          </div>
+                        {/* Fila 2: descripción */}
+                        {desc && (
+                          <div style={{ fontSize:12, color:"#5A7A80", marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Espera: {desc}</div>
+                        )}
+                        {/* Fila 3: fecha + badge */}
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          {fmtDl && (
+                            <span style={{ fontSize:11, fontWeight:600, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", background: urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F6F7", padding:"3px 9px", borderRadius:6 }}>
+                              {urg.label ? `${urg.label} · ` : ""}{fmtDl}
+                            </span>
+                          )}
+                          <StatusPill status={o.status}/>
                         </div>
-                        <StatusPill status={o.status}/>
                       </button>
                     );
                   })}
 
                   {sorted.length > 0 && (
-                    <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"13px", background:"#F0F6F7", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, color:"#1B3F45", cursor:"pointer", marginTop:4 }}>
-                      View all orders
+                    <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"13px", background:"#F0F6F7", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, color:"#1B3F45", cursor:"pointer", marginTop:4 }}>
+                      Ver todas las órdenes
                     </button>
                   )}
                 </>
