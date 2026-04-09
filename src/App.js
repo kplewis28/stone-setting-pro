@@ -712,30 +712,39 @@ export default function App() {
             if(urgentes.length === 0) return null;
             return (
               <div style={{ padding: isDesktop ? "0 40px 20px" : "0 22px 18px" }}>
-                <div style={{ border:"1.5px solid #E8BE7A", borderRadius:16, overflow:"hidden" }}>
-                  {/* Header del bloque */}
-                  <div style={{ background:"#FBF5E8", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, borderBottom:"1px solid #E8BE7A" }}>
-                    <Icon name="bell" size={16} color="#C9933A"/>
-                    <span style={{ fontSize:12, fontWeight:700, color:"#C9933A", letterSpacing:"0.06em", textTransform:"uppercase" }}>
-                      Requieren atención · {urgentes.length}
-                    </span>
+                <div style={{ border:"2px solid #C9933A", borderRadius:16, overflow:"hidden" }}>
+                  {/* Header dorado sólido */}
+                  <div style={{ background:"#C9933A", padding:"11px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <Icon name="bell" size={16} color="white"/>
+                      <span style={{ fontSize:13, fontWeight:700, color:"white" }}>Requieren atención hoy</span>
+                    </div>
+                    <div style={{ background:"rgba(255,255,255,0.25)", borderRadius:20, padding:"2px 10px" }}>
+                      <span style={{ fontSize:12, fontWeight:700, color:"white" }}>{urgentes.length}</span>
+                    </div>
                   </div>
                   {/* Filas */}
                   {urgentes.map((o, idx) => {
                     const isToday = o.deadline === todayStr;
                     const desc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || "—";
+                    const tipo = o.field2 || (o.status === "inprogress" ? "Revisión" : "Entrega");
+                    const piezas = o.pieces || "—";
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background: idx%2===0 ? "white" : "#FDFAF5", border:"none", borderTop: idx>0 ? "1px solid #E8E4DC" : "none", padding:"12px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "1px solid #E8E4DC" : "none", padding:"12px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:12 }}>
+                        {/* Cuadradito de items */}
+                        <div style={{ width:34, height:34, borderRadius:8, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <span style={{ fontSize:13, fontWeight:800, color:"#C9933A", lineHeight:1 }}>{piezas}</span>
+                        </div>
+                        {/* Info centro */}
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
                           <div style={{ fontSize:12, color:"#5A7A80", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Espera: {desc}</div>
                         </div>
+                        {/* Derecha: fecha + tipo */}
                         <div style={{ textAlign:"right", flexShrink:0 }}>
-                          <span style={{ fontSize:11, fontWeight:700, color: isToday ? "#da1e28" : "#C9933A", background: isToday ? "#ffd7d9" : "#FBF5E8", padding:"3px 9px", borderRadius:6, display:"block", marginBottom:2 }}>
-                            {isToday ? "Hoy" : "Mañana"}
-                          </span>
-                          <StatusPill status={o.status}/>
+                          <div style={{ fontSize:12, fontWeight:700, color:"#C9933A", marginBottom:2 }}>{isToday ? "Hoy" : "Mañana"}</div>
+                          <div style={{ fontSize:11, color:"#5A7A80" }}>{tipo}</div>
                         </div>
                       </button>
                     );
@@ -804,11 +813,18 @@ export default function App() {
               // Color del borde izquierdo según estado
               const statusBorderColor = { received:"#C9933A", inprogress:"#1B3F45", done:"#198038", invoiced:"#5A7A80" };
 
+              const todayLabel = (() => {
+                const d = new Date();
+                const dias = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+                const meses = ["enero","feb","marzo","abril","mayo","jun","jul","ago","sep","oct","nov","dic"];
+                return `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
+              })();
+
               return (
                 <>
                   <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:12 }}>
-                    <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", letterSpacing:"-0.01em" }}>Pendientes</div>
-                    {sorted.length > 0 && <div style={{ fontSize:12, fontWeight:500, color:"#5A7A80" }}>{sorted.length} en proceso</div>}
+                    <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", letterSpacing:"-0.01em" }}>Órdenes del día</div>
+                    {sorted.length > 0 && <div style={{ fontSize:12, fontWeight:500, color:"#5A7A80" }}>{sorted.length} {sorted.length===1?"orden":"órdenes"} · {todayLabel}</div>}
                   </div>
 
                   {sorted.length === 0 && (
@@ -822,23 +838,31 @@ export default function App() {
                     const fmtDl = o.deadline ? new Date(o.deadline+"T12:00:00").toLocaleDateString("es-CH",{day:"numeric",month:"short"}) : null;
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"0.5px solid #E8E4DC", borderLeft:`4px solid ${borderColor}`, borderRadius:12, padding:"14px 16px", marginBottom:10, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 4px rgba(27,63,69,0.06)", display:"block" }}>
-                        {/* Fila 1: cliente + monto */}
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: desc||fmtDl ? 6 : 0 }}>
+                        style={{ width:"100%", background:"white", border:"0.5px solid #E8E4DC", borderLeft:`4px solid ${borderColor}`, borderRadius:12, padding:"13px 16px", marginBottom:10, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 4px rgba(27,63,69,0.06)", display:"block" }}>
+                        {/* Línea 1: cliente + monto */}
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
                           <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `Orden #${o.id}`}</div>
                           {o.amount > 0 && <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(o.amount)}</div>}
                         </div>
-                        {/* Fila 2: descripción */}
-                        {desc && (
-                          <div style={{ fontSize:12, color:"#5A7A80", marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Espera: {desc}</div>
-                        )}
-                        {/* Fila 3: fecha + badge */}
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          {fmtDl && (
-                            <span style={{ fontSize:11, fontWeight:600, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", background: urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F6F7", padding:"3px 9px", borderRadius:6 }}>
-                              {urg.label ? `${urg.label} · ` : ""}{fmtDl}
-                            </span>
-                          )}
+                        {/* Línea 2: ID · descripción */}
+                        <div style={{ fontSize:12, color:"#5A7A80", marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          <span style={{ fontWeight:600 }}>#{o.id}</span>
+                          {desc && <span> · Espera: {desc}</span>}
+                        </div>
+                        {/* Línea 3: ícono + fecha ←→ badge */}
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                            {fmtDl ? (
+                              <>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={urg.accent !== "transparent" ? urg.accent : "#5A7A80"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                                <span style={{ fontSize:11, fontWeight:600, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", background: urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F6F7", padding:"2px 8px", borderRadius:6 }}>
+                                  {urg.label ? `${urg.label} · ` : ""}{fmtDl}
+                                </span>
+                              </>
+                            ) : (
+                              <span style={{ fontSize:11, color:"#5A7A80" }}>Sin fecha</span>
+                            )}
+                          </div>
                           <StatusPill status={o.status}/>
                         </div>
                       </button>
