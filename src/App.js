@@ -762,87 +762,98 @@ export default function App() {
             );
           })()}
 
-          {/* ── S4: CALENDAR STRIP ── */}
-          <div style={{ padding: isDesktop ? "16px 40px 4px" : "16px 22px 4px", background:"white" }}>
-            <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", letterSpacing:"-0.01em" }}>Agenda</div>
-            <div style={{ fontSize:12, color:"#5A7A80", fontWeight:500, marginTop:2 }}>Toca un día para ver sus órdenes</div>
-          </div>
+          {/* ── S4 + S5: BLOQUE UNIFICADO CALENDARIO + ÓRDENES ── */}
           {(() => {
+            const todayStr = new Date().toISOString().split("T")[0];
             const days = [];
             for(let i = -7; i <= 30; i++) {
               const d = new Date(); d.setDate(d.getDate()+i);
               days.push(d.toISOString().split("T")[0]);
             }
             const DAYS_ES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+            const active = orders.filter(o => o.status !== "done" && o.status !== "invoiced");
+            const withDeadline = active.filter(o => o.deadline).sort((a,b) => a.deadline.localeCompare(b.deadline));
+            const sorted = [...withDeadline, ...active.filter(o => !o.deadline)];
+
+            const ordersForDay = active.filter(o => o.deadline === selectedDate);
+
+            const getUrgency = (deadline) => {
+              if(!deadline) return { accent:"transparent", label:null };
+              if(deadline < todayStr) return { accent:"#da1e28", label:"Vencida" };
+              if(deadline === todayStr) return { accent:"#C9933A", label:"Hoy" };
+              const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(todayStr+"T12:00:00"))/(864e5));
+              if(diff === 1) return { accent:"#C9933A", label:"Mañana" };
+              if(diff <= 7)  return { accent:"#C9933A", label:null };
+              return { accent:"transparent", label:null };
+            };
+
+            const statusBorderColor = { received:"#C9933A", inprogress:"#1B3F45", done:"#198038", invoiced:"#5A7A80" };
+
+            const d = new Date();
+            const dias  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+            const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+            const headerDate = `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
+
             return (
-              <div ref={calStripRef} style={{ overflowX:"auto", display:"flex", gap:8, padding:"12px 22px 16px", background:"white", scrollbarWidth:"none" }}>
-                {days.map(d => {
-                  const date = new Date(d+"T12:00:00");
-                  const isToday    = d === TODAY;
-                  const isSelected = d === selectedDate;
-                  const hasOrders  = orders.some(o => o.deadline === d && o.status !== "done" && o.status !== "invoiced");
-                  const hasNote    = dayNotes[d]?.text;
-                  const isPast     = d < TODAY;
-                  return (
-                    <button key={d} data-today={isToday||undefined} onClick={()=>{ setSelectedDate(d); setDayModal(d); }}
-                      style={{ flexShrink:0, width:54, padding:"10px 4px", borderRadius:18, border:"none", background: isSelected ? "#1B3F45" : isToday ? `${ACCENT}18` : "transparent", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                      <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", color: isSelected ? "rgba(255,255,255,0.6)" : "#5A7A80", letterSpacing:"0.08em" }}>{DAYS_ES[date.getDay()]}</span>
-                      <span style={{ fontSize:18, fontWeight:800, color: isSelected ? "white" : isPast ? "#c6c6c6" : "#1B3F45", lineHeight:1, letterSpacing:"-0.01em" }}>{date.getDate()}</span>
-                      <div style={{ display:"flex", gap:3, height:5, alignItems:"center" }}>
-                        {hasOrders && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.7)":ACCENT }}/>}
-                        {hasNote   && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.5)":"#C9933A" }}/>}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })()}
+              <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : "0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+                {/* ── Contenedor unificado ── */}
+                <div style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
 
-          {/* ── S5: ÓRDENES DEL DÍA ── */}
-          <div style={{ padding: isDesktop ? "16px 40px 60px" : "16px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
-            {(() => {
-              const todayStr = new Date().toISOString().split("T")[0];
-              const active = orders.filter(o => o.status !== "done" && o.status !== "invoiced");
-              const withDeadline = active.filter(o => o.deadline).sort((a,b) => a.deadline.localeCompare(b.deadline));
-              const noDeadline   = active.filter(o => !o.deadline);
-              const sorted = [...withDeadline, ...noDeadline];
-
-              const getUrgency = (deadline) => {
-                if(!deadline) return { accent:"transparent", label:null };
-                if(deadline < todayStr) return { accent:"#da1e28", label:"Vencida" };
-                if(deadline === todayStr) return { accent:"#C9933A", label:"Hoy" };
-                const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(todayStr+"T12:00:00"))/(864e5));
-                if(diff === 1) return { accent:"#C9933A", label:"Mañana" };
-                if(diff <= 7)  return { accent:"#C9933A", label:null };
-                return { accent:"transparent", label:null };
-              };
-
-              // Color del borde izquierdo según estado
-              const statusBorderColor = { received:"#C9933A", inprogress:"#1B3F45", done:"#198038", invoiced:"#5A7A80" };
-
-              const todayLabel = (() => {
-                const d = new Date();
-                const dias = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-                const meses = ["enero","feb","marzo","abril","mayo","jun","jul","ago","sep","oct","nov","dic"];
-                return `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
-              })();
-
-              return (
-                <>
-                  <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:12 }}>
-                    <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", letterSpacing:"-0.01em" }}>Órdenes del día</div>
-                    {sorted.length > 0 && <div style={{ fontSize:12, fontWeight:500, color:"#5A7A80" }}>{sorted.length} {sorted.length===1?"orden":"órdenes"} · {todayLabel}</div>}
+                  {/* Parte A: Header */}
+                  <div style={{ padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>Órdenes del día</span>
+                    <span style={{ fontSize:12, color:"#5A7A80" }}>{headerDate}</span>
                   </div>
 
-                  {sorted.length === 0 && (
-                    <div style={{ textAlign:"center", padding:"28px 0", color:"#5A7A80", fontSize:14, fontWeight:500 }}>Sin órdenes pendientes</div>
-                  )}
+                  {/* Separador */}
+                  <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
 
-                  {sorted.map(o => {
+                  {/* Parte B: Strip de días */}
+                  <div ref={calStripRef} style={{ overflowX:"auto", display:"flex", gap:6, padding:"10px 12px", scrollbarWidth:"none" }}>
+                    {days.map(dayStr => {
+                      const date      = new Date(dayStr+"T12:00:00");
+                      const isToday   = dayStr === TODAY;
+                      const isSelected= dayStr === selectedDate;
+                      const hasOrders = orders.some(o => o.deadline === dayStr && o.status !== "done" && o.status !== "invoiced");
+                      const hasNote   = dayNotes[dayStr]?.text;
+                      const isPast    = dayStr < TODAY;
+                      return (
+                        <button key={dayStr} data-today={isToday||undefined} onClick={()=>{ setSelectedDate(dayStr); setDayModal(dayStr); }}
+                          style={{ flexShrink:0, width:52, padding:"9px 4px", borderRadius:16, border:"none", background: isSelected ? "#1B3F45" : isToday ? `${ACCENT}18` : "transparent", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                          <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", color: isSelected ? "rgba(255,255,255,0.6)" : "#5A7A80", letterSpacing:"0.08em" }}>{DAYS_ES[date.getDay()]}</span>
+                          <span style={{ fontSize:17, fontWeight:800, color: isSelected ? "white" : isPast ? "#c6c6c6" : "#1B3F45", lineHeight:1, letterSpacing:"-0.01em" }}>{date.getDate()}</span>
+                          <div style={{ display:"flex", gap:3, height:5, alignItems:"center" }}>
+                            {hasOrders && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.7)":ACCENT }}/>}
+                            {hasNote   && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.5)":"#C9933A" }}/>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Separador */}
+                  <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
+
+                  {/* Parte D: Conteo del día seleccionado */}
+                  <div style={{ padding:"10px 16px", background:"#F7F5F0" }}>
+                    <span style={{ fontSize:12, color:"#5A7A80" }}>
+                      {ordersForDay.length > 0
+                        ? `${ordersForDay.length} ${ordersForDay.length===1?"orden":"órdenes"} para este día`
+                        : "Sin órdenes para este día"}
+                    </span>
+                  </div>
+
+                  {/* Separador */}
+                  <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
+
+                  {/* Cards de órdenes */}
+                  {sorted.length === 0 && (
+                    <div style={{ padding:"28px 16px", textAlign:"center", color:"#5A7A80", fontSize:14 }}>Sin órdenes pendientes</div>
+                  )}
+                  {sorted.map((o, idx) => {
                     const urg = getUrgency(o.deadline);
                     const borderColor = statusBorderColor[o.status] || "#E8E4DC";
-                    // Descripción: detectar handwritten scans, truncar a 25 chars
                     const rawDesc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || null;
                     const descLabel = (() => {
                       if(!rawDesc) return null;
@@ -852,7 +863,7 @@ export default function App() {
                     const fmtDl = o.deadline ? new Date(o.deadline+"T12:00:00").toLocaleDateString("es-CH",{day:"numeric",month:"short"}) : null;
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"0.5px solid #E8E4DC", borderLeft:`4px solid ${borderColor}`, borderRadius:12, padding:"13px 16px", marginBottom:10, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 4px rgba(27,63,69,0.06)", display:"block" }}>
+                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"13px 16px", cursor:"pointer", textAlign:"left", display:"block" }}>
                         {/* Línea 1: cliente + monto */}
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
                           <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `Orden #${o.id}`}</div>
@@ -863,7 +874,7 @@ export default function App() {
                           <span style={{ fontFamily:"'IBM Plex Mono', monospace", fontWeight:600 }}>#{o.id}</span>
                           {descLabel && <span> · Espera: {descLabel}</span>}
                         </div>
-                        {/* Línea 3: ícono + fecha en gris ←→ badge */}
+                        {/* Línea 3: ícono + fecha ←→ badge */}
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                           <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                             {fmtDl ? (
@@ -883,15 +894,19 @@ export default function App() {
                     );
                   })}
 
+                  {/* Footer: ver todas */}
                   {sorted.length > 0 && (
-                    <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"13px", background:"#F0F6F7", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, color:"#1B3F45", cursor:"pointer", marginTop:4 }}>
-                      Ver todas las órdenes
-                    </button>
+                    <>
+                      <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
+                      <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"13px 16px", background:"#F7F5F0", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
+                        Ver todas las órdenes →
+                      </button>
+                    </>
                   )}
-                </>
-              );
-            })()}
-          </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
