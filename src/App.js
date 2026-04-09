@@ -700,51 +700,59 @@ export default function App() {
             </button>
           </div>
 
-          {/* ── S3: URGENTES (solo si hay órdenes hoy o mañana) ── */}
+          {/* ── S3: URGENTES ── */}
           {(() => {
             const todayStr = new Date().toISOString().split("T")[0];
             const tmrw = new Date(); tmrw.setDate(tmrw.getDate()+1);
             const tmrwStr = tmrw.toISOString().split("T")[0];
             const urgentes = orders.filter(o =>
-              o.status !== "done" && o.status !== "invoiced" &&
-              (o.deadline === todayStr || o.deadline === tmrwStr)
+              o.status !== "done" && o.status !== "invoiced" && o.deadline && (
+                o.deadline === todayStr ||
+                o.deadline === tmrwStr ||
+                (o.status === "received" && o.deadline < todayStr)
+              )
             );
             if(urgentes.length === 0) return null;
+            const trunca4 = (txt) => {
+              if(!txt) return "—";
+              if(/handwritten|scanned|extract/i.test(txt)) return "Orden escaneada";
+              const words = txt.trim().split(/\s+/);
+              return words.length <= 4 ? txt : words.slice(0,4).join(" ") + "…";
+            };
             return (
               <div style={{ padding: isDesktop ? "0 40px 20px" : "0 22px 18px" }}>
-                <div style={{ border:"2px solid #C9933A", borderRadius:16, overflow:"hidden" }}>
+                <div style={{ border:"2px solid #C9933A", borderRadius:12, overflow:"hidden" }}>
                   {/* Header dorado sólido */}
-                  <div style={{ background:"#C9933A", padding:"11px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <Icon name="bell" size={16} color="white"/>
-                      <span style={{ fontSize:13, fontWeight:700, color:"white" }}>Requieren atención hoy</span>
-                    </div>
-                    <div style={{ background:"rgba(255,255,255,0.25)", borderRadius:20, padding:"2px 10px" }}>
-                      <span style={{ fontSize:12, fontWeight:700, color:"white" }}>{urgentes.length}</span>
+                  <div style={{ background:"#C9933A", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:14, fontWeight:500, color:"white" }}>Requieren atención</span>
+                    <div style={{ background:"rgba(255,255,255,0.2)", borderRadius:20, padding:"2px 10px" }}>
+                      <span style={{ fontSize:12, fontWeight:700, color:"white" }}>{urgentes.length} urgentes</span>
                     </div>
                   </div>
                   {/* Filas */}
                   {urgentes.map((o, idx) => {
                     const isToday = o.deadline === todayStr;
-                    const desc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || "—";
-                    const tipo = o.field2 || (o.status === "inprogress" ? "Revisión" : "Entrega");
+                    const isOverdue = o.deadline < todayStr;
+                    const labelFecha = isOverdue ? "Vencida" : isToday ? "Hoy" : "Mañana";
+                    const desc = trunca4(o.description || [o.field1, o.field2].filter(Boolean).join(" · "));
+                    const tipo = o.status === "inprogress" ? "Revisión" : "Entrega";
                     const piezas = o.pieces || "—";
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "1px solid #E8E4DC" : "none", padding:"12px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:12 }}>
-                        {/* Cuadradito de items */}
-                        <div style={{ width:34, height:34, borderRadius:8, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                          <span style={{ fontSize:13, fontWeight:800, color:"#C9933A", lineHeight:1 }}>{piezas}</span>
+                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", padding:"12px 14px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:12 }}>
+                        {/* Avatar 28px */}
+                        <div style={{ width:28, height:28, borderRadius:6, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <span style={{ fontSize:12, fontWeight:800, color:"#C9933A", lineHeight:1 }}>{piezas}</span>
                         </div>
                         {/* Info centro */}
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
-                          <div style={{ fontSize:12, color:"#5A7A80", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Espera: {desc}</div>
+                          <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
+                          <div style={{ fontSize:11, color:"#5A7A80", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Espera: {desc}</div>
                         </div>
-                        {/* Derecha: fecha + tipo */}
+                        {/* Derecha */}
                         <div style={{ textAlign:"right", flexShrink:0 }}>
-                          <div style={{ fontSize:12, fontWeight:700, color:"#C9933A", marginBottom:2 }}>{isToday ? "Hoy" : "Mañana"}</div>
-                          <div style={{ fontSize:11, color:"#5A7A80" }}>{tipo}</div>
+                          <div style={{ fontSize:11, fontWeight:700, color: isOverdue ? "#da1e28" : "#C9933A", marginBottom:2 }}>{labelFecha}</div>
+                          <div style={{ fontSize:10, color:"#5A7A80" }}>{tipo}</div>
                         </div>
                       </button>
                     );
@@ -834,7 +842,13 @@ export default function App() {
                   {sorted.map(o => {
                     const urg = getUrgency(o.deadline);
                     const borderColor = statusBorderColor[o.status] || "#E8E4DC";
-                    const desc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || null;
+                    // Descripción: detectar handwritten scans, truncar a 25 chars
+                    const rawDesc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || null;
+                    const descLabel = (() => {
+                      if(!rawDesc) return null;
+                      if(/handwritten|scanned|extract/i.test(rawDesc)) return "Orden escaneada";
+                      return rawDesc.length > 25 ? rawDesc.slice(0,25) + "…" : rawDesc;
+                    })();
                     const fmtDl = o.deadline ? new Date(o.deadline+"T12:00:00").toLocaleDateString("es-CH",{day:"numeric",month:"short"}) : null;
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
@@ -844,12 +858,12 @@ export default function App() {
                           <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `Orden #${o.id}`}</div>
                           {o.amount > 0 && <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(o.amount)}</div>}
                         </div>
-                        {/* Línea 2: ID · descripción */}
-                        <div style={{ fontSize:12, color:"#5A7A80", marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                          <span style={{ fontWeight:600 }}>#{o.id}</span>
-                          {desc && <span> · Espera: {desc}</span>}
+                        {/* Línea 2: ID mono · Espera: desc truncada */}
+                        <div style={{ fontSize:11, color:"#5A7A80", marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          <span style={{ fontFamily:"'IBM Plex Mono', monospace", fontWeight:600 }}>#{o.id}</span>
+                          {descLabel && <span> · Espera: {descLabel}</span>}
                         </div>
-                        {/* Línea 3: ícono + fecha ←→ badge */}
+                        {/* Línea 3: ícono + fecha en gris ←→ badge */}
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                           <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                             {fmtDl ? (
