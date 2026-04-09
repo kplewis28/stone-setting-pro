@@ -1,23 +1,36 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 
+/* ── Stone Art Precision GmbH — Design Tokens ── */
+:root {
+  --sa-teal:       #1B3F45;
+  --sa-teal-mid:   #2A5F68;
+  --sa-teal-light: #E0EDEF;
+  --sa-teal-pale:  #F0F6F7;
+  --sa-gold:       #C9933A;
+  --sa-gold-light: #E8BE7A;
+  --sa-gold-pale:  #FBF5E8;
+  --sa-surface:    #F7F5F0;
+  --sa-border:     #E8E4DC;
+}
+
 body {
   margin: 0;
   font-family: 'IBM Plex Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f4f4f4;
+  background: var(--sa-surface);
 }
 
 code {
   font-family: 'IBM Plex Mono', 'Courier New', monospace;
 }
 
-/* ── Carbon Button overrides (brand: yellow + black) ── */
+/* ── Carbon Button overrides (Stone Art: gold + white) ── */
 .cds--btn--primary {
-  background-color: #f1c21b !important;
-  color: #161616 !important;
-  border-color: #f1c21b !important;
-  border-radius: 0 !important;
+  background-color: var(--sa-gold) !important;
+  color: #ffffff !important;
+  border-color: var(--sa-gold) !important;
+  border-radius: 8px !important;
   font-family: 'IBM Plex Sans', sans-serif !important;
   font-weight: 600 !important;
   width: 100%;
@@ -25,20 +38,20 @@ code {
   min-height: 52px;
 }
 .cds--btn--primary:hover {
-  background-color: #d4aa00 !important;
-  border-color: #d4aa00 !important;
+  background-color: #b07c28 !important;
+  border-color: #b07c28 !important;
 }
 .cds--btn--primary:disabled,
 .cds--btn--primary:hover:disabled {
-  background-color: #e0e0e0 !important;
+  background-color: var(--sa-border) !important;
   color: #8d8d8d !important;
-  border-color: #e0e0e0 !important;
+  border-color: var(--sa-border) !important;
 }
 
 .cds--btn--ghost {
-  color: #161616 !important;
-  border: 1.5px solid #e0e0e0 !important;
-  border-radius: 0 !important;
+  color: var(--sa-teal) !important;
+  border: 1.5px solid var(--sa-border) !important;
+  border-radius: 8px !important;
   font-family: 'IBM Plex Sans', sans-serif !important;
   font-weight: 500 !important;
   width: 100%;
@@ -47,25 +60,25 @@ code {
   background: #ffffff !important;
 }
 .cds--btn--ghost:hover {
-  background: #f4f4f4 !important;
-  color: #161616 !important;
+  background: var(--sa-teal-pale) !important;
+  color: var(--sa-teal) !important;
 }
 .cds--btn--ghost:disabled {
   color: #8d8d8d !important;
-  border-color: #e0e0e0 !important;
+  border-color: var(--sa-border) !important;
   opacity: 0.6;
 }
 
 /* ── Carbon TextInput overrides ── */
 .cds--text-input {
   font-family: 'IBM Plex Sans', sans-serif !important;
-  border-radius: 0 !important;
-  background: #f4f4f4 !important;
-  color: #161616 !important;
+  border-radius: 4px !important;
+  background: var(--sa-teal-pale) !important;
+  color: var(--sa-teal) !important;
   border-bottom-color: #8d8d8d !important;
 }
 .cds--text-input:focus {
-  outline: 2px solid #f1c21b !important;
+  outline: 2px solid var(--sa-gold) !important;
   outline-offset: -2px !important;
   background: #ffffff !important;
 }
@@ -79,14 +92,14 @@ code {
 /* ── Carbon TextArea overrides ── */
 .cds--text-area {
   font-family: 'IBM Plex Sans', sans-serif !important;
-  border-radius: 0 !important;
-  background: #f4f4f4 !important;
-  color: #161616 !important;
+  border-radius: 4px !important;
+  background: var(--sa-teal-pale) !important;
+  color: var(--sa-teal) !important;
   border-bottom-color: #8d8d8d !important;
   resize: none !important;
 }
 .cds--text-area:focus {
-  outline: 2px solid #f1c21b !important;
+  outline: 2px solid var(--sa-gold) !important;
   outline-offset: -2px !important;
   background: #ffffff !important;
 }
