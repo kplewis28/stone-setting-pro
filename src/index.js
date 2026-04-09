@@ -1,4 +1,5 @@
 import React from 'react';
+import '@carbon/styles/css/styles.css';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
