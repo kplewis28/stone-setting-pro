@@ -1213,7 +1213,7 @@ export default function App() {
                         const orderCount = orders.filter(o=>o.clientId===c.id||o.client===name).length;
                         const isSelected = draft.clientId===c.id;
                         return (
-                          <button key={c.id} onClick={()=>setDraft({...draft,clientId:c.id,client:name})}
+                          <button key={c.id} onClick={()=>{ setDraft(d=>({...d,clientId:c.id,client:name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); setNewOrderStep(2); }}
                             style={{ width:"100%", background: isSelected?"#F0F6F7":"white", border:"none", borderTop: idx>0?"0.5px solid #E8E4DC":"none", padding:"12px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
                             <div style={{ width:36, height:36, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                               <span style={{ fontSize:13, fontWeight:700, color:"#C9933A" }}>{initials}</span>
@@ -1257,8 +1257,9 @@ export default function App() {
                         <button disabled={!sheetClient.name.trim()} onClick={()=>{
                           const nc={...newClient(),name:sheetClient.name.trim(),phone:sheetClient.phone,email:sheetClient.email};
                           setClients(prev=>[...prev,nc]);
-                          setDraft(d=>({...d,clientId:nc.id,client:nc.name}));
+                          setDraft(d=>({...d,clientId:nc.id,client:nc.name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]}));
                           setNewClientSheet(false);
+                          setNewOrderStep(2);
                         }} style={{ width:"100%", padding:"16px", background:sheetClient.name.trim()?"#1B3F45":"#E8E4DC", color:sheetClient.name.trim()?"white":"#9DB5B9", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:sheetClient.name.trim()?"pointer":"default", marginTop:8 }}>
                           Crear y continuar
                         </button>
