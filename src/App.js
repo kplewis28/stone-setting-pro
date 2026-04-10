@@ -203,9 +203,9 @@ const BtnGhost = ({ children, onClick, disabled, style={} }) => (
   </Button>
 );
 
-// Stone Art card — 12px radius, subtle border
+// Stone Art card — 16px radius, generous padding, subtle shadow
 const Card = ({ children, onClick, style={} }) => (
-  <div onClick={onClick} style={{ background:"#ffffff", padding:"16px 20px", marginBottom:12, border:"0.5px solid #E8E4DC", borderRadius:12, boxShadow:"0 1px 4px rgba(27,63,69,0.06)", cursor: onClick ? "pointer" : "default", ...style }}>
+  <div onClick={onClick} style={{ background:"#ffffff", padding:"20px 22px", marginBottom:14, border:"0.5px solid #E8E4DC", borderRadius:16, boxShadow:"0 2px 8px rgba(27,63,69,0.07)", cursor: onClick ? "pointer" : "default", ...style }}>
     {children}
   </div>
 );
@@ -1244,7 +1244,7 @@ export default function App() {
                     {/* Botón continuar fijo */}
                     <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200 }}>
                       <button disabled={!draft.client} onClick={()=>{ setNewOrderStep(2); if(!(draft.lineItems||[]).length) setDraft(d=>({...d,lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); }}
-                        style={{ width:"100%", padding:"16px", background:draft.client?"#1B3F45":"#E8E4DC", color:draft.client?"white":"#9DB5B9", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:draft.client?"pointer":"default" }}>
+                        style={{ width:"100%", padding:"16px", background:draft.client?"#1B3F45":"#E8E4DC", color:draft.client?"white":"#9DB5B9", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:draft.client?"pointer":"default" }}>
                         Continuar →
                       </button>
                     </div>
@@ -1262,7 +1262,7 @@ export default function App() {
                           setDraft(d=>({...d,clientId:nc.id,client:nc.name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]}));
                           setNewClientSheet(false);
                           setNewOrderStep(2);
-                        }} style={{ width:"100%", padding:"16px", background:sheetClient.name.trim()?"#1B3F45":"#E8E4DC", color:sheetClient.name.trim()?"white":"#9DB5B9", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:sheetClient.name.trim()?"pointer":"default", marginTop:8 }}>
+                        }} style={{ width:"100%", padding:"16px", background:sheetClient.name.trim()?"#1B3F45":"#E8E4DC", color:sheetClient.name.trim()?"white":"#9DB5B9", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:sheetClient.name.trim()?"pointer":"default", marginTop:8 }}>
                           Crear y continuar
                         </button>
                       </div>
@@ -1397,7 +1397,7 @@ export default function App() {
                     </div>
                     <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200 }}>
                       <button onClick={()=>setNewOrderStep(3)}
-                        style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>
+                        style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>
                         Continuar →
                       </button>
                     </div>
@@ -1406,36 +1406,90 @@ export default function App() {
               }
 
               /* ── PASO 3: Detalles ── */
+              const addDays = (n) => { const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().split("T")[0]; };
+              const quickDates = [
+                { label:"1 semana",  date: addDays(7)  },
+                { label:"2 semanas", date: addDays(14) },
+                { label:"1 mes",     date: addDays(30) },
+              ];
+              const clientInitials = clientName.split(" ").map(w=>w[0]||"").join("").slice(0,2).toUpperCase();
+              const saveOrder = () => {
+                const order={...draft, amount:pieceTotal};
+                setOrders([order,...orders]);
+                syncToSheets(order);
+                setDraft(newOrder());
+                setNewOrderStep(1);
+                setClientSearch("");
+                setView("list");
+                showToast("Orden guardada");
+              };
               return (
-                <div style={{ padding:"8px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
-                  {/* Resumen */}
-                  <div style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", padding:"14px 16px", marginBottom:20 }}>
-                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: pieceTotal>0?6:0 }}>
-                      <div>
-                        <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45" }}>{clientName}</div>
-                        <div style={{ fontSize:11, color:"#9DB5B9", marginTop:2 }}>{(draft.lineItems||[]).length} {(draft.lineItems||[]).length===1?"pieza":"piezas"}</div>
+                <div style={{ padding:"16px 16px max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
+
+                  {/* Resumen visual */}
+                  <div style={{ background:"#F0F6F7", borderRadius:20, padding:"20px", marginBottom:24 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom: (draft.lineItems||[]).some(li=>li.desc) ? 14 : 0 }}>
+                      <div style={{ width:44, height:44, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <span style={{ fontSize:15, fontWeight:700, color:"#C9933A" }}>{clientInitials}</span>
                       </div>
-                      {pieceTotal>0 && <div style={{ fontSize:20, fontWeight:800, color:"#C9933A" }}>{C.currency} {fmt(pieceTotal)}</div>}
+                      <div>
+                        <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45" }}>{clientName}</div>
+                        <div style={{ fontSize:12, color:"#5A7A80", marginTop:2 }}>
+                          {(draft.lineItems||[]).length} {(draft.lineItems||[]).length===1?"pieza":"piezas"}
+                        </div>
+                      </div>
                     </div>
+                    {(draft.lineItems||[]).filter(li=>li.desc).map((li,i)=>(
+                      <div key={li.id} style={{ display:"flex", alignItems:"flex-start", gap:10, marginTop: i===0?0:8 }}>
+                        <div style={{ width:6, height:6, borderRadius:"50%", background:"#C9933A", marginTop:5, flexShrink:0 }}/>
+                        <span style={{ fontSize:13, color:"#1B3F45", lineHeight:1.4 }}>{li.desc}{li.qty&&li.qty!=="1"?` × ${li.qty}`:""}</span>
+                      </div>
+                    ))}
                   </div>
-                  <Field label="Fecha de entrega">
-                    <Input type="date" value={draft.deadline} onChange={e=>setDraft({...draft,deadline:e.target.value})}/>
-                  </Field>
-                  <Field label="Notas para el taller">
-                    <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Instrucciones especiales, referencia del cliente…" rows={4}/>
-                  </Field>
-                  <BtnPrimary onClick={()=>{
-                    const order={...draft, amount:pieceTotal};
-                    setOrders([order,...orders]);
-                    syncToSheets(order);
-                    setDraft(newOrder());
-                    setNewOrderStep(1);
-                    setClientSearch("");
-                    setView("list");
-                    showToast("Orden guardada");
-                  }}>
-                    Guardar orden
-                  </BtnPrimary>
+
+                  {/* Fecha de entrega */}
+                  <div style={{ marginBottom:24 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:12 }}>
+                      ¿Cuándo debe estar listo?
+                    </div>
+                    <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+                      {quickDates.map(qd=>(
+                        <button key={qd.label} onClick={()=>setDraft(d=>({...d,deadline:qd.date}))}
+                          style={{ flex:1, padding:"10px 4px", borderRadius:12, border: draft.deadline===qd.date?"2px solid #1B3F45":"1.5px solid #E8E4DC",
+                            background: draft.deadline===qd.date?"#1B3F45":"white",
+                            color: draft.deadline===qd.date?"white":"#5A7A80",
+                            fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif",
+                            transition:"all 0.15s" }}>
+                          {qd.label}
+                        </button>
+                      ))}
+                    </div>
+                    <input type="date" value={draft.deadline} onChange={e=>setDraft(d=>({...d,deadline:e.target.value}))}
+                      style={{ width:"100%", padding:"12px 14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:14, color: draft.deadline?"#1B3F45":"#9DB5B9",
+                        fontFamily:"'IBM Plex Sans', sans-serif", background:"white", boxSizing:"border-box", outline:"none" }}/>
+                  </div>
+
+                  {/* Notas */}
+                  <div style={{ marginBottom:8 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:12 }}>
+                      Notas <span style={{ fontWeight:400, textTransform:"none", letterSpacing:0 }}>(opcional)</span>
+                    </div>
+                    <textarea value={draft.description} onChange={e=>setDraft(d=>({...d,description:e.target.value}))}
+                      placeholder="Instrucciones especiales, referencia del cliente, acabado deseado…"
+                      rows={3}
+                      style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:14, color:"#1B3F45",
+                        fontFamily:"'IBM Plex Sans', sans-serif", resize:"none", background:"white", boxSizing:"border-box", outline:"none", lineHeight:1.5 }}/>
+                  </div>
+
+                  {/* Guardar — fixed */}
+                  <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200 }}>
+                    <button onClick={saveOrder}
+                      style={{ width:"100%", padding:"18px", background:"#C9933A", color:"white", border:"none", borderRadius:16,
+                        fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer",
+                        boxShadow:"0 4px 16px rgba(201,147,58,0.35)", letterSpacing:"0.01em" }}>
+                      Guardar orden
+                    </button>
+                  </div>
                 </div>
               );
             })()}
