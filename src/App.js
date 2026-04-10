@@ -258,6 +258,9 @@ export default function App() {
   const [sheetClient, setSheetClient]     = useState({ name:"", address:"" });
   const [clientSearch, setClientSearch]   = useState("");
   const [editingPieceId, setEditingPieceId] = useState(null);
+  const [dragIdx, setDragIdx]     = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+  const dragTouchStartY = useRef(null);
   const [extracted, setExtracted] = useState(null);
   const fileRef = useRef();
   const draftPhotoRef = useRef();
@@ -1271,22 +1274,52 @@ export default function App() {
               /* ── PASO 2: Piezas ── */
               if(newOrderStep===2) {
                 const items = draft.lineItems||[];
-                const moveItem = (idx, dir) => {
-                  const arr = [...items];
-                  const to = idx+dir;
-                  if(to<0||to>=arr.length) return;
-                  [arr[idx],arr[to]]=[arr[to],arr[idx]];
-                  setDraft(d=>({...d,lineItems:arr}));
-                };
                 const dupItem = (li) => {
                   const copy = {...li, id:Date.now()+Math.random()};
                   const idx = items.findIndex(i=>i.id===li.id);
-                  const arr = [...items];
-                  arr.splice(idx+1,0,copy);
+                  const arr = [...items]; arr.splice(idx+1,0,copy);
                   setDraft(d=>({...d,lineItems:arr}));
                 };
                 const delItem = (id) => setDraft(d=>({...d,lineItems:d.lineItems.filter(i=>i.id!==id)}));
                 const updItem = (id, patch) => setDraft(d=>({...d,lineItems:d.lineItems.map(i=>i.id===id?{...i,...patch}:i)}));
+                const stepQty = (id, delta) => {
+                  const cur = parseInt(items.find(i=>i.id===id)?.qty)||1;
+                  updItem(id,{qty:String(Math.max(1,cur+delta))});
+                };
+                /* touch drag handlers */
+                const onHandleTouchStart = (e, idx) => {
+                  dragTouchStartY.current = e.touches[0].clientY;
+                  setDragIdx(idx);
+                };
+                const onHandleTouchMove = (e) => {
+                  e.preventDefault();
+                  const touch = e.touches[0];
+                  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+                  const card = el?.closest('[data-piece-idx]');
+                  if(card) setDragOverIdx(parseInt(card.dataset.pieceIdx));
+                };
+                const onHandleTouchEnd = () => {
+                  if(dragIdx!==null && dragOverIdx!==null && dragIdx!==dragOverIdx){
+                    const arr=[...items];
+                    const [moved]=arr.splice(dragIdx,1);
+                    arr.splice(dragOverIdx,0,moved);
+                    setDraft(d=>({...d,lineItems:arr}));
+                  }
+                  setDragIdx(null); setDragOverIdx(null);
+                };
+                /* desktop drag */
+                const onDragStart = (e,idx) => { e.dataTransfer.effectAllowed="move"; setDragIdx(idx); };
+                const onDragOver  = (e,idx) => { e.preventDefault(); setDragOverIdx(idx); };
+                const onDrop      = (e,idx) => {
+                  e.preventDefault();
+                  if(dragIdx!==null && dragIdx!==idx){
+                    const arr=[...items];
+                    const [moved]=arr.splice(dragIdx,1);
+                    arr.splice(idx,0,moved);
+                    setDraft(d=>({...d,lineItems:arr}));
+                  }
+                  setDragIdx(null); setDragOverIdx(null);
+                };
                 return (
                   <div style={{ paddingBottom:"max(120px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
                     <input ref={piecePhotoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}}
@@ -1294,73 +1327,74 @@ export default function App() {
                         const f=e.target.files[0]; if(!f||!editingPieceId)return;
                         const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ updItem(editingPieceId,{photo:c}); setEditingPieceId(null); }); }; r.readAsDataURL(f);
                       }}/>
-                    {/* Subtítulo */}
-                    <div style={{ padding:"10px 20px 6px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <div style={{ padding:"10px 20px 6px" }}>
                       <span style={{ fontSize:12, color:"#9DB5B9", fontWeight:600, letterSpacing:"0.05em", textTransform:"uppercase" }}>
                         {items.length} {items.length===1?"pieza":"piezas"} · {clientName}
                       </span>
                     </div>
                     <div style={{ padding:"0 16px" }}>
-                      {items.map((li,idx)=>(
-                        <div key={li.id} style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", marginBottom:10, overflow:"hidden" }}>
-                          {/* Cabecera de la pieza */}
-                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 10px 9px 14px", borderBottom:"0.5px solid #F0F6F7" }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              {/* Drag-like handle */}
-                              <div style={{ display:"flex", flexDirection:"column", gap:2.5, opacity:0.35 }}>
-                                {[0,1,2].map(r=><div key={r} style={{ width:14, height:1.5, background:"#1B3F45", borderRadius:1 }}/>)}
+                      {items.map((li,idx)=>{
+                        const isDragging = dragIdx===idx;
+                        const isOver    = dragOverIdx===idx && dragIdx!==idx;
+                        return (
+                          <div key={li.id} data-piece-idx={idx}
+                            draggable onDragStart={e=>onDragStart(e,idx)} onDragOver={e=>onDragOver(e,idx)} onDrop={e=>onDrop(e,idx)} onDragEnd={()=>{setDragIdx(null);setDragOverIdx(null);}}
+                            style={{ background:"white", borderRadius:12, marginBottom:10, overflow:"hidden",
+                              border: isOver?"1.5px solid #C9933A":"0.5px solid #E8E4DC",
+                              opacity: isDragging?0.45:1,
+                              transition:"opacity 0.15s, border 0.1s" }}>
+                            {/* Cabecera */}
+                            <div style={{ display:"flex", alignItems:"center", gap:0, padding:"8px 10px 8px 0", borderBottom:"0.5px solid #F0F6F7" }}>
+                              {/* Handle — draggable */}
+                              <div
+                                onTouchStart={e=>onHandleTouchStart(e,idx)}
+                                onTouchMove={onHandleTouchMove}
+                                onTouchEnd={onHandleTouchEnd}
+                                style={{ padding:"6px 12px", cursor:"grab", touchAction:"none", display:"flex", flexDirection:"column", gap:3, opacity:0.4 }}>
+                                {[0,1,2].map(r=><div key={r} style={{ width:16, height:1.5, background:"#1B3F45", borderRadius:1 }}/>)}
                               </div>
-                              <span style={{ fontSize:11, fontWeight:700, color:"#1B3F45", letterSpacing:"0.06em", textTransform:"uppercase" }}>Pieza {idx+1}</span>
-                            </div>
-                            <div style={{ display:"flex", alignItems:"center", gap:2 }}>
-                              {/* Foto opcional */}
-                              <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
-                                style={{ background:"none", border:"none", cursor:"pointer", padding:"5px 6px", borderRadius:6, color: li.photo?"#C9933A":"#9DB5B9", display:"flex", alignItems:"center", gap:4 }}>
-                                <Icon name="camera" size={14} color={li.photo?"#C9933A":"#9DB5B9"}/>
-                                {li.photo && <span style={{ fontSize:9, fontWeight:700, color:"#C9933A" }}>✓</span>}
-                              </button>
-                              {/* Mover arriba */}
-                              <button disabled={idx===0} onClick={()=>moveItem(idx,-1)} style={{ background:"none", border:"none", cursor:idx===0?"default":"pointer", padding:"5px 4px", opacity:idx===0?0.25:0.7 }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round"><path d="M18 15l-6-6-6 6"/></svg>
-                              </button>
-                              {/* Mover abajo */}
-                              <button disabled={idx===items.length-1} onClick={()=>moveItem(idx,1)} style={{ background:"none", border:"none", cursor:idx===items.length-1?"default":"pointer", padding:"5px 4px", opacity:idx===items.length-1?0.25:0.7 }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
-                              </button>
-                              {/* Duplicar */}
-                              <button onClick={()=>dupItem(li)} style={{ background:"none", border:"none", cursor:"pointer", padding:"5px 4px", opacity:0.7 }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                              </button>
-                              {/* Eliminar */}
-                              {items.length>1 && (
-                                <button onClick={()=>delItem(li.id)} style={{ background:"none", border:"none", cursor:"pointer", padding:"5px 4px" }}>
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#da1e28" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                              <span style={{ fontSize:11, fontWeight:700, color:"#1B3F45", letterSpacing:"0.06em", textTransform:"uppercase", flex:1 }}>Pieza {idx+1}</span>
+                              {/* Acciones */}
+                              <div style={{ display:"flex", alignItems:"center", gap:0 }}>
+                                <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
+                                  style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 7px", display:"flex", alignItems:"center" }}>
+                                  <Icon name="camera" size={14} color={li.photo?"#C9933A":"#9DB5B9"}/>
                                 </button>
-                              )}
+                                <button onClick={()=>dupItem(li)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 7px", display:"flex", alignItems:"center" }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                </button>
+                                {items.length>1 && (
+                                  <button onClick={()=>delItem(li.id)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 7px", display:"flex", alignItems:"center" }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#da1e28" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            {/* Cuerpo */}
+                            <div style={{ padding:"10px 14px 12px" }}>
+                              <textarea placeholder="¿Qué hay que hacer? (ej. Engaste Pavé, pulido, grabado…)" value={li.desc||""} onChange={e=>updItem(li.id,{desc:e.target.value})}
+                                style={{ width:"100%", minHeight:52, border:"none", outline:"none", resize:"none", fontSize:14, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
+                              <div style={{ height:"0.5px", background:"#F0F6F7", margin:"8px 0" }}/>
+                              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                                <input placeholder="Material / tipo" value={li.material||""} onChange={e=>updItem(li.id,{material:e.target.value})}
+                                  style={{ flex:1, border:"none", outline:"none", fontSize:12, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
+                                {/* Stepper de cantidad */}
+                                <div style={{ display:"flex", alignItems:"center", gap:0, background:"#F7F5F0", borderRadius:8, overflow:"hidden", flexShrink:0 }}>
+                                  <button onClick={()=>stepQty(li.id,-1)} style={{ background:"none", border:"none", cursor:"pointer", padding:"5px 10px", fontSize:16, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>−</button>
+                                  <span style={{ fontSize:13, fontWeight:700, color:"#1B3F45", minWidth:20, textAlign:"center", fontFamily:"'IBM Plex Sans', sans-serif" }}>{li.qty||1}</span>
+                                  <button onClick={()=>stepQty(li.id,1)} style={{ background:"none", border:"none", cursor:"pointer", padding:"5px 10px", fontSize:16, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>+</button>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          {/* Cuerpo */}
-                          <div style={{ padding:"10px 14px 12px" }}>
-                            <textarea placeholder="¿Qué hay que hacer? (ej. Engaste Pavé, pulido, grabado…)" value={li.desc||""} onChange={e=>updItem(li.id,{desc:e.target.value})}
-                              style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:14, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
-                            <div style={{ height:"0.5px", background:"#F0F6F7", margin:"6px 0" }}/>
-                            <div style={{ display:"flex", gap:10 }}>
-                              <input placeholder="Material" value={li.material||""} onChange={e=>updItem(li.id,{material:e.target.value})}
-                                style={{ flex:2, border:"none", outline:"none", fontSize:12, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
-                              <input type="number" placeholder="Cant." value={li.qty||""} onChange={e=>updItem(li.id,{qty:e.target.value})}
-                                style={{ flex:1, border:"none", outline:"none", fontSize:12, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0, textAlign:"right", minWidth:0 }}/>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {/* + Agregar pieza */}
+                        );
+                      })}
                       <button onClick={()=>setDraft(d=>({...d,lineItems:[...(d.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:"",photo:null}]}))}
                         style={{ width:"100%", border:"1.5px dashed #C9933A", borderRadius:12, background:"none", padding:"14px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:16 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
                         <span style={{ fontSize:14, fontWeight:600, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Agregar otra pieza</span>
                       </button>
                     </div>
-                    {/* Continuar */}
                     <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:10 }}>
                       <button onClick={()=>setNewOrderStep(3)}
                         style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>
