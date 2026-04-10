@@ -114,6 +114,9 @@ const Icon = ({ name, size=22, color="#1B3F45" }) => {
     print:       <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>,
     arrowUp:     <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>,
     arrowDown:   <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>,
+    dots:        <svg style={s} viewBox="0 0 24 24" fill={color} stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>,
+    pencil:      <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+    alert:       <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   };
   return icons[name] || null;
 };
@@ -257,6 +260,10 @@ export default function App() {
   const [newClientSheet, setNewClientSheet] = useState(false);
   const [sheetClient, setSheetClient]     = useState({ name:"", address:"", phone:"", email:"" });
   const [clientSearch, setClientSearch]   = useState("");
+  const [confirmSheet, setConfirmSheet]   = useState(null); // { type:"done"|"invoice"|"delete", order:{} }
+  const [optionsMenu, setOptionsMenu]     = useState(null); // order object | null
+  const [swipeHintSeen, setSwipeHintSeen] = useState(() => localStorage.getItem("ssp_swipe_hint")==="1");
+  const [swipingCard, setSwipingCard]     = useState(null); // { id, startX, dx }
   const [editingPieceId, setEditingPieceId] = useState(null);
   const [dragIdx, setDragIdx]     = useState(null);
   const [dragOverIdx, setDragOverIdx] = useState(null);
@@ -1104,9 +1111,11 @@ export default function App() {
               )}
               {view==="detail" && selectedOrder && (
                 <div style={{ display:"flex", gap:8 }}>
-                  <button onClick={()=>{ setDraft({...selectedOrder}); setView("edit"); }} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Edit</button>
                   <button onClick={()=>setWorkOrderPreview(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>
                     <Icon name="print" size={15} color="#1B3F45"/> Print
+                  </button>
+                  <button onClick={()=>setOptionsMenu(selectedOrder)} style={{ width:38, height:38, background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <Icon name="dots" size={18} color="#1B3F45"/>
                   </button>
                 </div>
               )}
@@ -1150,8 +1159,15 @@ export default function App() {
                   </div>
                   <button onClick={exportToExcel} style={{ padding:"10px 14px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", whiteSpace:"nowrap" }}>↓ Excel</button>
                 </div>
+                {/* Swipe hint — desaparece tras primera interacción */}
+                {!swipeHintSeen && !selectMode && filteredOrders.length > 0 && (
+                  <div style={{ textAlign:"center", fontSize:9, color:"#9DB5B9", fontWeight:500, letterSpacing:"0.04em", marginBottom:12, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                    ← Desliza para marcar listo &nbsp;·&nbsp; Desliza para eliminar →
+                  </div>
+                )}
+
                 {/* Order rows */}
-                {filteredOrders.map((o, i) => {
+                {filteredOrders.map((o) => {
                   const today = new Date().toISOString().split("T")[0];
                   const getUrgency = (deadline) => {
                     if(!deadline) return { accent:"transparent", label:null, bg:"#F0F6F7" };
@@ -1163,69 +1179,109 @@ export default function App() {
                     return { accent:"#1B3F45", label:null, bg:"#F0F6F7" };
                   };
                   const urg = getUrgency(o.deadline);
-                  const priorityColor = i === 0 ? "#da1e28" : i === 1 ? "#C9933A" : i === 2 ? "#C9933A" : "#5A7A80";
                   const isChecked = selectedOrderIds.has(o.id);
                   const deadlineDate = o.deadline ? new Date(o.deadline+"T12:00:00") : null;
                   const deadlineDay = deadlineDate ? deadlineDate.getDate() : null;
                   const deadlineMon = deadlineDate ? deadlineDate.toLocaleDateString("es-ES",{month:"short"}).replace(".","").toUpperCase() : null;
+                  const swipeDx = swipingCard?.id === o.id ? swipingCard.dx : 0;
+                  const isMoving = swipingCard?.id === o.id;
+
                   return (
-                    <button key={o.id} onClick={()=>{
-                      if(selectMode) {
-                        setSelectedOrderIds(prev => {
-                          const next = new Set(prev);
-                          next.has(o.id) ? next.delete(o.id) : next.add(o.id);
-                          return next;
-                        });
-                      } else {
-                        setSelectedId(o.id); setView("detail");
-                      }
-                    }}
-                      style={{ width:"100%", background: isChecked ? "#FFF3F0" : "white", border: isChecked ? "2px solid #da1e2840" : "1.5px solid #F0EDE8", borderRadius:20, padding:"16px", marginBottom:10, display:"flex", alignItems:"stretch", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
+                    <div key={o.id} style={{ position:"relative", marginBottom:10, borderRadius:20, height:"auto" }}>
 
-                      {/* Select checkbox (solo en modo selección) */}
-                      {selectMode && (
-                        <div style={{ width:32, display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:2, flexShrink:0 }}>
-                          {isChecked
-                            ? <div style={{ width:22, height:22, borderRadius:6, background:"#da1e28", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="check" size={14} color="white"/></div>
-                            : <div style={{ width:22, height:22, borderRadius:6, border:"2px solid #D8D4CC" }}/>
+                      {/* Fondo verde — acción "Listo" (se revela con swipe izquierda) */}
+                      <div style={{ position:"absolute", inset:0, background:"#E8F3EF", borderRadius:20, display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:22 }}>
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+                          <Icon name="check" size={22} color="#1B6048"/>
+                          <span style={{ fontSize:10, color:"#1B6048", fontWeight:700, fontFamily:"'IBM Plex Sans', sans-serif" }}>Listo</span>
+                        </div>
+                      </div>
+                      {/* Fondo rojo — acción "Eliminar" (se revela con swipe derecha) */}
+                      <div style={{ position:"absolute", inset:0, background:"#FCEBEB", borderRadius:20, display:"flex", alignItems:"center", paddingLeft:22 }}>
+                        <Icon name="trash" size={22} color="#A32D2D"/>
+                      </div>
+
+                      {/* Tarjeta deslizable */}
+                      <div
+                        onTouchStart={e => {
+                          if(selectMode) return;
+                          setSwipingCard({ id:o.id, startX:e.touches[0].clientX, dx:0 });
+                        }}
+                        onTouchMove={e => {
+                          if(!swipingCard || swipingCard.id!==o.id || selectMode) return;
+                          const raw = e.touches[0].clientX - swipingCard.startX;
+                          const dx = Math.max(-140, Math.min(140, raw));
+                          setSwipingCard(prev=>({...prev, dx}));
+                        }}
+                        onTouchEnd={()=>{
+                          if(!swipingCard || swipingCard.id!==o.id) return;
+                          const { dx } = swipingCard;
+                          setSwipingCard(null);
+                          if(!swipeHintSeen){ setSwipeHintSeen(true); localStorage.setItem("ssp_swipe_hint","1"); }
+                          if(dx < -60) {
+                            setConfirmSheet({ type:"done", order:o });
+                          } else if(dx > 60) {
+                            setConfirmSheet({ type:"delete", order:o });
                           }
-                        </div>
-                      )}
+                        }}
+                        onClick={()=>{
+                          if(swipingCard && Math.abs(swipingCard.dx||0) > 10) return;
+                          if(selectMode){
+                            setSelectedOrderIds(prev=>{ const n=new Set(prev); n.has(o.id)?n.delete(o.id):n.add(o.id); return n; });
+                          } else {
+                            setSelectedId(o.id); setView("detail");
+                          }
+                        }}
+                        style={{ position:"relative", transform:`translateX(${swipeDx}px)`, transition: isMoving?"none":"transform 0.3s ease",
+                          background: isChecked?"#FFF3F0":"white", border: isChecked?"2px solid #da1e2840":"1.5px solid #F0EDE8",
+                          borderRadius:20, padding:"16px", display:"flex", alignItems:"stretch", gap:14,
+                          cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", userSelect:"none" }}>
 
-                      {/* Main content */}
-                      <div style={{ flex:1, minWidth:0 }}>
-                        {/* Client name + status */}
-                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:10 }}>
-                          <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{o.client || "—"}</div>
-                          <StatusPill status={o.status}/>
-                        </div>
+                        {/* Select checkbox (solo en modo selección) */}
+                        {selectMode && (
+                          <div style={{ width:32, display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:2, flexShrink:0 }}>
+                            {isChecked
+                              ? <div style={{ width:22, height:22, borderRadius:6, background:"#da1e28", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="check" size={14} color="white"/></div>
+                              : <div style={{ width:22, height:22, borderRadius:6, border:"2px solid #D8D4CC" }}/>
+                            }
+                          </div>
+                        )}
 
-                        {/* Delivery date — prominent */}
-                        <div style={{ display:"flex", alignItems:"center", gap:10, background: urg.bg, borderRadius:12, padding:"10px 14px", marginBottom: o.description ? 10 : 0 }}>
-                          {deadlineDay ? (
-                            <>
-                              <div style={{ textAlign:"center", flexShrink:0 }}>
-                                <div style={{ fontSize:28, fontWeight:900, color: urg.accent !== "transparent" ? urg.accent : "#1B3F45", lineHeight:1 }}>{deadlineDay}</div>
-                                <div style={{ fontSize:10, fontWeight:700, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", letterSpacing:"0.08em", marginTop:1 }}>{deadlineMon}</div>
-                              </div>
-                              <div style={{ width:"1px", height:36, background: urg.accent !== "transparent" ? `${urg.accent}30` : "#D8D4CC", flexShrink:0 }}/>
-                              <div>
-                                <div style={{ fontSize:10, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:2 }}>Entrega</div>
-                                {urg.label && <div style={{ fontSize:13, fontWeight:800, color: urg.accent }}>{urg.label}</div>}
-                                {!urg.label && <div style={{ fontSize:12, fontWeight:600, color:"#5A7A80" }}>{deadlineDate.toLocaleDateString("es-ES",{weekday:"long"})}</div>}
-                              </div>
-                            </>
-                          ) : (
-                            <div style={{ fontSize:12, color:"#9DB5B9", fontStyle:"italic" }}>Sin fecha de entrega</div>
+                        {/* Main content */}
+                        <div style={{ flex:1, minWidth:0 }}>
+                          {/* Client name + status */}
+                          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:10 }}>
+                            <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{o.client || "—"}</div>
+                            <StatusPill status={o.status}/>
+                          </div>
+
+                          {/* Delivery date — prominent */}
+                          <div style={{ display:"flex", alignItems:"center", gap:10, background: urg.bg, borderRadius:12, padding:"10px 14px", marginBottom: o.description ? 10 : 0 }}>
+                            {deadlineDay ? (
+                              <>
+                                <div style={{ textAlign:"center", flexShrink:0 }}>
+                                  <div style={{ fontSize:28, fontWeight:900, color: urg.accent !== "transparent" ? urg.accent : "#1B3F45", lineHeight:1 }}>{deadlineDay}</div>
+                                  <div style={{ fontSize:10, fontWeight:700, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", letterSpacing:"0.08em", marginTop:1 }}>{deadlineMon}</div>
+                                </div>
+                                <div style={{ width:"1px", height:36, background: urg.accent !== "transparent" ? `${urg.accent}30` : "#D8D4CC", flexShrink:0 }}/>
+                                <div>
+                                  <div style={{ fontSize:10, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:2 }}>Entrega</div>
+                                  {urg.label && <div style={{ fontSize:13, fontWeight:800, color: urg.accent }}>{urg.label}</div>}
+                                  {!urg.label && <div style={{ fontSize:12, fontWeight:600, color:"#5A7A80" }}>{deadlineDate.toLocaleDateString("es-ES",{weekday:"long"})}</div>}
+                                </div>
+                              </>
+                            ) : (
+                              <div style={{ fontSize:12, color:"#9DB5B9", fontStyle:"italic" }}>Sin fecha de entrega</div>
+                            )}
+                          </div>
+
+                          {/* Description */}
+                          {o.description && (
+                            <div style={{ fontSize:12, color:"#7A9AA0", lineHeight:1.4, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{o.description}</div>
                           )}
                         </div>
-
-                        {/* Description */}
-                        {o.description && (
-                          <div style={{ fontSize:12, color:"#7A9AA0", lineHeight:1.4, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{o.description}</div>
-                        )}
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
 
@@ -2517,6 +2573,191 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ── OPTIONS MENU (···) ── */}
+      {optionsMenu && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(27,63,69,0.35)", zIndex:3000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+             onClick={()=>setOptionsMenu(null)}>
+          <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"12px 0 max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
+               onClick={e=>e.stopPropagation()}>
+            {/* Handle */}
+            <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
+            {/* Título */}
+            <div style={{ padding:"0 20px 14px", borderBottom:"0.5px solid #F5F3EF" }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45" }}>{optionsMenu.client || "Orden"}</div>
+              <div style={{ fontSize:11, color:"#9DB5B9", marginTop:2 }}>#{optionsMenu.id}</div>
+            </div>
+
+            {/* Opción 1 — Editar */}
+            <button onClick={()=>{ setOptionsMenu(null); setDraft({...optionsMenu}); setView("edit"); }}
+              style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
+              <div style={{ width:38, height:38, borderRadius:10, background:"#E0EDEF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <Icon name="pencil" size={18} color="#1B3F45"/>
+              </div>
+              <div>
+                <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Editar orden</div>
+                <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Cambiar datos, items o fecha</div>
+              </div>
+            </button>
+
+            {/* Opción 2 — Marcar como terminada (solo si no está done/invoiced) */}
+            {optionsMenu.status !== "done" && optionsMenu.status !== "invoiced" && (
+              <button onClick={()=>{ setOptionsMenu(null); setConfirmSheet({ type:"done", order:optionsMenu }); }}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
+                <div style={{ width:38, height:38, borderRadius:10, background:"#E8F3EF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <Icon name="check" size={18} color="#1B6048"/>
+                </div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Marcar como terminada</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>El trabajo está completado</div>
+                </div>
+              </button>
+            )}
+
+            {/* Opción 3 — Generar factura (solo si está done) */}
+            {optionsMenu.status === "done" && (
+              <button onClick={()=>{ setOptionsMenu(null); setConfirmSheet({ type:"invoice", order:optionsMenu }); }}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
+                <div style={{ width:38, height:38, borderRadius:10, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <Icon name="invoice" size={18} color="#8A6220"/>
+                </div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Generar factura</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Crear factura con esta orden</div>
+                </div>
+              </button>
+            )}
+
+            {/* Separador antes de eliminar */}
+            {optionsMenu.status !== "invoiced" && (
+              <div style={{ height:"0.5px", background:"#F5F3EF", margin:"4px 0" }}/>
+            )}
+
+            {/* Opción 4 — Eliminar (si no está facturada) */}
+            {optionsMenu.status !== "invoiced" && (
+              <button onClick={()=>{ setOptionsMenu(null); setConfirmSheet({ type:"delete", order:optionsMenu }); }}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
+                <div style={{ width:38, height:38, borderRadius:10, background:"#FCEBEB", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <Icon name="trash" size={18} color="#A32D2D"/>
+                </div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#A32D2D", fontFamily:"'IBM Plex Sans', sans-serif" }}>Eliminar orden</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Esta acción no se puede deshacer</div>
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM SHEET ── */}
+      {confirmSheet && (()=>{
+        const { type, order } = confirmSheet;
+        const close = () => setConfirmSheet(null);
+        const total = (order.lineItems||[]).length > 0
+          ? (order.lineItems).reduce((s,li)=>s+lineTotal(li),0)
+          : parseFloat(order.amount)||0;
+
+        const OrderSummary = () => (
+          <div style={{ background:"#F7F5F0", borderRadius:9, padding:"12px 14px", marginBottom:16 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+              <span style={{ fontSize:11, color:"#9DB5B9", fontWeight:500, fontFamily:"'IBM Plex Sans', sans-serif" }}>Cliente</span>
+              <span style={{ fontSize:11, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{order.client||"—"}</span>
+            </div>
+            {(order.lineItems||[]).filter(li=>li.desc).map(li=>(
+              <div key={li.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                <span style={{ fontSize:11, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", flex:1, marginRight:8 }}>{li.desc}{li.qty&&li.qty!=="1"?` ×${li.qty}`:""}</span>
+                {lineTotal(li)>0 && <span style={{ fontSize:11, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap" }}>{C.currency} {fmt(lineTotal(li))}</span>}
+              </div>
+            ))}
+            {(order.lineItems||[]).filter(li=>li.desc).length===0 && order.description && (
+              <div style={{ fontSize:11, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", marginBottom:6 }}>{order.description}</div>
+            )}
+            {total > 0 && (
+              <div style={{ display:"flex", justifyContent:"space-between", paddingTop:8, borderTop:"0.5px solid #E8E4DC", marginTop:4 }}>
+                <span style={{ fontSize:12, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Total</span>
+                <span style={{ fontSize:12, fontWeight:800, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.currency} {fmt(total)}</span>
+              </div>
+            )}
+          </div>
+        );
+
+        /* ─── Variante A — Marcar como terminada ─── */
+        if(type === "done") return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(27,63,69,0.35)", zIndex:3500, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+               onClick={close}>
+            <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
+                 onClick={e=>e.stopPropagation()}>
+              <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Marcar como terminada</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>Confirma que el trabajo está completado</div>
+              <OrderSummary/>
+              <button onClick={()=>{
+                close();
+                setOrders(orders.map(o=>o.id===order.id?{...o,status:"done"}:o));
+                showToast("Orden marcada como terminada","#198038");
+                setDoneModal(order.id);
+              }} style={{ width:"100%", padding:"15px", background:"#1B3F45", color:"white", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
+                <Icon name="check" size={16} color="#C9933A"/> Confirmar — está terminada
+              </button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancelar</button>
+            </div>
+          </div>
+        );
+
+        /* ─── Variante B — Generar factura ─── */
+        if(type === "invoice") return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(27,63,69,0.35)", zIndex:3500, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+               onClick={close}>
+            <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
+                 onClick={e=>e.stopPropagation()}>
+              <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Generar factura</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>Esto creará la factura con estos datos</div>
+              <OrderSummary/>
+              <button onClick={()=>{
+                close();
+                loadOrderIntoInvoice(order);
+              }} style={{ width:"100%", padding:"15px", background:"#C9933A", color:"white", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
+                <Icon name="invoice" size={16} color="white"/> Confirmar y generar factura
+              </button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancelar</button>
+            </div>
+          </div>
+        );
+
+        /* ─── Variante C — Eliminar ─── */
+        if(type === "delete") return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(27,63,69,0.35)", zIndex:3500, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+               onClick={close}>
+            <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
+                 onClick={e=>e.stopPropagation()}>
+              <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Eliminar orden</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:14, fontFamily:"'IBM Plex Sans', sans-serif" }}>¿Estás segura?</div>
+              {/* Advertencia */}
+              <div style={{ display:"flex", alignItems:"flex-start", gap:10, background:"#FCEBEB", borderRadius:8, padding:"8px 10px", marginBottom:14 }}>
+                <Icon name="alert" size={16} color="#A32D2D"/>
+                <span style={{ fontSize:10, color:"#A32D2D", lineHeight:1.4, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                  Esta acción no se puede deshacer. Se eliminará toda la información de la orden #{order.id}
+                </span>
+              </div>
+              <OrderSummary/>
+              <button onClick={()=>{
+                close();
+                setOrders(orders.filter(o=>o.id!==order.id));
+                if(selectedId===order.id) setView("list");
+                showToast("Orden eliminada","#da1e28");
+              }} style={{ width:"100%", padding:"15px", background:"#FCEBEB", color:"#A32D2D", border:"1px solid #F7C1C1", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", marginBottom:10 }}>
+                Sí, eliminar orden
+              </button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancelar</button>
+            </div>
+          </div>
+        );
+
+        return null;
+      })()}
 
       {/* ── TOAST ── */}
       {toast && (
