@@ -1114,17 +1114,20 @@ export default function App() {
                 {filteredOrders.map((o, i) => {
                   const today = new Date().toISOString().split("T")[0];
                   const getUrgency = (deadline) => {
-                    if(!deadline) return { accent:"transparent", label:null };
-                    if(deadline < today) return { accent:"#da1e28", label:"Overdue" };
-                    if(deadline === today) return { accent:"#C9933A", label:"Today" };
+                    if(!deadline) return { accent:"transparent", label:null, bg:"#F0F6F7" };
+                    if(deadline < today) return { accent:"#da1e28", label:"Vencida", bg:"#FFF0F0" };
+                    if(deadline === today) return { accent:"#C9933A", label:"Hoy", bg:"#FFF8ED" };
                     const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
-                    if(diff === 1) return { accent:"#C9933A", label:"Tomorrow" };
-                    if(diff <= 7)  return { accent:"#C9933A", label:null };
-                    return { accent:"transparent", label:null };
+                    if(diff === 1) return { accent:"#C9933A", label:"Mañana", bg:"#FFF8ED" };
+                    if(diff <= 7)  return { accent:"#C9933A", label:`${diff} días`, bg:"#FFF8ED" };
+                    return { accent:"#1B3F45", label:null, bg:"#F0F6F7" };
                   };
                   const urg = getUrgency(o.deadline);
                   const priorityColor = i === 0 ? "#da1e28" : i === 1 ? "#C9933A" : i === 2 ? "#C9933A" : "#5A7A80";
                   const isChecked = selectedOrderIds.has(o.id);
+                  const deadlineDate = o.deadline ? new Date(o.deadline+"T12:00:00") : null;
+                  const deadlineDay = deadlineDate ? deadlineDate.getDate() : null;
+                  const deadlineMon = deadlineDate ? deadlineDate.toLocaleDateString("es-ES",{month:"short"}).replace(".","").toUpperCase() : null;
                   return (
                     <button key={o.id} onClick={()=>{
                       if(selectMode) {
@@ -1137,25 +1140,49 @@ export default function App() {
                         setSelectedId(o.id); setView("detail");
                       }
                     }}
-                      style={{ width:"100%", background: isChecked ? "#FFF3F0" : "white", border: isChecked ? "1.5px solid #FF3B3030" : "1.5px solid transparent", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
-                      <div style={{ width:40, height:40, borderRadius:12, background: isChecked ? "#da1e28" : "#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s" }}>
+                      style={{ width:"100%", background: isChecked ? "#FFF3F0" : "white", border: isChecked ? "2px solid #da1e2840" : "1.5px solid #F0EDE8", borderRadius:20, padding:"16px", marginBottom:10, display:"flex", alignItems:"stretch", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
+
+                      {/* Priority number */}
+                      <div style={{ width:36, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-start", paddingTop:2, flexShrink:0 }}>
                         {isChecked
-                          ? <Icon name="check" size={18} color="white"/>
-                          : <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{i+1}</span>
+                          ? <div style={{ width:32, height:32, borderRadius:10, background:"#da1e28", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="check" size={16} color="white"/></div>
+                          : <span style={{ fontSize:18, fontWeight:900, color:priorityColor, lineHeight:1 }}>#{i+1}</span>
                         }
                       </div>
+
+                      {/* Main content */}
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:800, color:"#1B3F45", marginBottom:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", letterSpacing:"-0.01em" }}>{o.client || "—"}</div>
-                        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                          {o.deadline && (
-                            <span style={{ fontSize:11, fontWeight:700, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", background: urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F6F7", padding:"3px 9px", borderRadius:8 }}>
-                              {urg.label ? `${urg.label} · ` : ""}{new Date(o.deadline+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}
-                            </span>
-                          )}
-                          {o.description && <span style={{ fontSize:11, color:"rgba(0,0,0,0.35)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</span>}
+                        {/* Client name + status */}
+                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:10 }}>
+                          <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{o.client || "—"}</div>
+                          <StatusPill status={o.status}/>
                         </div>
+
+                        {/* Delivery date — prominent */}
+                        <div style={{ display:"flex", alignItems:"center", gap:10, background: urg.bg, borderRadius:12, padding:"10px 14px", marginBottom: o.description ? 10 : 0 }}>
+                          {deadlineDay ? (
+                            <>
+                              <div style={{ textAlign:"center", flexShrink:0 }}>
+                                <div style={{ fontSize:28, fontWeight:900, color: urg.accent !== "transparent" ? urg.accent : "#1B3F45", lineHeight:1 }}>{deadlineDay}</div>
+                                <div style={{ fontSize:10, fontWeight:700, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", letterSpacing:"0.08em", marginTop:1 }}>{deadlineMon}</div>
+                              </div>
+                              <div style={{ width:"1px", height:36, background: urg.accent !== "transparent" ? `${urg.accent}30` : "#D8D4CC", flexShrink:0 }}/>
+                              <div>
+                                <div style={{ fontSize:10, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:2 }}>Entrega</div>
+                                {urg.label && <div style={{ fontSize:13, fontWeight:800, color: urg.accent }}>{urg.label}</div>}
+                                {!urg.label && <div style={{ fontSize:12, fontWeight:600, color:"#5A7A80" }}>{deadlineDate.toLocaleDateString("es-ES",{weekday:"long"})}</div>}
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ fontSize:12, color:"#9DB5B9", fontStyle:"italic" }}>Sin fecha de entrega</div>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        {o.description && (
+                          <div style={{ fontSize:12, color:"#7A9AA0", lineHeight:1.4, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{o.description}</div>
+                        )}
                       </div>
-                      <StatusPill status={o.status}/>
                     </button>
                   );
                 })}
@@ -1277,22 +1304,25 @@ export default function App() {
                               outline:"none", boxSizing:"border-box", transition:"all 0.15s" }}/>
                         </div>
                         {/* Campos opcionales */}
-                        <div style={{ padding:"10px 24px 0", display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                        <div style={{ padding:"10px 24px 0", display:"flex", flexDirection:"column", gap:10 }}>
                           {[
-                            { key:"address", placeholder:"Dirección",  icon:"📍" },
-                            { key:"phone",   placeholder:"Teléfono",   icon:"📞" },
-                            { key:"email",   placeholder:"Email",      icon:"✉️"  },
+                            { key:"address", placeholder:"Dirección", type:"text",
+                              icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> },
+                            { key:"phone",   placeholder:"Teléfono",  type:"tel",
+                              icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.59A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg> },
+                            { key:"email",   placeholder:"Email",     type:"email",
+                              icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg> },
                           ].map(f=>(
-                            <input key={f.key}
-                              placeholder={`${f.icon}  ${f.placeholder}`}
-                              value={sheetClient[f.key]||""}
-                              onChange={e=>setSheetClient(s=>({...s,[f.key]:e.target.value}))}
-                              type={f.key==="email"?"email":f.key==="phone"?"tel":"text"}
-                              style={{ padding:"12px 14px", fontSize:13, color:"#5A7A80",
-                                border:"1.5px solid #E8E4DC", borderRadius:12,
-                                fontFamily:"'IBM Plex Sans', sans-serif", background:"white",
-                                outline:"none", width:"100%", boxSizing:"border-box",
-                                gridColumn: f.key==="address"?"span 2":"auto" }}/>
+                            <div key={f.key} style={{ display:"flex", alignItems:"center", gap:10, padding:"11px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, background:"white" }}>
+                              {f.icon}
+                              <input
+                                placeholder={f.placeholder}
+                                value={sheetClient[f.key]||""}
+                                onChange={e=>setSheetClient(s=>({...s,[f.key]:e.target.value}))}
+                                type={f.type}
+                                style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#5A7A80",
+                                  fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
+                            </div>
                           ))}
                         </div>
                         <div style={{ padding:"10px 24px 0", display:"flex", alignItems:"center", gap:6 }}>
@@ -2042,46 +2072,77 @@ export default function App() {
 
             {/* ── NEW / EDIT FORM ── */}
             {(clientView==="new" || clientView==="edit") && (
-              <Card>
-                <Field label="Contact name *">
-                  <Input placeholder="Full name" value={clientDraft.name} onChange={e=>setClientDraft({...clientDraft,name:e.target.value})}/>
-                </Field>
-                <Field label="Company">
-                  <Input placeholder="Company name" value={clientDraft.company} onChange={e=>setClientDraft({...clientDraft,company:e.target.value})}/>
-                </Field>
-                <Field label="Address (for invoices)">
-                  <Textarea placeholder={"Street and number\nPostal code, City\nCountry"} value={clientDraft.address} onChange={e=>setClientDraft({...clientDraft,address:e.target.value})} style={{ height:90 }}/>
-                </Field>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  <Field label="Phone">
-                    <Input placeholder="+41 …" value={clientDraft.phone} onChange={e=>setClientDraft({...clientDraft,phone:e.target.value})}/>
-                  </Field>
-                  <Field label="Email">
-                    <Input type="email" placeholder="email@company.com" value={clientDraft.email} onChange={e=>setClientDraft({...clientDraft,email:e.target.value})}/>
-                  </Field>
+              <div style={{ padding:"0 16px" }}>
+                {/* Campo principal — empresa */}
+                <div style={{ marginBottom:12 }}>
+                  <input
+                    autoFocus={clientView==="new"}
+                    placeholder="Nombre de la empresa *"
+                    value={clientDraft.company||clientDraft.name||""}
+                    onChange={e=>setClientDraft(d=>({...d,company:e.target.value,name:e.target.value}))}
+                    style={{ width:"100%", padding:"18px 16px", fontSize:17, fontWeight:600, color:"#1B3F45",
+                      border:(clientDraft.company||clientDraft.name)?"2px solid #1B3F45":"2px solid #E8E4DC",
+                      borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif",
+                      background:(clientDraft.company||clientDraft.name)?"#F0F6F7":"white",
+                      outline:"none", boxSizing:"border-box", transition:"all 0.15s" }}/>
+                </div>
+                {/* Campos opcionales */}
+                <div style={{ background:"white", borderRadius:16, border:"0.5px solid #E8E4DC", overflow:"hidden", marginBottom:12 }}>
+                  {[
+                    { key:"address", placeholder:"Dirección", type:"text",
+                      icon:<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> },
+                    { key:"phone",   placeholder:"Teléfono",  type:"tel",
+                      icon:<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.59A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg> },
+                    { key:"email",   placeholder:"Email",     type:"email",
+                      icon:<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg> },
+                  ].map((f,i)=>(
+                    <div key={f.key} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", borderTop: i>0?"0.5px solid #F0F6F7":"none" }}>
+                      {f.icon}
+                      <input
+                        placeholder={f.placeholder}
+                        value={clientDraft[f.key]||""}
+                        onChange={e=>setClientDraft(d=>({...d,[f.key]:e.target.value}))}
+                        type={f.type}
+                        style={{ flex:1, border:"none", outline:"none", fontSize:14, color:"#1B3F45",
+                          fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:24 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+                  <span style={{ fontSize:11, color:"#9DB5B9" }}>Dirección, teléfono y email son opcionales</span>
                 </div>
                 {clientView==="edit" && (
-                  <button onClick={()=>showConfirm("Delete this client? Their orders will remain but the client will be removed.",()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Client deleted","#da1e28"); })}
-                    style={{ background:"none", border:"none", color:"#da1e28", fontSize:13, fontWeight:600, cursor:"pointer", padding:"4px 0", marginBottom:8 }}>
-                    Delete client
+                  <button onClick={()=>showConfirm("¿Eliminar este cliente? Sus órdenes se conservarán.",()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Cliente eliminado","#da1e28"); })}
+                    style={{ background:"none", border:"none", color:"#da1e28", fontSize:13, fontWeight:600, cursor:"pointer", padding:"0 0 16px", display:"block" }}>
+                    Eliminar cliente
                   </button>
                 )}
-                <BtnPrimary disabled={!clientDraft.name && !clientDraft.company} onClick={()=>{
-                  if(!clientDraft.name && !clientDraft.company) return;
-                  if(clientView==="edit"){
-                    setClients(clients.map(c=>c.id===clientDraft.id ? clientDraft : c));
-                    setClientView("detail");
-                    showToast("Client updated");
-                  } else {
-                    const c = { ...clientDraft, id: String(Date.now()) };
-                    setClients([...clients, c]);
-                    setClientView("list");
-                    showToast("Client added");
-                  }
-                }}>
-                  {clientView==="edit" ? "Save changes" : "Save client"}
-                </BtnPrimary>
-              </Card>
+                <button
+                  disabled={!clientDraft.company && !clientDraft.name}
+                  onClick={()=>{
+                    if(!clientDraft.company && !clientDraft.name) return;
+                    if(clientView==="edit"){
+                      setClients(clients.map(c=>c.id===clientDraft.id ? clientDraft : c));
+                      setClientView("detail");
+                      showToast("Cliente guardado");
+                    } else {
+                      const c = { ...clientDraft, id: String(Date.now()) };
+                      setClients([...clients, c]);
+                      setClientView("list");
+                      showToast("Cliente añadido");
+                    }
+                  }}
+                  style={{ width:"100%", padding:"18px", border:"none", borderRadius:16,
+                    background:(clientDraft.company||clientDraft.name)?"#C9933A":"#E8E4DC",
+                    color:(clientDraft.company||clientDraft.name)?"white":"#9DB5B9",
+                    fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700,
+                    cursor:(clientDraft.company||clientDraft.name)?"pointer":"default",
+                    boxShadow:(clientDraft.company||clientDraft.name)?"0 4px 14px rgba(201,147,58,0.3)":"none",
+                    transition:"all 0.15s" }}>
+                  {clientView==="edit" ? "Guardar cambios" : "Guardar cliente"}
+                </button>
+              </div>
             )}
 
             {/* ── DETAIL ── */}
