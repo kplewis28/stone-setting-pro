@@ -255,7 +255,7 @@ export default function App() {
   const [aiError, setAiError]   = useState("");
   const [newOrderStep, setNewOrderStep]   = useState(1);
   const [newClientSheet, setNewClientSheet] = useState(false);
-  const [sheetClient, setSheetClient]     = useState({ name:"", address:"" });
+  const [sheetClient, setSheetClient]     = useState({ name:"", address:"", phone:"", email:"" });
   const [clientSearch, setClientSearch]   = useState("");
   const [editingPieceId, setEditingPieceId] = useState(null);
   const [dragIdx, setDragIdx]     = useState(null);
@@ -1235,7 +1235,7 @@ export default function App() {
                       })}
                       {filtered.length > 0 && <div style={{ height:"0.5px", background:"#E8E4DC" }}/>}
                       {/* + Crear nuevo cliente */}
-                      <button onClick={()=>{ setSheetClient({name:"",address:""}); setNewClientSheet(true); }}
+                      <button onClick={()=>{ setSheetClient({name:"",address:"",phone:"",email:""}); setNewClientSheet(true); }}
                         style={{ width:"100%", background:"none", border:"none", padding:"14px", cursor:"pointer", display:"flex", alignItems:"center", gap:10, justifyContent:"center" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
                         <span style={{ fontSize:14, fontWeight:600, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Crear nuevo cliente</span>
@@ -1250,21 +1250,72 @@ export default function App() {
                     </div>
                     {/* Bottom sheet — nuevo cliente */}
                     {newClientSheet && (<>
-                      <div onClick={()=>setNewClientSheet(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:300 }}/>
-                      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"white", borderRadius:"20px 20px 0 0", padding:"12px 22px max(32px, env(safe-area-inset-bottom, 32px))", zIndex:301, animation:"fadeUp 0.2s ease" }}>
-                        <div style={{ width:40, height:4, borderRadius:2, background:"#E8E4DC", margin:"0 auto 20px" }}/>
-                        <div style={{ fontSize:18, fontWeight:700, color:"#1B3F45", marginBottom:20 }}>Nuevo cliente</div>
-                        <Field label="Nombre *"><Input placeholder="Nombre o empresa" value={sheetClient.name} onChange={e=>setSheetClient({...sheetClient,name:e.target.value})}/></Field>
-                        <Field label="Dirección"><Input placeholder="Calle, ciudad, país" value={sheetClient.address||""} onChange={e=>setSheetClient({...sheetClient,address:e.target.value})}/></Field>
-                        <button disabled={!sheetClient.name.trim()} onClick={()=>{
-                          const nc={...newClient(),name:sheetClient.name.trim(),address:sheetClient.address};
-                          setClients(prev=>[...prev,nc]);
-                          setDraft(d=>({...d,clientId:nc.id,client:nc.name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]}));
-                          setNewClientSheet(false);
-                          setNewOrderStep(2);
-                        }} style={{ width:"100%", padding:"16px", background:sheetClient.name.trim()?"#1B3F45":"#E8E4DC", color:sheetClient.name.trim()?"white":"#9DB5B9", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:sheetClient.name.trim()?"pointer":"default", marginTop:8 }}>
-                          Crear y continuar
-                        </button>
+                      <div onClick={()=>setNewClientSheet(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:300 }}/>
+                      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"white", borderRadius:"24px 24px 0 0", padding:"0 0 max(28px, env(safe-area-inset-bottom, 28px))", zIndex:301 }}>
+                        {/* Handle */}
+                        <div style={{ padding:"14px 0 0", display:"flex", justifyContent:"center" }}>
+                          <div style={{ width:36, height:4, borderRadius:2, background:"#E8E4DC" }}/>
+                        </div>
+                        {/* Título */}
+                        <div style={{ padding:"16px 24px 4px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                          <span style={{ fontSize:18, fontWeight:700, color:"#1B3F45" }}>Nuevo cliente</span>
+                          <button onClick={()=>setNewClientSheet(false)} style={{ background:"#F0F6F7", border:"none", borderRadius:"50%", width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                          </button>
+                        </div>
+                        {/* Campo principal */}
+                        <div style={{ padding:"16px 24px 0" }}>
+                          <input
+                            autoFocus
+                            placeholder="Nombre de la empresa *"
+                            value={sheetClient.name}
+                            onChange={e=>setSheetClient(s=>({...s,name:e.target.value}))}
+                            style={{ width:"100%", padding:"16px", fontSize:16, fontWeight:600, color:"#1B3F45",
+                              border: sheetClient.name.trim()?"2px solid #1B3F45":"2px solid #E8E4DC",
+                              borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif",
+                              background: sheetClient.name.trim()?"#F0F6F7":"white",
+                              outline:"none", boxSizing:"border-box", transition:"all 0.15s" }}/>
+                        </div>
+                        {/* Campos opcionales */}
+                        <div style={{ padding:"10px 24px 0", display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                          {[
+                            { key:"address", placeholder:"Dirección",  icon:"📍" },
+                            { key:"phone",   placeholder:"Teléfono",   icon:"📞" },
+                            { key:"email",   placeholder:"Email",      icon:"✉️"  },
+                          ].map(f=>(
+                            <input key={f.key}
+                              placeholder={`${f.icon}  ${f.placeholder}`}
+                              value={sheetClient[f.key]||""}
+                              onChange={e=>setSheetClient(s=>({...s,[f.key]:e.target.value}))}
+                              type={f.key==="email"?"email":f.key==="phone"?"tel":"text"}
+                              style={{ padding:"12px 14px", fontSize:13, color:"#5A7A80",
+                                border:"1.5px solid #E8E4DC", borderRadius:12,
+                                fontFamily:"'IBM Plex Sans', sans-serif", background:"white",
+                                outline:"none", width:"100%", boxSizing:"border-box",
+                                gridColumn: f.key==="address"?"span 2":"auto" }}/>
+                          ))}
+                        </div>
+                        <div style={{ padding:"10px 24px 0", display:"flex", alignItems:"center", gap:6 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+                          <span style={{ fontSize:11, color:"#9DB5B9" }}>Dirección, teléfono y email son opcionales</span>
+                        </div>
+                        {/* Botón */}
+                        <div style={{ padding:"16px 24px 0" }}>
+                          <button disabled={!sheetClient.name.trim()} onClick={()=>{
+                            const nc={...newClient(),name:sheetClient.name.trim(),address:sheetClient.address,phone:sheetClient.phone,email:sheetClient.email};
+                            setClients(prev=>[...prev,nc]);
+                            setDraft(d=>({...d,clientId:nc.id,client:nc.name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]}));
+                            setNewClientSheet(false);
+                            setNewOrderStep(2);
+                          }} style={{ width:"100%", padding:"17px", background:sheetClient.name.trim()?"#C9933A":"#E8E4DC",
+                            color:sheetClient.name.trim()?"white":"#9DB5B9", border:"none", borderRadius:16,
+                            fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700,
+                            cursor:sheetClient.name.trim()?"pointer":"default",
+                            boxShadow: sheetClient.name.trim()?"0 4px 14px rgba(201,147,58,0.3)":"none",
+                            transition:"all 0.15s" }}>
+                            Crear cliente →
+                          </button>
+                        </div>
                       </div>
                     </>)}
                   </div>
