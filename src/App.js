@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { dbGet, dbSet } from './supabase';
 import { Button, TextInput, TextArea } from '@carbon/react';
@@ -1131,7 +1131,7 @@ export default function App() {
             </div>
           )}
 
-          <div style={{ padding: view==="new" ? 0 : isDesktop?"16px 40px 60px":"16px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+          <div style={{ padding: view==="new" ? 0 : view==="detail" ? (isDesktop?"20px 0 120px":"12px 0 max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))") : isDesktop?"16px 40px 60px":"16px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
 
             {/* ── LIST ── */}
             {view==="list" && (
@@ -1727,70 +1727,168 @@ export default function App() {
             )}
 
             {/* ── DETAIL ── */}
-            {view==="detail" && selectedOrder && (
-              <>
-                {/* Photo */}
-                {selectedOrder.photo && (
-                  <img src={selectedOrder.photo} alt="order" style={{ width:"100%", borderRadius:16, objectFit:"cover", maxHeight:240, marginBottom:16, border:"1.5px solid #E8E4DC", display:"block" }}/>
-                )}
+            {view==="detail" && selectedOrder && (()=>{
+              const st = selectedOrder.status;
+              const today = new Date().toISOString().split("T")[0];
+              const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short",year:"numeric"}) : "—";
+              const dlPast = selectedOrder.deadline && selectedOrder.deadline < today;
+              const orderTotal = (selectedOrder.lineItems||[]).length > 0
+                ? (selectedOrder.lineItems).reduce((s,li)=>s+lineTotal(li),0)
+                : parseFloat(selectedOrder.amount)||0;
 
-                {/* Order info */}
-                <Card>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-                    {[
-                      ["Received", selectedOrder.received],
-                      ["Order ID", `#${selectedOrder.id}`],
-                      ["Delivery", selectedOrder.deadline],
-                      [C.piecesLabel, selectedOrder.pieces],
-                    ].filter(([,v])=>v).map(([l,v])=>(
-                      <div key={l}>
-                        <div style={{ fontSize:11, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:600, marginBottom:4 }}>{l}</div>
-                        <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45" }}>{v}</div>
+              /* ── Progress bar helpers ── */
+              const STEPS = ["Recibida","En trabajo","Terminada","Facturada"];
+              const activeIdx = { received:1, inprogress:2, done:3, invoiced:-1 }[st] ?? 1;
+              const isCompleted = idx => st==="invoiced" || idx < activeIdx;
+              const isActive    = idx => st!=="invoiced" && idx===activeIdx;
+
+              return (
+                <>
+                  {/* Photo */}
+                  {selectedOrder.photo && (
+                    <img src={selectedOrder.photo} alt="order" style={{ width:"calc(100% - 32px)", margin:"0 16px 12px", borderRadius:14, objectFit:"cover", maxHeight:200, display:"block" }}/>
+                  )}
+
+                  {/* ── 1. BANNER DE ESTADO ── */}
+                  {st==="received" && (
+                    <div style={{ margin:"0 16px 10px", background:"#FBF5E8", border:"1.5px solid #E8C97A", borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
+                      <div style={{ width:36, height:36, borderRadius:10, background:"#F0DDB0", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <Icon name="alert" size={18} color="#8A6220"/>
                       </div>
-                    ))}
-                  </div>
-                  {selectedOrder.description && (
-                    <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #E8E4DC" }}>
-                      <div style={{ fontSize:11, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:600, marginBottom:6 }}>Description</div>
-                      <div style={{ fontSize:14, color:"#1B3F45", lineHeight:1.5 }}>{selectedOrder.description}</div>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>Pendiente</div>
+                        <div style={{ fontSize:10, color:"#BA9B55", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                          Recibida {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · Entrega ${fmtDate(selectedOrder.deadline)}` : ""}
+                        </div>
+                      </div>
                     </div>
                   )}
-                </Card>
+                  {st==="inprogress" && (
+                    <div style={{ margin:"0 16px 10px", background:"#E0EDEF", border:"1.5px solid #9DB5B9", borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
+                      <div style={{ width:36, height:36, borderRadius:10, background:"#C4D8DC", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>En revisión</div>
+                        <div style={{ fontSize:10, color:"#5A7A80", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                          Recibida {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · Entrega ${fmtDate(selectedOrder.deadline)}` : ""}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {(st==="done"||st==="invoiced") && (
+                    <div style={{ margin:"0 16px 10px", background:"#E8F3EF", border:"1.5px solid #9FCFBC", borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
+                      <div style={{ width:36, height:36, borderRadius:10, background:"#C0E8D8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <Icon name="checkCircle" size={18} color="#1B6048"/>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#1B6048", fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?"Facturada":"Terminada"}</div>
+                        <div style={{ fontSize:10, color:"#3B8060", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?"Factura generada":"Lista para facturar"}</div>
+                      </div>
+                    </div>
+                  )}
 
-                {/* Status selector — compact horizontal, only 3 main statuses */}
-                <div style={{ display:"flex", gap:8, marginBottom:20 }}>
-                  {[
-                    ["received",   "Pendiente",  "#C9933A", "#FBF5E8", "#E8BE7A"],
-                    ["inprogress", "Revisión",   "#1B3F45", "#E0EDEF", "#2A5F68"],
-                    ["done",       "Aprobada",   "#198038", "#defbe6", "#82cfaa"],
-                  ].map(([key,label,color,bg,border])=>{
-                    const active = selectedOrder.status===key || (selectedOrder.status==="invoiced" && key==="done");
-                    return (
-                      <button key={key} onClick={()=>{
-                        if(active) return;
-                        setOrders(orders.map(o=>o.id===selectedOrder.id?{...o,status:key}:o));
-                        if(key==="done") {
-                          setDoneModal(selectedOrder.id);
-                        } else {
-                          showToast(`${label}`, color);
-                        }
-                      }}
-                        style={{ flex:1, padding:"10px 6px", borderRadius:12, border:`1.5px solid ${active?border:"#E8E4DC"}`, background: active?bg:"white", cursor: active?"default":"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:5, transition:"all 0.15s" }}>
-                        <div style={{ width:8, height:8, borderRadius:"50%", background: active?color:"#E8E4DC" }}/>
-                        <span style={{ fontSize:11, fontWeight: active?700:500, color: active?color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif" }}>{label}</span>
+                  {/* ── 2. BARRA DE PROGRESO ── */}
+                  <div style={{ margin:"0 16px 10px", background:"white", border:"0.5px solid #E8E4DC", borderRadius:12, padding:"12px 14px" }}>
+                    <div style={{ display:"flex", alignItems:"center" }}>
+                      {STEPS.map((label, idx) => (
+                        <React.Fragment key={label}>
+                          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5, flexShrink:0 }}>
+                            <div style={{ width:22, height:22, borderRadius:"50%",
+                              background: isCompleted(idx)?"#1B3F45": isActive(idx)?"#C9933A":"white",
+                              border: (!isCompleted(idx)&&!isActive(idx))?"1.5px solid #E8E4DC":"none",
+                              display:"flex", alignItems:"center", justifyContent:"center" }}>
+                              {isCompleted(idx)
+                                ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                : isActive(idx)
+                                  ? <div style={{ width:6, height:6, borderRadius:"50%", background:"white" }}/>
+                                  : null
+                              }
+                            </div>
+                            <span style={{ fontSize:9, fontWeight:500, color: isCompleted(idx)?"#1B3F45": isActive(idx)?"#C9933A":"#9DB5B9", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap" }}>{label}</span>
+                          </div>
+                          {idx < STEPS.length-1 && (
+                            <div style={{ flex:1, height:2, background: isCompleted(idx+1)?"#1B3F45":"#E8E4DC", margin:"0 3px", marginBottom:14 }}/>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── 3. CARD DE INFORMACIÓN ── */}
+                  <div style={{ margin:"0 16px", background:"white", border:"0.5px solid #E8E4DC", borderRadius:12, overflow:"hidden" }}>
+
+                    {/* Fila A — Order ID + Entrega */}
+                    <div style={{ padding:"10px 14px", borderBottom:"0.5px solid #F5F3EF", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                      <div>
+                        <div style={{ fontSize:9, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3, fontFamily:"'IBM Plex Sans', sans-serif" }}>Order ID</div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>#{selectedOrder.id}</div>
+                      </div>
+                      {selectedOrder.deadline && (
+                        <div style={{ textAlign:"right" }}>
+                          <div style={{ fontSize:9, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3, fontFamily:"'IBM Plex Sans', sans-serif" }}>Entrega</div>
+                          <div style={{ fontSize:13, fontWeight:500, color: dlPast?"#E24B4A":"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{fmtDate(selectedOrder.deadline)}</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fila B — Descripción */}
+                    {selectedOrder.description && (
+                      <div style={{ padding:"10px 14px", borderBottom:"0.5px solid #F5F3EF" }}>
+                        <div style={{ fontSize:9, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Descripción</div>
+                        <div style={{ fontSize:12, color:"#1B3F45", lineHeight:1.5, fontFamily:"'IBM Plex Sans', sans-serif" }}>{selectedOrder.description}</div>
+                      </div>
+                    )}
+
+                    {/* Filas C — Items */}
+                    {(selectedOrder.lineItems||[]).filter(li=>li.desc).map((li, idx, arr) => (
+                      <div key={li.id} style={{ padding:"10px 14px", borderBottom: idx<arr.length-1||orderTotal>0?"0.5px solid #F5F3EF":"none", display:"flex", alignItems:"center", gap:12 }}>
+                        <div style={{ width:36, height:36, borderRadius:8, background:"#E0ECED", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <Icon name="gem" size={16} color="#5A7A80"/>
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:12, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{li.desc}</div>
+                          {(li.qty&&li.qty!=="1") && <div style={{ fontSize:10, color:"#9DB5B9", fontFamily:"'IBM Plex Sans', sans-serif" }}>×{li.qty}</div>}
+                        </div>
+                        {lineTotal(li)>0 && (
+                          <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", flexShrink:0 }}>{C.currency} {fmt(lineTotal(li))}</div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Fila D — Total */}
+                    {orderTotal > 0 && (
+                      <div style={{ padding:"10px 14px", background:"#F7F5F0", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                        <span style={{ fontSize:12, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Total</span>
+                        <span style={{ fontSize:16, fontWeight:500, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.currency} {fmt(orderTotal)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── 5. BOTÓN PRINCIPAL FIJO AL FONDO ── */}
+                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#F2EDE4", padding:"12px 16px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
+                    {(st==="received"||st==="inprogress") && (
+                      <button onClick={()=>setConfirmSheet({ type:"done", order:selectedOrder })}
+                        style={{ width:"100%", padding:"13px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:500, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                        <Icon name="check" size={16} color="#C9933A"/> Marcar como terminada
                       </button>
-                    );
-                  })}
-                </div>
-
-                {/* Facturar — only when Aprobada (done), not when already invoiced */}
-                {selectedOrder.status==="done" && (
-                  <BtnPrimary onClick={()=>loadOrderIntoInvoice(selectedOrder)} style={{ marginTop:4 }}>
-                    <Icon name="invoice" size={16} color="white"/> Crear factura
-                  </BtnPrimary>
-                )}
-              </>
-            )}
+                    )}
+                    {st==="done" && (
+                      <button onClick={()=>setConfirmSheet({ type:"invoice", order:selectedOrder })}
+                        style={{ width:"100%", padding:"13px", background:"#C9933A", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:500, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                        <Icon name="invoice" size={16} color="white"/> Generar factura
+                      </button>
+                    )}
+                    {st==="invoiced" && (
+                      <button onClick={()=>setWorkOrderPreview(selectedOrder)}
+                        style={{ width:"100%", padding:"13px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:500, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                        <Icon name="print" size={16} color="#C9933A"/> Imprimir / compartir factura
+                      </button>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
