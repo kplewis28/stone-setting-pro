@@ -1142,13 +1142,15 @@ export default function App() {
                     }}
                       style={{ width:"100%", background: isChecked ? "#FFF3F0" : "white", border: isChecked ? "2px solid #da1e2840" : "1.5px solid #F0EDE8", borderRadius:20, padding:"16px", marginBottom:10, display:"flex", alignItems:"stretch", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
 
-                      {/* Priority number */}
-                      <div style={{ width:36, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-start", paddingTop:2, flexShrink:0 }}>
-                        {isChecked
-                          ? <div style={{ width:32, height:32, borderRadius:10, background:"#da1e28", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="check" size={16} color="white"/></div>
-                          : <span style={{ fontSize:18, fontWeight:900, color:priorityColor, lineHeight:1 }}>#{i+1}</span>
-                        }
-                      </div>
+                      {/* Select checkbox (solo en modo selección) */}
+                      {selectMode && (
+                        <div style={{ width:32, display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:2, flexShrink:0 }}>
+                          {isChecked
+                            ? <div style={{ width:22, height:22, borderRadius:6, background:"#da1e28", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="check" size={14} color="white"/></div>
+                            : <div style={{ width:22, height:22, borderRadius:6, border:"2px solid #D8D4CC" }}/>
+                          }
+                        </div>
+                      )}
 
                       {/* Main content */}
                       <div style={{ flex:1, minWidth:0 }}>
