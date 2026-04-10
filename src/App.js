@@ -158,7 +158,7 @@ const Input = ({ labelText = "", id: providedId, ...props }) => {
 };
 
 const CHEVRON_URL = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235A7A80' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C%2Fsvg%3E\")";
-const selectBase = { width:"100%", padding:"13px 40px 13px 14px", border:"none", borderBottom:"1px solid #8d8d8d", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, color:"#1B3F45", background:"#F0F6F7", outline:"none", boxSizing:"border-box", appearance:"none", WebkitAppearance:"none", backgroundImage:CHEVRON_URL, backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center" };
+const selectBase = { width:"100%", padding:"13px 40px 13px 14px", border:"1.5px solid #E8E4DC", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, color:"#1B3F45", background:"#ffffff", outline:"none", boxSizing:"border-box", appearance:"none", WebkitAppearance:"none", backgroundImage:CHEVRON_URL, backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center" };
 const Select = ({ children, ...props }) => (
   <select {...props} style={{ ...selectBase, color: props.value ? "#1B3F45" : "#5A7A80", ...props.style }}>
     {children}
@@ -631,6 +631,33 @@ export default function App() {
           .two-col { grid-template-columns: 1fr !important; }
           .filter-row { flex-wrap: wrap; }
         }
+        /* ── Carbon overrides: rounded inputs ── */
+        .cds--text-input-wrapper .cds--text-input,
+        .cds--text-input-wrapper .cds--text-input:focus {
+          border-radius: 14px !important;
+          border: 1.5px solid #E8E4DC !important;
+          border-bottom: 1.5px solid #E8E4DC !important;
+          background: #ffffff !important;
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        .cds--text-area__wrapper .cds--text-area,
+        .cds--text-area__wrapper .cds--text-area:focus {
+          border-radius: 14px !important;
+          border: 1.5px solid #E8E4DC !important;
+          border-bottom: 1.5px solid #E8E4DC !important;
+          background: #ffffff !important;
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        .cds--text-input:focus ~ .cds--text-input__divider,
+        .cds--text-input__field-wrapper[data-invalid] .cds--text-input,
+        .cds--text-area__wrapper--warning .cds--text-area,
+        .cds--text-area__wrapper[data-invalid] .cds--text-area {
+          border-radius: 14px !important;
+          outline: none !important;
+          box-shadow: none !important;
+        }
       `}</style>
 
       {/* ── DESKTOP SIDEBAR ── */}
@@ -1035,17 +1062,30 @@ export default function App() {
       {tab==="orders" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* HEADER */}
-          <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
+          <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                {view!=="list"
-                  ? <button onClick={()=>{ if(view==="edit") setView("detail"); else if(view==="new" && newOrderStep>1) setNewOrderStep(s=>s-1); else setView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
-                  : <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
-                }
-                <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>
-                  {view==="new" ? "Nueva orden" : view==="edit" ? "Edit Order" : view==="detail" ? selectedOrder?.client : "Orders"}
+              {/* Left: date block (list) or back + title (other views) */}
+              {view==="list" ? (
+                <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                  {/* Today's date block */}
+                  <div style={{ background:"#1B3F45", borderRadius:16, padding:"8px 14px", textAlign:"center", minWidth:54, flexShrink:0 }}>
+                    <div style={{ fontSize:28, fontWeight:900, color:"white", lineHeight:1 }}>{new Date().getDate()}</div>
+                    <div style={{ fontSize:10, fontWeight:700, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", textTransform:"uppercase", marginTop:1 }}>{new Date().toLocaleDateString("es-ES",{month:"short"}).replace(".","")}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:12, color:"#9DB5B9", fontWeight:500, marginBottom:2 }}>{new Date().toLocaleDateString("es-ES",{weekday:"long"})}</div>
+                    <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1 }}>Órdenes</div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <button onClick={()=>{ if(view==="edit") setView("detail"); else if(view==="new" && newOrderStep>1) setNewOrderStep(s=>s-1); else setView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+                  <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>
+                    {view==="new" ? "Nueva orden" : view==="edit" ? "Edit Order" : view==="detail" ? selectedOrder?.client : "Órdenes"}
+                  </div>
+                </div>
+              )}
+
               {view==="new" && (
                 <div style={{ fontSize:12, fontWeight:600, color:"#9DB5B9" }}>{newOrderStep} de 3</div>
               )}
@@ -1055,7 +1095,7 @@ export default function App() {
                     ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Cancel</button>
                     : <>
                         <button onClick={()=>setSelectMode(true)} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Select</button>
-                        <button onClick={()=>{ setView("new"); setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); }} style={{ width:38, height:38, borderRadius:12, background:"#C9933A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <button onClick={()=>{ setView("new"); setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); }} style={{ width:38, height:38, borderRadius:14, background:"#C9933A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           <Icon name="plus" size={18} color="white"/>
                         </button>
                       </>
@@ -2207,7 +2247,7 @@ export default function App() {
 
       {/* ── BOTTOM NAV (mobile only, hidden during wizard) ── */}
       {!isDesktop && !(tab==="orders" && view==="new") && (
-        <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#ffffff", borderTop:`2px solid ${ACCENT}`, display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
+        <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#ffffff", borderTop:"none", boxShadow:"0 -4px 20px rgba(27,63,69,0.07)", display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
           {[
             { key:"home",    icon:"orders",  label:"Home"    },
             { key:"scan",    icon:"scan",    label:"Scan"    },
