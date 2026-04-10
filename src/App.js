@@ -1879,12 +1879,21 @@ export default function App() {
                         <Icon name="invoice" size={16} color="white"/> Generar factura
                       </button>
                     )}
-                    {st==="invoiced" && (
-                      <button onClick={()=>setWorkOrderPreview(selectedOrder)}
-                        style={{ width:"100%", padding:"13px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:500, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                        <Icon name="print" size={16} color="#C9933A"/> Imprimir / compartir factura
-                      </button>
-                    )}
+                    {st==="invoiced" && (()=>{
+                      const linkedInv = invoices.find(inv=>inv.items&&inv.items.some(it=>it.orderRef===selectedOrder.id));
+                      return (
+                        <div style={{ display:"flex", gap:8 }}>
+                          <button onClick={()=>setWorkOrderPreview(selectedOrder)}
+                            style={{ flex:1, padding:"13px 8px", background:"#E0EDEF", color:"#1B3F45", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                            <Icon name="print" size={15} color="#1B3F45"/> Orden de trabajo
+                          </button>
+                          <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast("No se encontró la factura","#da1e28"); }}
+                            style={{ flex:1, padding:"13px 8px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                            <Icon name="invoice" size={15} color="#C9933A"/> Imprimir factura
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </>
               );
