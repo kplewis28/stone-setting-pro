@@ -1242,7 +1242,7 @@ export default function App() {
                       </button>
                     </div>
                     {/* Botón continuar fijo */}
-                    <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:10 }}>
+                    <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200 }}>
                       <button disabled={!draft.client} onClick={()=>{ setNewOrderStep(2); if(!(draft.lineItems||[]).length) setDraft(d=>({...d,lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); }}
                         style={{ width:"100%", padding:"16px", background:draft.client?"#1B3F45":"#E8E4DC", color:draft.client?"white":"#9DB5B9", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:draft.client?"pointer":"default" }}>
                         Continuar →
@@ -1395,7 +1395,7 @@ export default function App() {
                         <span style={{ fontSize:14, fontWeight:600, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Agregar otra pieza</span>
                       </button>
                     </div>
-                    <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:10 }}>
+                    <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200 }}>
                       <button onClick={()=>setNewOrderStep(3)}
                         style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>
                         Continuar →
@@ -2037,8 +2037,8 @@ export default function App() {
         </div>
       )}
 
-      {/* ── BOTTOM NAV (mobile only) ── */}
-      {!isDesktop && (
+      {/* ── BOTTOM NAV (mobile only, hidden during wizard) ── */}
+      {!isDesktop && !(tab==="orders" && view==="new") && (
         <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#ffffff", borderTop:`2px solid ${ACCENT}`, display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
           {[
             { key:"home",    icon:"orders",  label:"Home"    },
