@@ -253,10 +253,16 @@ export default function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMsg, setAiMsg]       = useState("");
   const [aiError, setAiError]   = useState("");
+  const [newOrderStep, setNewOrderStep]   = useState(1);
+  const [newClientSheet, setNewClientSheet] = useState(false);
+  const [sheetClient, setSheetClient]     = useState({ name:"", phone:"", email:"" });
+  const [clientSearch, setClientSearch]   = useState("");
+  const [editingPieceId, setEditingPieceId] = useState(null);
   const [extracted, setExtracted] = useState(null);
   const fileRef = useRef();
   const draftPhotoRef = useRef();
   const calStripRef = useRef();
+  const piecePhotoRef = useRef();
   const TODAY = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [dayNotes, setDayNotes] = useState(() => { try { return JSON.parse(localStorage.getItem("ssp_day_notes")) || {}; } catch { return {}; } });
@@ -684,7 +690,7 @@ export default function App() {
 
           {/* ── S2: CTA PRINCIPAL ── */}
           <div style={{ padding: isDesktop ? "0 40px 20px" : "0 22px 18px", background:"white" }}>
-            <button onClick={()=>{ setTab("orders"); setView("new"); }} style={{ width:"100%", background:PASTELS.orders, border:"none", borderRadius:20, padding:"20px 20px 22px", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
+            <button onClick={()=>{ setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); setTab("orders"); setView("new"); }} style={{ width:"100%", background:PASTELS.orders, border:"none", borderRadius:20, padding:"20px 20px 22px", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
               <div style={{ display:"flex", alignItems:"center", gap:16 }}>
                 <div style={{ width:60, height:60, borderRadius:18, background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   <Icon name="gem" size={28} color="white"/>
@@ -1030,20 +1036,23 @@ export default function App() {
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {view!=="list"
-                  ? <button onClick={()=>view==="edit" ? setView("detail") : setView("list")} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+                  ? <button onClick={()=>{ if(view==="edit") setView("detail"); else if(view==="new" && newOrderStep>1) setNewOrderStep(s=>s-1); else setView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                   : <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                 }
                 <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>
-                  {view==="new" ? "New Order" : view==="edit" ? "Edit Order" : view==="detail" ? selectedOrder?.client : "Orders"}
+                  {view==="new" ? "Nueva orden" : view==="edit" ? "Edit Order" : view==="detail" ? selectedOrder?.client : "Orders"}
                 </div>
               </div>
+              {view==="new" && (
+                <div style={{ fontSize:12, fontWeight:600, color:"#9DB5B9" }}>{newOrderStep} de 3</div>
+              )}
               {view==="list" && (
                 <div style={{ display:"flex", gap:8 }}>
                   {selectMode
                     ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Cancel</button>
                     : <>
                         <button onClick={()=>setSelectMode(true)} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Select</button>
-                        <button onClick={()=>setView("new")} style={{ width:38, height:38, borderRadius:12, background:"#C9933A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <button onClick={()=>{ setView("new"); setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); }} style={{ width:38, height:38, borderRadius:12, background:"#C9933A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           <Icon name="plus" size={18} color="white"/>
                         </button>
                       </>
@@ -1061,7 +1070,16 @@ export default function App() {
             </div>
           </div>
 
-          <div style={{ padding: isDesktop?"16px 40px 60px":"16px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+          {/* Barra de progreso — solo en nueva orden */}
+          {view==="new" && (
+            <div style={{ display:"flex", gap:4, padding:"10px 22px 12px", background:"white" }}>
+              {[1,2,3].map(s=>(
+                <div key={s} style={{ flex:1, height:3, borderRadius:2, background: s<newOrderStep?"#1B3F45":s===newOrderStep?"#C9933A":"#E8E4DC", transition:"background 0.2s" }}/>
+              ))}
+            </div>
+          )}
+
+          <div style={{ padding: view==="new" ? 0 : isDesktop?"16px 40px 60px":"16px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
 
             {/* ── LIST ── */}
             {view==="list" && (
@@ -1158,73 +1176,200 @@ export default function App() {
               </>
             )}
 
-            {/* ── NEW ORDER ── */}
-            {view==="new" && (
-              <Card>
-                {/* Photo */}
-                <input ref={draftPhotoRef} type="file" accept="image/*" capture="environment" style={{ display:"none" }}
-                  onChange={e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>setDraft(d=>({...d,photo:c}))); }; r.readAsDataURL(f); }}/>
-                {draft.photo
-                  ? <div style={{ position:"relative", marginBottom:14 }}>
-                      <img src={draft.photo} alt="product" style={{ width:"100%", borderRadius:12, objectFit:"cover", maxHeight:200, display:"block" }}/>
-                      <button onClick={()=>setDraft(d=>({...d,photo:null}))} style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:28, height:28, color:"white", fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
-                    </div>
-                  : <button onClick={()=>draftPhotoRef.current.click()} style={{ width:"100%", padding:"14px", background:"#F0F6F7", border:"2px dashed #E8E4DC", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:600, color:"#5A7A80", cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                      <Icon name="camera" size={18} color="#5A7A80"/> Add product photo
-                    </button>
-                }
-                <Field label="Client *">
-                  {clients.length > 0
-                    ? <Select value={draft.clientId} onChange={e=>{
-                        const c = clients.find(x=>x.id===e.target.value);
-                        setDraft({...draft, clientId: e.target.value, client: c ? (c.company||c.name) : "" });
-                      }}>
-                        <option value="">— Select client —</option>
-                        {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
-                      </Select>
-                    : <Input placeholder="Client or company" value={draft.client} onChange={e=>setDraft({...draft,client:e.target.value})}/>
-                  }
-                  {clients.length > 0 && <div onClick={()=>{ setTab("clients"); setClientView("new"); setClientDraft(newClient()); }} style={{ fontSize:12, color:ACCENT, fontWeight:600, marginTop:6, cursor:"pointer" }}>+ Add new client</div>}
-                </Field>
-                <Field label="Work description">
-                  <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Work description sent by client…"/>
-                </Field>
-                <Field label="Delivery date">
-                  <Input type="date" value={draft.deadline} onChange={e=>setDraft({...draft,deadline:e.target.value})}/>
-                </Field>
+            {/* ── NEW ORDER — WIZARD 3 PASOS ── */}
+            {view==="new" && (()=>{
+              const pieceTotal = (draft.lineItems||[]).reduce((s,li)=>s+lineTotal(li),0);
+              const clientName = draft.client || "";
 
-                {/* Line items */}
-                <div style={{ marginTop:8, marginBottom:4 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Items for invoice</div>
-                  {(draft.lineItems||[]).map((li,idx)=>{ const mv=(a,f,t)=>{const b=[...a];const[x]=b.splice(f,1);b.splice(t,0,x);return b;}; return (
-                    <div key={li.id} style={{ background:"#F0F6F7", borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
-                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                          <button onClick={()=>idx>0&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx-1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#5A7A80"/></button>
-                          <button onClick={()=>idx<draft.lineItems.length-1&&setDraft({...draft,lineItems:mv(draft.lineItems,idx,idx+1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===draft.lineItems.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#5A7A80"/></button>
-                          <span style={{ fontSize:12, fontWeight:700, color:"#5A7A80" }}>Item {idx+1}</span>
-                        </div>
-                        <div style={{ display:"flex", gap:4 }}>
-                          <button onClick={()=>setDraft({...draft, lineItems:[...draft.lineItems.slice(0,idx+1), {...li, id:Date.now()+Math.random()}, ...draft.lineItems.slice(idx+1)]})} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.5 }} title="Duplicate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
-                          <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setDraft({...draft, lineItems:draft.lineItems.filter(i=>i.id!==li.id)}))} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#da1e28"/></button>
-                        </div>
-                      </div>
-                      <Input placeholder="Description (e.g. Pavé setting – ring)" value={li.desc} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                        <Input type="number" placeholder="Qty" value={li.qty||""} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,qty:e.target.value}:i)})}/>
-                        <Input type="number" placeholder={`Unit price (${C.currency})`} value={li.unitPrice||""} onChange={e=>setDraft({...draft, lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,unitPrice:e.target.value}:i)})}/>
-                      </div>
-                      {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#5A7A80", marginTop:6 }}>Total: <strong style={{color:"#1B3F45"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
+              /* ── PASO 1: Cliente ── */
+              if(newOrderStep===1) {
+                const allClients = clients.length > 0 ? clients : [];
+                const filtered = allClients.filter(c=>{
+                  const n = (c.company||c.name||"").toLowerCase();
+                  return n.includes(clientSearch.toLowerCase());
+                });
+                return (
+                  <div style={{ paddingBottom:"max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+                    <input ref={draftPhotoRef} type="file" accept="image/*" style={{display:"none"}} onChange={()=>{}}/>
+                    <div style={{ padding:"16px 22px 10px" }}>
+                      <div style={{ fontSize:10, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.1em", textTransform:"uppercase" }}>¿Para quién es?</div>
                     </div>
-                  );})}
-                  <button onClick={()=>setDraft({...draft, lineItems:[...(draft.lineItems||[]), {id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E8E4DC", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>+ Add item</button>
+                    {/* Card de clientes */}
+                    <div style={{ margin:"0 16px", background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
+                      {/* Buscador */}
+                      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input value={clientSearch} onChange={e=>setClientSearch(e.target.value)} placeholder="Buscar cliente..." style={{ flex:1, border:"none", outline:"none", fontSize:14, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent" }}/>
+                        {clientSearch && <button onClick={()=>setClientSearch("")} style={{ background:"none", border:"none", color:"#9DB5B9", cursor:"pointer", fontSize:16, padding:0 }}>×</button>}
+                      </div>
+                      <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
+                      {/* Lista de clientes */}
+                      {filtered.length === 0 && clientSearch && (
+                        <div style={{ padding:"16px 14px", fontSize:13, color:"#9DB5B9", textAlign:"center" }}>Sin resultados para "{clientSearch}"</div>
+                      )}
+                      {filtered.map((c, idx)=>{
+                        const name = c.company||c.name;
+                        const initials = name.split(" ").map(w=>w[0]||"").join("").slice(0,2).toUpperCase();
+                        const orderCount = orders.filter(o=>o.clientId===c.id||o.client===name).length;
+                        const isSelected = draft.clientId===c.id;
+                        return (
+                          <button key={c.id} onClick={()=>setDraft({...draft,clientId:c.id,client:name})}
+                            style={{ width:"100%", background: isSelected?"#F0F6F7":"white", border:"none", borderTop: idx>0?"0.5px solid #E8E4DC":"none", padding:"12px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
+                            <div style={{ width:36, height:36, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                              <span style={{ fontSize:13, fontWeight:700, color:"#C9933A" }}>{initials}</span>
+                            </div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45" }}>{name}</div>
+                              <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1 }}>{orderCount} {orderCount===1?"orden anterior":"órdenes anteriores"}</div>
+                            </div>
+                            {isSelected && (
+                              <div style={{ width:20, height:20, borderRadius:"50%", background:"#198038", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                <Icon name="check" size={12} color="white"/>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                      {filtered.length > 0 && <div style={{ height:"0.5px", background:"#E8E4DC" }}/>}
+                      {/* + Crear nuevo cliente */}
+                      <button onClick={()=>{ setSheetClient({name:"",phone:"",email:""}); setNewClientSheet(true); }}
+                        style={{ width:"100%", background:"none", border:"none", padding:"14px", cursor:"pointer", display:"flex", alignItems:"center", gap:10, justifyContent:"center" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                        <span style={{ fontSize:14, fontWeight:600, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Crear nuevo cliente</span>
+                      </button>
+                    </div>
+                    {/* Botón continuar fijo */}
+                    <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:10 }}>
+                      <button disabled={!draft.client} onClick={()=>{ setNewOrderStep(2); if(!(draft.lineItems||[]).length) setDraft(d=>({...d,lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); }}
+                        style={{ width:"100%", padding:"16px", background:draft.client?"#1B3F45":"#E8E4DC", color:draft.client?"white":"#9DB5B9", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:draft.client?"pointer":"default" }}>
+                        Continuar →
+                      </button>
+                    </div>
+                    {/* Bottom sheet — nuevo cliente */}
+                    {newClientSheet && (<>
+                      <div onClick={()=>setNewClientSheet(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:300 }}/>
+                      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"white", borderRadius:"20px 20px 0 0", padding:"12px 22px max(32px, env(safe-area-inset-bottom, 32px))", zIndex:301, animation:"fadeUp 0.2s ease" }}>
+                        <div style={{ width:40, height:4, borderRadius:2, background:"#E8E4DC", margin:"0 auto 20px" }}/>
+                        <div style={{ fontSize:18, fontWeight:700, color:"#1B3F45", marginBottom:20 }}>Nuevo cliente</div>
+                        <Field label="Nombre *"><Input placeholder="Nombre o empresa" value={sheetClient.name} onChange={e=>setSheetClient({...sheetClient,name:e.target.value})}/></Field>
+                        <Field label="Teléfono"><Input type="tel" placeholder="+41 xx xxx xx xx" value={sheetClient.phone} onChange={e=>setSheetClient({...sheetClient,phone:e.target.value})}/></Field>
+                        <Field label="Email"><Input type="email" placeholder="email@ejemplo.com" value={sheetClient.email} onChange={e=>setSheetClient({...sheetClient,email:e.target.value})}/></Field>
+                        <button disabled={!sheetClient.name.trim()} onClick={()=>{
+                          const nc={...newClient(),name:sheetClient.name.trim(),phone:sheetClient.phone,email:sheetClient.email};
+                          setClients(prev=>[...prev,nc]);
+                          setDraft(d=>({...d,clientId:nc.id,client:nc.name}));
+                          setNewClientSheet(false);
+                        }} style={{ width:"100%", padding:"16px", background:sheetClient.name.trim()?"#1B3F45":"#E8E4DC", color:sheetClient.name.trim()?"white":"#9DB5B9", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:sheetClient.name.trim()?"pointer":"default", marginTop:8 }}>
+                          Crear y continuar
+                        </button>
+                      </div>
+                    </>)}
+                  </div>
+                );
+              }
+
+              /* ── PASO 2: Piezas ── */
+              if(newOrderStep===2) {
+                return (
+                  <div style={{ paddingBottom:"max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+                    <input ref={piecePhotoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}}
+                      onChange={e=>{
+                        const f=e.target.files[0]; if(!f||!editingPieceId)return;
+                        const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ setDraft(d=>({...d,lineItems:d.lineItems.map(i=>i.id===editingPieceId?{...i,photo:c}:i)})); setEditingPieceId(null); }); }; r.readAsDataURL(f);
+                      }}/>
+                    {/* Subtítulo */}
+                    <div style={{ padding:"12px 22px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <div style={{ fontSize:13, color:"#5A7A80" }}>
+                        <span style={{ fontWeight:700, color:"#1B3F45" }}>{(draft.lineItems||[]).length}</span> {(draft.lineItems||[]).length===1?"pieza":"piezas"} · {clientName}
+                      </div>
+                      {pieceTotal>0 && <div style={{ fontSize:14, fontWeight:700, color:"#C9933A" }}>{C.currency} {fmt(pieceTotal)}</div>}
+                    </div>
+                    <div style={{ padding:"0 16px" }}>
+                      {(draft.lineItems||[]).map((li,idx)=>(
+                        <div key={li.id} style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", marginBottom:12, overflow:"hidden" }}>
+                          {/* Zona foto */}
+                          <div style={{ height:90, background:"#E0ECED", position:"relative", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                            {li.photo
+                              ? <img src={li.photo} alt="pieza" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                              : <Icon name="camera" size={28} color="#9DB5B9"/>
+                            }
+                            <div style={{ position:"absolute", top:8, left:8, background:"#1B3F45", color:"white", fontSize:10, fontWeight:700, borderRadius:999, padding:"2px 8px" }}>Pieza {idx+1}</div>
+                            <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
+                              style={{ position:"absolute", top:8, right:8, background:"rgba(255,255,255,0.9)", border:"none", borderRadius:6, padding:"3px 8px", fontSize:9, fontWeight:600, color:"#C9933A", cursor:"pointer" }}>
+                              {li.photo?"cambiar foto":"agregar foto"}
+                            </button>
+                          </div>
+                          {/* Cuerpo */}
+                          <div style={{ padding:"10px 12px" }}>
+                            <Input placeholder="Descripción del trabajo (ej. Engaste Pavé anillo)" value={li.desc} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
+                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
+                              <Input placeholder="Material / tipo" value={li.material||""} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,material:e.target.value}:i)})}/>
+                              <Input type="number" placeholder="Cantidad" value={li.qty||""} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,qty:e.target.value}:i)})}/>
+                            </div>
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+                              <span style={{ fontSize:13, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{lineTotal(li)>0?`${C.currency} ${fmt(lineTotal(li))}`:"Sin precio"}</span>
+                              <div style={{ display:"flex", alignItems:"center", gap:8, flex:1, justifyContent:"flex-end" }}>
+                                <Input type="number" placeholder={`Precio ${C.currency}`} value={li.unitPrice||""} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,unitPrice:e.target.value}:i)})} style={{ maxWidth:130 }}/>
+                                {(draft.lineItems||[]).length>1 && <button onClick={()=>setDraft({...draft,lineItems:draft.lineItems.filter(i=>i.id!==li.id)})} style={{ background:"none", border:"none", cursor:"pointer", padding:4, flexShrink:0 }}><Icon name="trash" size={14} color="#da1e28"/></button>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {/* + Agregar otra pieza */}
+                      <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:"",photo:null}]})}
+                        style={{ width:"100%", border:"1.5px dashed #C9933A", borderRadius:12, background:"none", padding:"16px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:12, marginBottom:16 }}>
+                        <div style={{ width:28, height:28, borderRadius:"50%", background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                        </div>
+                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Agregar otra pieza</span>
+                      </button>
+                    </div>
+                    {/* Continuar */}
+                    <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:10 }}>
+                      <button onClick={()=>setNewOrderStep(3)}
+                        style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>
+                        Continuar →
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              /* ── PASO 3: Detalles ── */
+              return (
+                <div style={{ padding:"8px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+                  {/* Resumen */}
+                  <div style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", padding:"14px 16px", marginBottom:20 }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: pieceTotal>0?6:0 }}>
+                      <div>
+                        <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45" }}>{clientName}</div>
+                        <div style={{ fontSize:11, color:"#9DB5B9", marginTop:2 }}>{(draft.lineItems||[]).length} {(draft.lineItems||[]).length===1?"pieza":"piezas"}</div>
+                      </div>
+                      {pieceTotal>0 && <div style={{ fontSize:20, fontWeight:800, color:"#C9933A" }}>{C.currency} {fmt(pieceTotal)}</div>}
+                    </div>
+                  </div>
+                  <Field label="Fecha de entrega">
+                    <Input type="date" value={draft.deadline} onChange={e=>setDraft({...draft,deadline:e.target.value})}/>
+                  </Field>
+                  <Field label="Notas para el taller">
+                    <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Instrucciones especiales, referencia del cliente…" rows={4}/>
+                  </Field>
+                  <BtnPrimary onClick={()=>{
+                    const order={...draft, amount:pieceTotal};
+                    setOrders([order,...orders]);
+                    syncToSheets(order);
+                    setDraft(newOrder());
+                    setNewOrderStep(1);
+                    setClientSearch("");
+                    setView("list");
+                    showToast("Orden guardada");
+                  }}>
+                    Guardar orden
+                  </BtnPrimary>
                 </div>
-
-                <BtnPrimary disabled={!draft.client} onClick={()=>{ if(draft.client){ setOrders([{...draft},...orders]); syncToSheets(draft); setDraft(newOrder()); setView("list"); } }}>
-                  Save Order
-                </BtnPrimary>
-              </Card>
-            )}
+              );
+            })()}
 
             {/* ── EDIT ORDER ── */}
             {view==="edit" && (
