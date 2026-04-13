@@ -17,6 +17,7 @@ const CONFIG = {
   vatId: "CHE-307.800.003 MWST",
   paymentTerms: "Betrag zahlbar innerhalb von 10 Tagen.",
   bankDetails: "CH 40 0900 0000 1674 9039 3",
+  sheetsUrl: "https://script.google.com/macros/s/AKfycbwrS39lpQVDKjW-NIlCSfkjMd7iv36fnMiuUpC9awF2Z5jewZj970YftzWNlcqUrgpetA/exec",
   porto: 0,
   accentColor: "#C9933A",
   serviceTypes: ["Pavé", "Bezel", "Prong", "Channel", "Flush", "Invisible"],
@@ -2252,8 +2253,8 @@ export default function App() {
             const draftTotal = draftSub + draftPorto + draftTax;
             // Orders done but not yet invoiced (exclude already linked)
             const syncInvoiceToSheets = (inv) => {
-              const sheetsUrl = process.env.REACT_APP_SHEETS_URL;
-              if (!sheetsUrl) return;
+              const url = C.sheetsUrl || process.env.REACT_APP_SHEETS_URL;
+              if (!url) return;
               const sub   = inv.items.reduce((s, it) => s + lineTotal(it), 0);
               const porto = parseFloat(inv.porto) || 0;
               const mwst  = sub * C.taxRate;
@@ -2275,9 +2276,11 @@ export default function App() {
                 porto: porto,
                 total: total,
               };
-              fetch(sheetsUrl, {
+              // GAS requires no-cors + text/plain to avoid preflight rejection
+              fetch(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify(payload),
               }).catch(err => console.error("[Sheets] Invoice sync failed:", err));
             };
