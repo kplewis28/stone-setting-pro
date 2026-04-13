@@ -129,7 +129,7 @@ const StatusPill = ({ status }) => {
 
 const Field = ({ label, children }) => (
   <div style={{ marginBottom:16 }}>
-    <div style={{ fontSize:"0.75rem", fontWeight:600, color:"#5A7A80", letterSpacing:"0.04em", textTransform:"uppercase", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{label}</div>
+    <div style={{ fontSize:13, fontWeight:700, color:"#5A7A80", letterSpacing:"0.04em", textTransform:"uppercase", marginBottom:6, fontFamily:"'IBM Plex Sans', sans-serif" }}>{label}</div>
     {children}
   </div>
 );
@@ -202,7 +202,7 @@ const Card = ({ children, onClick, style={} }) => (
 );
 
 const SectionTitle = ({ children }) => (
-  <div style={{ fontSize:"0.75rem", fontWeight:600, color:"#5A7A80", letterSpacing:"0.04em", textTransform:"uppercase", marginBottom:12, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+  <div style={{ fontSize:13, fontWeight:700, color:"#5A7A80", letterSpacing:"0.04em", textTransform:"uppercase", marginBottom:12, fontFamily:"'IBM Plex Sans', sans-serif" }}>
     {children}
   </div>
 );
@@ -1970,11 +1970,37 @@ export default function App() {
                     <Field label="Invoice number">
                       <Input placeholder="R12026" value={invNumber} onChange={e=>setInvNumber(e.target.value)}/>
                     </Field>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                      <Field label="Date"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
-                      <Field label={`Postage (${C.currency})`}><Input type="number" placeholder="0.00" value={invPorto} onChange={e=>setInvPorto(e.target.value)}/></Field>
-                    </div>
+                    <Field label="Date"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
                   </Card>
+
+                  {/* ── POSTAGE — callout prominente ── */}
+                  <div style={{ background: invPorto ? "#F0F9F4" : "#FBF5E8", border: invPorto ? "1.5px solid #9FCFBC" : "1.5px solid #E8C97A", borderRadius:16, padding:"16px 18px", marginBottom:16, transition:"all 0.2s" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+                      <div style={{ width:36, height:36, borderRadius:10, background: invPorto ? "#C0E8D8" : "#F0DDB0", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"background 0.2s" }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={invPorto ? "#1B6048" : "#8A6220"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0022 16v-2"/>
+                          <path d="M12 22V12M2.5 7.5l9.5 5.5 9.5-5.5"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:15, fontWeight:800, color: invPorto ? "#1B6048" : "#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                          Postage ({C.currency})
+                        </div>
+                        <div style={{ fontSize:12, color: invPorto ? "#3B8060" : "#BA9B55", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                          {invPorto ? `${C.currency} ${fmt(parseFloat(invPorto))} included` : "Don't forget to add shipping cost"}
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={invPorto}
+                      onChange={e=>setInvPorto(e.target.value)}
+                      style={{ width:"100%", padding:"14px 16px", fontSize:18, fontWeight:700, color:"#1B3F45",
+                        border: invPorto ? "2px solid #9FCFBC" : "2px solid #E8C97A",
+                        borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif",
+                        background:"white", outline:"none", boxSizing:"border-box", transition:"border 0.2s" }}/>
+                  </div>
 
 
                   {/* Items — all, whether from order or manual */}
@@ -1985,7 +2011,7 @@ export default function App() {
                         <div style={{ display:"flex", alignItems:"center", gap:4 }}>
                           <button onClick={()=>idx>0&&setItems(mv(items,idx,idx-1))} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===0?0.25:1 }}><Icon name="arrowUp" size={13} color="#5A7A80"/></button>
                           <button onClick={()=>idx<items.length-1&&setItems(mv(items,idx,idx+1))} style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:idx===items.length-1?0.25:1 }}><Icon name="arrowDown" size={13} color="#5A7A80"/></button>
-                          <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em" }}>Item {idx+1}</div>
+                          <div style={{ fontSize:13, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.06em" }}>Item {idx+1}</div>
                         </div>
                         <div style={{ display:"flex", gap:4 }}>
                           <button onClick={()=>setItems([...items.slice(0,idx+1),{...it,id:Date.now()+Math.random()},...items.slice(idx+1)])} style={{ background:"none", border:"none", cursor:"pointer", padding:4, opacity:0.5 }} title="Duplicate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
@@ -1997,7 +2023,7 @@ export default function App() {
                         <Field label="Qty"><Input type="number" placeholder="1" value={it.qty||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,qty:e.target.value}:i))}/></Field>
                         <Field label={`Unit price (${C.currency})`}><Input type="number" placeholder="0.00" value={it.unitPrice||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,unitPrice:e.target.value}:i))}/></Field>
                       </div>
-                      {lineTotal(it) > 0 && <div style={{ fontSize:12, color:"#5A7A80", marginTop:2 }}>Total: <strong style={{color:"#1B3F45"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
+                      {lineTotal(it) > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:4 }}>Total: <strong style={{color:"#1B3F45"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
                     </Card>
                   );})}
 
@@ -2045,10 +2071,20 @@ export default function App() {
                     </Card>
                   )}
 
+                  {/* Warning if postage is empty */}
+                  {draftSub > 0 && !invPorto && (
+                    <div style={{ background:"#FBF5E8", border:"1px solid #E8C97A", borderRadius:12, padding:"12px 14px", marginBottom:14, display:"flex", alignItems:"flex-start", gap:10 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A6220" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginTop:1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:700, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>Postage not added</div>
+                        <div style={{ fontSize:12, color:"#BA9B55", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>Scroll up to add shipping cost before saving.</div>
+                      </div>
+                    </div>
+                  )}
                   <button disabled={!invClient||items.every(it=>!it.desc&&!it.price)}
                     onClick={()=>saveInvoice(true)}
-                    style={{ width:"100%", padding:"15px", background: (!invClient||items.every(it=>!it.desc&&!it.price))?"#C6C6C6":"#C9933A", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor: (!invClient||items.every(it=>!it.desc&&!it.price))?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                    <Icon name="invoice" size={18} color="white"/> Save invoice
+                    style={{ width:"100%", padding:"16px", background: (!invClient||items.every(it=>!it.desc&&!it.price))?"#C6C6C6":"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor: (!invClient||items.every(it=>!it.desc&&!it.price))?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                    <Icon name="invoice" size={18} color={(!invClient||items.every(it=>!it.desc&&!it.price)) ? "white" : "#C9933A"}/> Save invoice
                   </button>
                 </div>
               </>
