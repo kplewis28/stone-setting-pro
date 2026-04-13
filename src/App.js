@@ -815,20 +815,20 @@ export default function App() {
                     const piezas = o.pieces || "—";
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", padding:"12px 14px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:12 }}>
-                        {/* Avatar 28px */}
-                        <div style={{ width:28, height:28, borderRadius:6, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                          <span style={{ fontSize:12, fontWeight:800, color:"#C9933A", lineHeight:1 }}>{piezas}</span>
+                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:14 }}>
+                        {/* Avatar piezas */}
+                        <div style={{ width:36, height:36, borderRadius:10, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <span style={{ fontSize:14, fontWeight:900, color:"#C9933A", lineHeight:1 }}>{piezas}</span>
                         </div>
                         {/* Info centro */}
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
-                          <div style={{ fontSize:11, color:"#5A7A80", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Espera: {desc}</div>
+                          <div style={{ fontSize:15, fontWeight:800, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
+                          <div style={{ fontSize:12, color:"#5A7A80", marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{desc}</div>
                         </div>
                         {/* Derecha */}
                         <div style={{ textAlign:"right", flexShrink:0 }}>
-                          <div style={{ fontSize:11, fontWeight:700, color: isOverdue ? "#da1e28" : "#C9933A", marginBottom:2 }}>{labelFecha}</div>
-                          <div style={{ fontSize:10, color:"#5A7A80" }}>{tipo}</div>
+                          <div style={{ fontSize:13, fontWeight:800, color: isOverdue ? "#da1e28" : "#C9933A", marginBottom:3 }}>{labelFecha}</div>
+                          <div style={{ fontSize:11, color:"#5A7A80" }}>{tipo}</div>
                         </div>
                       </button>
                     );
@@ -877,9 +877,9 @@ export default function App() {
                 <div style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
 
                   {/* Parte A: Header */}
-                  <div style={{ padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>Órdenes del día</span>
-                    <span style={{ fontSize:12, color:"#5A7A80" }}>{headerDate}</span>
+                  <div style={{ padding:"16px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:17, fontWeight:800, color:"#1B3F45" }}>Órdenes del día</span>
+                    <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{headerDate}</span>
                   </div>
 
                   {/* Separador */}
@@ -913,7 +913,7 @@ export default function App() {
 
                   {/* Parte D: Conteo del día seleccionado */}
                   <div style={{ padding:"10px 16px", background:"#F7F5F0" }}>
-                    <span style={{ fontSize:12, color:"#5A7A80" }}>
+                    <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>
                       {ordersForDay.length > 0
                         ? `${ordersForDay.length} ${ordersForDay.length===1?"orden":"órdenes"} para este día`
                         : "Sin órdenes para este día"}
@@ -939,29 +939,29 @@ export default function App() {
                     const fmtDl = o.deadline ? new Date(o.deadline+"T12:00:00").toLocaleDateString("es-CH",{day:"numeric",month:"short"}) : null;
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"13px 16px", cursor:"pointer", textAlign:"left", display:"block" }}>
+                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"15px 16px", cursor:"pointer", textAlign:"left", display:"block" }}>
                         {/* Línea 1: cliente + monto */}
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
-                          <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `Orden #${o.id}`}</div>
-                          {o.amount > 0 && <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(o.amount)}</div>}
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}>
+                          <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `Orden #${o.id}`}</div>
+                          {o.amount > 0 && <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(o.amount)}</div>}
                         </div>
                         {/* Línea 2: ID mono · Espera: desc truncada */}
-                        <div style={{ fontSize:11, color:"#5A7A80", marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        <div style={{ fontSize:12, color:"#5A7A80", marginBottom:9, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                           <span style={{ fontFamily:"'IBM Plex Mono', monospace", fontWeight:600 }}>#{o.id}</span>
-                          {descLabel && <span> · Espera: {descLabel}</span>}
+                          {descLabel && <span> · {descLabel}</span>}
                         </div>
                         {/* Línea 3: ícono + fecha ←→ badge */}
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                           <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                             {fmtDl ? (
                               <>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={urg.accent !== "transparent" ? urg.accent : "#5A7A80"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                                <span style={{ fontSize:11, fontWeight:600, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", background: urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F6F7", padding:"2px 8px", borderRadius:6 }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={urg.accent !== "transparent" ? urg.accent : "#5A7A80"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                                <span style={{ fontSize:12, fontWeight:600, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", background: urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F6F7", padding:"3px 9px", borderRadius:6 }}>
                                   {urg.label ? `${urg.label} · ` : ""}{fmtDl}
                                 </span>
                               </>
                             ) : (
-                              <span style={{ fontSize:11, color:"#5A7A80" }}>Sin fecha</span>
+                              <span style={{ fontSize:12, color:"#5A7A80" }}>Sin fecha</span>
                             )}
                           </div>
                           <StatusPill status={o.status}/>
@@ -974,7 +974,7 @@ export default function App() {
                   {sorted.length > 0 && (
                     <>
                       <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
-                      <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"13px 16px", background:"#F7F5F0", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
+                      <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"15px 16px", background:"#F7F5F0", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
                         Ver todas las órdenes →
                       </button>
                     </>
@@ -1902,27 +1902,27 @@ export default function App() {
                   <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#F2EDE4", padding:"12px 16px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
                     {(st==="received"||st==="inprogress") && (
                       <button onClick={()=>setConfirmSheet({ type:"done", order:selectedOrder })}
-                        style={{ width:"100%", padding:"13px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:500, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                        <Icon name="check" size={16} color="#C9933A"/> Marcar como terminada
+                        style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                        <Icon name="check" size={18} color="#C9933A"/> Marcar como terminada
                       </button>
                     )}
                     {st==="done" && (
                       <button onClick={()=>setConfirmSheet({ type:"invoice", order:selectedOrder })}
-                        style={{ width:"100%", padding:"13px", background:"#C9933A", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:500, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                        <Icon name="invoice" size={16} color="white"/> Generar factura
+                        style={{ width:"100%", padding:"16px", background:"#C9933A", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                        <Icon name="invoice" size={18} color="white"/> Generar factura
                       </button>
                     )}
                     {st==="invoiced" && (()=>{
                       const linkedInv = invoices.find(inv=>inv.items&&inv.items.some(it=>it.orderRef===selectedOrder.id));
                       return (
-                        <div style={{ display:"flex", gap:8 }}>
+                        <div style={{ display:"flex", gap:10 }}>
                           <button onClick={()=>setWorkOrderPreview(selectedOrder)}
-                            style={{ flex:1, padding:"13px 8px", background:"#E0EDEF", color:"#1B3F45", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                            <Icon name="print" size={15} color="#1B3F45"/> Orden de trabajo
+                            style={{ flex:1, padding:"15px 8px", background:"#E0EDEF", color:"#1B3F45", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                            <Icon name="print" size={16} color="#1B3F45"/> Orden de trabajo
                           </button>
                           <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast("No se encontró la factura","#da1e28"); }}
-                            style={{ flex:1, padding:"13px 8px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                            <Icon name="invoice" size={15} color="#C9933A"/> Imprimir factura
+                            style={{ flex:1, padding:"15px 8px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                            <Icon name="invoice" size={16} color="#C9933A"/> Imprimir factura
                           </button>
                         </div>
                       );
@@ -1962,22 +1962,21 @@ export default function App() {
                     <div style={{ fontSize:13, color:"#5A7A80", lineHeight:1.6 }}>Invoices created from orders appear here.<br/>You can also create one manually.</div>
                   </div>
                 )}
-                {[...invoices].reverse().map((inv,i) => {
+                {[...invoices].reverse().map((inv) => {
                   const invTotal = inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate) + (parseFloat(inv.porto)||0);
-                  const priorityColor = i === 0 ? "#da1e28" : i === 1 ? "#C9933A" : i === 2 ? "#C9933A" : "#5A7A80";
                   return (
                     <button key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); }}
-                      style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
-                      <div style={{ width:40, height:40, borderRadius:12, background:"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{i+1}</span>
+                      style={{ width:"100%", background:"white", border:"none", borderRadius:20, padding:"18px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", border:"1.5px solid #F0EDE8" }}>
+                      <div style={{ width:46, height:46, borderRadius:14, background:"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <Icon name="receipt" size={22} color="#5A7A80"/>
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.client}</div>
-                        <div style={{ fontSize:12, color:"rgba(0,0,0,0.38)", fontWeight:500, marginTop:3 }}>{inv.number} · {new Date(inv.date+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div>
+                        <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.client || "—"}</div>
+                        <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.number} · {new Date(inv.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short",year:"numeric"})}</div>
                       </div>
                       <div style={{ textAlign:"right", flexShrink:0 }}>
-                        <div style={{ fontSize:15, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.01em" }}>{C.currency} {fmt(invTotal)}</div>
-                        <span style={{ fontSize:10, fontWeight:700, color: inv.printed?"#198038":"#C9933A" }}>{inv.printed?"Printed":"Saved"}</span>
+                        <div style={{ fontSize:16, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.01em" }}>{C.currency} {fmt(invTotal)}</div>
+                        <span style={{ fontSize:11, fontWeight:700, color: inv.printed?"#198038":"#C9933A", marginTop:3, display:"block" }}>{inv.printed?"Impresa":"Guardada"}</span>
                       </div>
                     </button>
                   );
@@ -2235,8 +2234,8 @@ export default function App() {
                   {/* Botón fijo al fondo */}
                   <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#F2EDE4", padding:"12px 16px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
                     <button onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}
-                      style={{ width:"100%", padding:"13px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                      <Icon name="print" size={16} color="#C9933A"/> Imprimir factura
+                      style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      <Icon name="print" size={18} color="#C9933A"/> Imprimir factura
                     </button>
                   </div>
                 </div>
