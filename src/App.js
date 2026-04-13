@@ -477,13 +477,17 @@ export default function App() {
   .footer { font-size:8.5pt; line-height:1.7; color:#444; }
   .footer strong { color:#111; }
   .thanks { margin-top:14px; font-size:9pt; }
+  .back-btn { position:fixed; top:14px; right:14px; z-index:9999; }
+  .back-btn button { background:#1B3F45; color:white; border:none; border-radius:10px; padding:10px 18px; font-size:13pt; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; }
   @media print {
     @page { size: letter portrait; margin: 14mm 18mm; }
     html, body { margin:0; padding:0; }
     .page { max-width:100%; }
+    .back-btn { display:none; }
   }
 </style></head>
 <body>
+<div class="back-btn"><button onclick="window.close()">← Back to app</button></div>
 <div class="page">
   <div class="logo">
     <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:70px;object-fit:contain;">
@@ -1313,7 +1317,31 @@ export default function App() {
 
                           {/* Description */}
                           {o.description && (
-                            <div style={{ fontSize:13, color:"#7A9AA0", lineHeight:1.5, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{o.description}</div>
+                            <div style={{ fontSize:13, color:"#7A9AA0", lineHeight:1.5, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", marginBottom:10 }}>{o.description}</div>
+                          )}
+
+                          {/* Action buttons */}
+                          {!selectMode && (
+                            <div style={{ display:"flex", gap:8, marginTop: o.description ? 0 : 10 }} onClick={e=>e.stopPropagation()}>
+                              <button onClick={()=>setWorkOrderPreview(o)}
+                                style={{ flex:1, padding:"9px 6px", background:"#F0F6F7", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                <Icon name="print" size={13} color="#1B3F45"/> Work order
+                              </button>
+                              {o.status==="invoiced" ? (()=>{
+                                const linkedInv = invoices.find(inv=>inv.items&&inv.items.some(it=>it.orderRef===o.id));
+                                return (
+                                  <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast("Invoice not found","#da1e28"); }}
+                                    style={{ flex:1, padding:"9px 6px", background:"#1B3F45", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:700, color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                    <Icon name="invoice" size={13} color="#C9933A"/> Print invoice
+                                  </button>
+                                );
+                              })() : (
+                                <button onClick={()=>setConfirmSheet({ type:"invoice", order:o })}
+                                  style={{ flex:1, padding:"9px 6px", background:"#C9933A", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:700, color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                  <Icon name="invoice" size={13} color="white"/> Create invoice
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
