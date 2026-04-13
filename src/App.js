@@ -1397,12 +1397,15 @@ export default function App() {
                 return n.includes(clientSearch.toLowerCase());
               });
 
-              const SectionLabel = ({num, text}) => (
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
-                  <div style={{ width:26, height:26, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    <span style={{ fontSize:12, fontWeight:800, color:"#C9933A" }}>{num}</span>
+              const SectionLabel = ({num, text, subtitle}) => (
+                <div style={{ display:"flex", alignItems:"flex-start", gap:12, marginBottom:16 }}>
+                  <div style={{ width:30, height:30, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:2 }}>
+                    <span style={{ fontSize:13, fontWeight:900, color:"#C9933A" }}>{num}</span>
                   </div>
-                  <span style={{ fontSize:13, fontWeight:800, color:"#1B3F45", letterSpacing:"0.04em", textTransform:"uppercase" }}>{text}</span>
+                  <div>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em" }}>{text}</div>
+                    {subtitle && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, lineHeight:1.4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{subtitle}</div>}
+                  </div>
                 </div>
               );
 
@@ -1417,7 +1420,7 @@ export default function App() {
 
                   {/* ── SECCIÓN 1: CLIENTE ── */}
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="1" text="Client"/>
+                    <SectionLabel num="1" text="Choose a client" subtitle="Who is this order for? Select an existing client or create a new one."/>
                     <div style={{ background:"white", borderRadius:16, border:"1px solid #E8E4DC", overflow:"hidden" }}>
                       {/* Buscador */}
                       <div style={{ display:"flex", alignItems:"center", gap:10, padding:"13px 14px" }}>
@@ -1465,7 +1468,7 @@ export default function App() {
 
                   {/* ── SECCIÓN 2: PIEZAS ── */}
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="2" text={`Pieces${items.length ? " · "+items.length : ""}`}/>
+                    <SectionLabel num="2" text={`Add the pieces${items.length > 0 ? ` · ${items.length}` : ""}`} subtitle="Describe each piece and the work to be done. Add as many as needed."/>
                     <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                       {items.map((li,idx)=>{
                         const isDragging = dragIdx===idx;
@@ -1529,7 +1532,7 @@ export default function App() {
 
                   {/* ── SECCIÓN 3: FECHA Y NOTAS ── */}
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="3" text="Date & notes"/>
+                    <SectionLabel num="3" text="Set the delivery deadline" subtitle="When does this order need to be ready? You can also add special instructions."/>
                     {/* Fechas rápidas */}
                     <div style={{ display:"flex", gap:8, marginBottom:12 }}>
                       {quickDates.map(qd=>(
