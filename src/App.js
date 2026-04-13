@@ -2109,13 +2109,11 @@ export default function App() {
                     </Card>
                   )}
 
-                  <BtnPrimary disabled={!invClient||items.every(it=>!it.desc&&!it.price)} onClick={()=>saveInvoice(false)}>
-                    <Icon name="invoice" size={18} color="white"/> Save invoice
-                  </BtnPrimary>
-                  <div style={{ height:10 }}/>
-                  <BtnGhost disabled={!invClient||items.every(it=>!it.desc&&!it.price)} onClick={()=>saveInvoice(true)}>
-                    {"⎙ Save & print"}
-                  </BtnGhost>
+                  <button disabled={!invClient||items.every(it=>!it.desc&&!it.price)}
+                    onClick={()=>saveInvoice(true)}
+                    style={{ width:"100%", padding:"15px", background: (!invClient||items.every(it=>!it.desc&&!it.price))?"#C6C6C6":"#C9933A", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor: (!invClient||items.every(it=>!it.desc&&!it.price))?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                    <Icon name="invoice" size={18} color="white"/> Guardar factura
+                  </button>
                 </div>
               </>
             );
@@ -2140,7 +2138,7 @@ export default function App() {
                     <button onClick={()=>showConfirm(`Delete invoice ${inv.number}? This cannot be undone.`,()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); showToast("Invoice deleted","#da1e28"); })} style={{ width:36, height:36, borderRadius:11, background:"#fff1f1", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#da1e28"/></button>
                   </div>
                 </div>
-                <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+                <div style={{ padding: isDesktop?"20px 40px 100px":"20px 16px max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
 
                   {/* ── INVOICE PREVIEW CARD ── */}
                   <div style={{ background:"white", border:"1.5px solid #E8E4DC", borderRadius:16, padding:"28px 24px", marginBottom:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
@@ -2214,9 +2212,13 @@ export default function App() {
                     </div>
                   </div>
 
-                  <BtnPrimary onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}>
-                    <Icon name="invoice" size={18} color="white"/> Print / Save PDF
-                  </BtnPrimary>
+                  {/* Botón fijo al fondo */}
+                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#F2EDE4", padding:"12px 16px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
+                    <button onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}
+                      style={{ width:"100%", padding:"13px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      <Icon name="print" size={16} color="#C9933A"/> Imprimir factura
+                    </button>
+                  </div>
                 </div>
               </>
             );
