@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { dbGet, dbSet } from './supabase';
+import { dbGet, dbSet, supabase } from './supabase';
 import { Button, TextInput, TextArea } from '@carbon/react';
 
 // ─── CLIENT CONFIG — only this changes per client ───────
@@ -279,6 +279,33 @@ export default function App() {
     const onResize = () => setIsDesktop(window.innerWidth >= 768);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // ── AUTH ──
+  const [authUser, setAuthUser]       = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authEmail, setAuthEmail]     = useState("");
+  const [authPw, setAuthPw]           = useState("");
+  const [authError, setAuthError]     = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [lang, setLang]               = useState(() => localStorage.getItem("ssp_lang") || "en");
+  const [changePwOpen, setChangePwOpen] = useState(false);
+  const [newPw, setNewPw]             = useState("");
+  const [newPwConfirm, setNewPwConfirm] = useState("");
+  const [pwError, setPwError]         = useState("");
+  const [pwLoading, setPwLoading]     = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthUser(session?.user ?? null);
+      setAuthChecked(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setAuthUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── LOAD FROM SUPABASE ON MOUNT (cloud overrides local cache) ──
@@ -635,6 +662,66 @@ export default function App() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
+  // ── AUTH HELPERS ──
+  const signIn = async () => {
+    setAuthLoading(true); setAuthError("");
+    const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPw });
+    if (error) setAuthError(error.message);
+    setAuthLoading(false);
+  };
+
+  const signOut = async () => {
+    setProfileOpen(false);
+    await supabase.auth.signOut();
+  };
+
+  const changePassword = async () => {
+    if (!newPw) { setPwError("Enter a new password."); return; }
+    if (newPw !== newPwConfirm) { setPwError("Passwords don't match."); return; }
+    if (newPw.length < 6) { setPwError("Minimum 6 characters."); return; }
+    setPwLoading(true); setPwError("");
+    const { error } = await supabase.auth.updateUser({ password: newPw });
+    if (error) { setPwError(error.message); setPwLoading(false); return; }
+    setChangePwOpen(false); setNewPw(""); setNewPwConfirm("");
+    setPwLoading(false);
+    showToast("Password updated");
+  };
+
+  // ── LOADING / LOGIN SCREENS ──
+  if (!authChecked) return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#F7F5F0" }}>
+      <div style={{ width:36, height:36, border:"3px solid #1B3F45", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/>
+    </div>
+  );
+
+  if (!authUser) return (
+    <div style={{ fontFamily:"'IBM Plex Sans', sans-serif", minHeight:"100vh", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
+      <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
+      <div style={{ width:"100%", maxWidth:360, background:"white", borderRadius:24, padding:"36px 28px", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+        <img src="/logo.png" alt={C.businessName} style={{ height:52, objectFit:"contain", display:"block", marginBottom:8 }} onError={e=>e.target.style.display="none"}/>
+        <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", marginBottom:4 }}>{C.businessName}</div>
+        <div style={{ fontSize:13, color:"#5A7A80", marginBottom:28 }}>Sign in to continue</div>
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>Email</div>
+          <input type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&signIn()}
+            placeholder="email@example.com"
+            style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
+        </div>
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>Password</div>
+          <input type="password" value={authPw} onChange={e=>setAuthPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&signIn()}
+            placeholder="••••••••"
+            style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
+        </div>
+        {authError && <div style={{ fontSize:13, color:"#da1e28", marginBottom:14, background:"#FFF0F0", border:"1px solid #F7C1C1", borderRadius:10, padding:"10px 12px" }}>{authError}</div>}
+        <button onClick={signIn} disabled={authLoading}
+          style={{ width:"100%", padding:"15px", background: authLoading?"#E8E4DC":"#1B3F45", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor: authLoading?"default":"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+          {authLoading ? <><div style={{ width:16, height:16, border:"2px solid white", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/> Signing in…</> : "Sign in"}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ fontFamily:"'IBM Plex Sans', sans-serif", background:"#F7F5F0", minHeight:"100vh" }}>
       <style>{`
@@ -743,16 +830,55 @@ export default function App() {
                 </div>
               </div>
               {/* Bell + Avatar */}
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:4 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:4, position:"relative" }}>
                 <button onClick={()=>{}} style={{ width:40, height:40, borderRadius:12, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
                   <Icon name="bell" size={20} color="#1B3F45"/>
                   {orders.filter(o=>o.deadline===TODAY&&o.status!=="done"&&o.status!=="invoiced").length > 0 && (
                     <div style={{ position:"absolute", top:8, right:8, width:7, height:7, borderRadius:"50%", background:"#da1e28", border:"1.5px solid white" }}/>
                   )}
                 </button>
-                <div style={{ width:40, height:40, borderRadius:12, background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <span style={{ fontSize:14, fontWeight:700, color:"white" }}>{C.ownerName.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
-                </div>
+                <button onClick={()=>setProfileOpen(p=>!p)}
+                  style={{ width:40, height:40, borderRadius:12, background:"#1B3F45", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ fontSize:14, fontWeight:700, color:"white", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.ownerName.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
+                </button>
+
+                {/* Profile dropdown */}
+                {profileOpen && (
+                  <>
+                    <div onClick={()=>setProfileOpen(false)} style={{ position:"fixed", inset:0, zIndex:400 }}/>
+                    <div style={{ position:"absolute", top:48, right:0, width:220, background:"white", borderRadius:16, boxShadow:"0 8px 32px rgba(0,0,0,0.16)", border:"1px solid #E8E4DC", zIndex:401, overflow:"hidden" }}>
+                      {/* User info */}
+                      <div style={{ padding:"14px 16px 12px", borderBottom:"0.5px solid #F0EDE8" }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45" }}>{C.ownerName}</div>
+                        <div style={{ fontSize:11, color:"#9DB5B9", marginTop:2 }}>{authUser?.email}</div>
+                      </div>
+                      {/* Language */}
+                      <div style={{ padding:"10px 16px", borderBottom:"0.5px solid #F0EDE8" }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>Language</div>
+                        <div style={{ display:"flex", gap:6 }}>
+                          {[{code:"en",label:"English"},{code:"de",label:"Deutsch"}].map(l=>(
+                            <button key={l.code} onClick={()=>{ setLang(l.code); localStorage.setItem("ssp_lang",l.code); }}
+                              style={{ flex:1, padding:"7px 0", borderRadius:8, border: lang===l.code?"2px solid #1B3F45":"1.5px solid #E8E4DC", background: lang===l.code?"#1B3F45":"white", color: lang===l.code?"white":"#5A7A80", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                              {l.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Change password */}
+                      <button onClick={()=>{ setProfileOpen(false); setChangePwOpen(true); }}
+                        style={{ width:"100%", padding:"13px 16px", background:"none", border:"none", borderBottom:"0.5px solid #F0EDE8", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:10 }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                        Change password
+                      </button>
+                      {/* Sign out */}
+                      <button onClick={signOut}
+                        style={{ width:"100%", padding:"13px 16px", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:600, color:"#da1e28", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:10 }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#da1e28" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                        Sign out
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -1182,18 +1308,21 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Client + Date filters */}
-                <div className="filter-row" style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
-                  {clients.length > 0 && (
-                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ flex:"1 1 130px", minWidth:0, fontSize:13, padding:"10px 36px 10px 12px", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>
+                {/* Client filter */}
+                {[...new Set(orders.map(o=>o.client).filter(Boolean))].length > 1 && (
+                  <div style={{ marginBottom:10 }}>
+                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ fontSize:13, padding:"10px 36px 10px 12px", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>
                       <option value="all">All clients</option>
                       {[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
                     </Select>
-                  )}
-                  <div style={{ display:"flex", alignItems:"center", gap:6, flex:"1 1 130px", minWidth:0 }}>
-                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ flex:1, minWidth:0, fontSize:13, padding:"10px 12px", color: filterDate?"#1B3F45":"#5A7A80" }}/>
-                    {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#5A7A80", cursor:"pointer", whiteSpace:"nowrap" }}>✕</button>}
                   </div>
+                )}
+                {/* Date + Excel */}
+                <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
+                  <div style={{ flex:1, position:"relative" }}>
+                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ width:"100%", fontSize:13, padding:"10px 12px", color: filterDate?"#1B3F45":"#9DB5B9" }}/>
+                  </div>
+                  {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#5A7A80", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>✕</button>}
                   <button onClick={exportToExcel} style={{ padding:"10px 14px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>↓ Excel</button>
                 </div>
                 {/* Swipe hint — desaparece tras primera interacción */}
@@ -2970,6 +3099,41 @@ export default function App() {
         <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"'IBM Plex Sans', sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
           <Icon name="check" size={15} color="white"/> {toast.msg}
         </div>
+      )}
+
+      {/* ── CHANGE PASSWORD SHEET ── */}
+      {changePwOpen && (
+        <>
+          <div onClick={()=>{ setChangePwOpen(false); setNewPw(""); setNewPwConfirm(""); setPwError(""); }} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:3000 }}/>
+          <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"white", borderRadius:"24px 24px 0 0", padding:"0 0 max(28px, env(safe-area-inset-bottom, 28px))", zIndex:3001 }}>
+            <div style={{ padding:"14px 0 0", display:"flex", justifyContent:"center" }}>
+              <div style={{ width:36, height:4, borderRadius:2, background:"#E8E4DC" }}/>
+            </div>
+            <div style={{ padding:"16px 24px 4px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <span style={{ fontSize:18, fontWeight:800, color:"#1B3F45" }}>Change password</span>
+              <button onClick={()=>{ setChangePwOpen(false); setNewPw(""); setNewPwConfirm(""); setPwError(""); }} style={{ background:"#F0F6F7", border:"none", borderRadius:"50%", width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div style={{ padding:"12px 24px 0" }}>
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>New password</div>
+                <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Minimum 6 characters"
+                  style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>Confirm password</div>
+                <input type="password" value={newPwConfirm} onChange={e=>setNewPwConfirm(e.target.value)} placeholder="Repeat new password"
+                  style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
+              </div>
+              {pwError && <div style={{ fontSize:13, color:"#da1e28", background:"#FFF0F0", border:"1px solid #F7C1C1", borderRadius:10, padding:"10px 12px", marginBottom:14 }}>{pwError}</div>}
+              <button onClick={changePassword} disabled={pwLoading}
+                style={{ width:"100%", padding:"15px", background: pwLoading?"#E8E4DC":"#1B3F45", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor: pwLoading?"default":"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                {pwLoading ? <><div style={{ width:16, height:16, border:"2px solid white", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/> Saving…</> : "Update password"}
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ── CONFIRM MODAL ── */}
