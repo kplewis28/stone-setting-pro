@@ -1966,7 +1966,7 @@ export default function App() {
                   const invTotal = inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate) + (parseFloat(inv.porto)||0);
                   return (
                     <button key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); }}
-                      style={{ width:"100%", background:"white", border:"none", borderRadius:20, padding:"18px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", border:"1.5px solid #F0EDE8" }}>
+                      style={{ width:"100%", background:"white", border:"1.5px solid #F0EDE8", borderRadius:20, padding:"18px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
                       <div style={{ width:46, height:46, borderRadius:14, background:"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                         <Icon name="receipt" size={22} color="#5A7A80"/>
                       </div>
