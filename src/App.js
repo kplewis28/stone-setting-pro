@@ -57,6 +57,10 @@ const newOrder     = () => ({ id: String(Date.now()).slice(-4), client:"", clien
 const newClient    = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
 const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", qty:"1", unitPrice:"", price:"" });
 const lineTotal    = it => (parseFloat(it.qty)||1) * (parseFloat(it.unitPrice)||parseFloat(it.price)||0);
+const genOrderNumber = (orders) => {
+  const nums = (orders||[]).map(o=>parseInt(o.orderNumber)||0).filter(n=>n>0);
+  return String(nums.length ? Math.max(...nums)+1 : 1);
+};
 const compressPhoto = (dataUrl) => new Promise(res => {
   const img = new Image();
   img.onload = () => {
@@ -1110,8 +1114,13 @@ export default function App() {
               ) : (
                 <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                   <button onClick={()=>{ if(view==="edit") setView("detail"); else if(view==="new" && newOrderStep>1) setNewOrderStep(s=>s-1); else setView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
-                  <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>
-                    {view==="new" ? "New order" : view==="edit" ? "Edit order" : view==="detail" ? selectedOrder?.client : "Orders"}
+                  <div>
+                    <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
+                      {view==="new" ? "New order" : view==="edit" ? "Edit order" : view==="detail" ? selectedOrder?.client : "Orders"}
+                    </div>
+                    {view==="detail" && selectedOrder?.orderNumber && (
+                      <div style={{ fontSize:11, fontWeight:600, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Order #{selectedOrder.orderNumber}</div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1274,7 +1283,10 @@ export default function App() {
                         <div style={{ flex:1, minWidth:0 }}>
                           {/* Client name + status */}
                           <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:10 }}>
-                            <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{o.client || "—"}</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || "—"}</div>
+                              {o.orderNumber && <div style={{ fontSize:11, fontWeight:600, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Order #{o.orderNumber}</div>}
+                            </div>
                             <StatusPill status={o.status}/>
                           </div>
 
@@ -1381,7 +1393,8 @@ export default function App() {
               ];
 
               const saveOrder = () => {
-                const order={...draft, amount:pieceTotal};
+                const orderNumber = draft.orderNumber || genOrderNumber(orders);
+                const order={...draft, amount:pieceTotal, orderNumber};
                 setOrders([order,...orders]);
                 syncToSheets(order);
                 setDraft(newOrder());
@@ -1468,7 +1481,7 @@ export default function App() {
 
                   {/* ── SECCIÓN 2: PIEZAS ── */}
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="2" text={`Add the pieces${items.length > 0 ? ` · ${items.length}` : ""}`} subtitle="Describe each piece and the work to be done. Add as many as needed."/>
+                    <SectionLabel num="2" text={`Add the pieces${items.length > 0 ? ` · ${items.reduce((s,li)=>s+(parseInt(li.qty)||1),0)} pcs` : ""}`} subtitle={'Start the description with a number to set the quantity (e.g. "3 rings"). Add as many as needed.'}/>
                     <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                       {items.map((li,idx)=>{
                         const isDragging = dragIdx===idx;
@@ -1487,10 +1500,6 @@ export default function App() {
                               </div>
                               <span style={{ fontSize:12, fontWeight:800, color:"#1B3F45", letterSpacing:"0.07em", textTransform:"uppercase", flex:1 }}>Piece {idx+1}</span>
                               <div style={{ display:"flex", alignItems:"center" }}>
-                                <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
-                                  style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 8px", display:"flex", alignItems:"center" }}>
-                                  <Icon name="camera" size={15} color={li.photo?"#C9933A":"#9DB5B9"}/>
-                                </button>
                                 <button onClick={()=>dupItem(li)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 8px", display:"flex", alignItems:"center" }}>
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                                 </button>
@@ -1503,7 +1512,11 @@ export default function App() {
                             </div>
                             {/* Cuerpo */}
                             <div style={{ padding:"12px 14px 14px" }}>
-                              <textarea placeholder="What needs to be done? (e.g. Pavé setting, polishing, engraving…)" value={li.desc||""} onChange={e=>updItem(li.id,{desc:e.target.value})}
+                              <textarea placeholder="What needs to be done? Start with a number for quantity, e.g. 3 rings to polish" value={li.desc||""} onChange={e=>{
+                                const val = e.target.value;
+                                const match = val.match(/^(\d+)\s/);
+                                updItem(li.id, match ? {desc:val, qty:String(parseInt(match[1]))} : {desc:val});
+                              }}
                                 style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
                               <div style={{ height:"0.5px", background:"#F0F6F7", margin:"10px 0" }}/>
                               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -1514,6 +1527,24 @@ export default function App() {
                                   <span style={{ fontSize:14, fontWeight:700, color:"#1B3F45", minWidth:22, textAlign:"center", fontFamily:"'IBM Plex Sans', sans-serif" }}>{li.qty||1}</span>
                                   <button onClick={()=>stepQty(li.id,1)} style={{ background:"none", border:"none", cursor:"pointer", padding:"7px 12px", fontSize:17, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>+</button>
                                 </div>
+                              </div>
+                              {/* Photo section */}
+                              <div style={{ marginTop:10 }}>
+                                {li.photo ? (
+                                  <div style={{ position:"relative", display:"inline-block" }}>
+                                    <img src={li.photo} alt="piece" style={{ width:80, height:80, objectFit:"cover", borderRadius:10, display:"block", border:"1.5px solid #C9933A" }}/>
+                                    <button onClick={()=>updItem(li.id,{photo:null})}
+                                      style={{ position:"absolute", top:-6, right:-6, width:20, height:20, borderRadius:"50%", background:"#da1e28", border:"2px solid white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>
+                                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
+                                    style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", background:"#FBF5E8", border:"1.5px dashed #C9933A", borderRadius:10, cursor:"pointer", width:"100%", justifyContent:"center" }}>
+                                    <Icon name="camera" size={16} color="#C9933A"/>
+                                    <span style={{ fontSize:13, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Add photo of this piece</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
