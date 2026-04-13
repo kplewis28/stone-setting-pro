@@ -862,6 +862,8 @@ export default function App() {
         @media (max-width: 320px) {
           .ssp-h1 { font-size: 20px !important; }
         }
+        /* ── Carbon Button: center text ── */
+        .cds--btn { justify-content: center !important; text-align: center !important; }
         /* ── Carbon overrides: rounded inputs ── */
         .cds--text-input-wrapper .cds--text-input,
         .cds--text-input-wrapper .cds--text-input:focus {
