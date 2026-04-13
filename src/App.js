@@ -642,14 +642,34 @@ export default function App() {
         @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        html, body { overflow-x: hidden; width: 100%; }
         input, select, textarea { font-size: 16px !important; font-family: 'IBM Plex Sans', sans-serif !important; }
         select:focus { outline: 2px solid ${ACCENT} !important; outline-offset: 0px; background: #ffffff !important; }
         ::-webkit-scrollbar { display: none; }
+        scrollbar-width: none;
         .safe-top { padding-top: max(56px, env(safe-area-inset-top, 56px)); }
         .safe-bottom { padding-bottom: max(100px, calc(72px + env(safe-area-inset-bottom, 0px))); }
+        /* Prevent any child from breaking out horizontally */
+        .ssp-tab { max-width: 100vw; overflow-x: hidden; }
+        /* Pill filter rows always scroll smoothly */
+        .pills-row { display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; -webkit-overflow-scrolling:touch; flex-wrap:nowrap; }
+        .pills-row::-webkit-scrollbar { display:none; }
+        /* Responsive table inside invoice preview */
+        @media (max-width: 400px) {
+          .inv-table col:nth-child(3) { width:0; display:none; }
+          .inv-table .hide-xs { display:none; }
+          .inv-table col:nth-child(2) { width:12%; }
+          .inv-table col:nth-child(1) { width:62%; }
+          .inv-table col:nth-child(4) { width:26%; }
+        }
         @media (max-width: 375px) {
           .two-col { grid-template-columns: 1fr !important; }
           .filter-row { flex-wrap: wrap; }
+          .ssp-card-pad { padding: 14px 12px !important; }
+          .ssp-h1 { font-size: 22px !important; }
+        }
+        @media (max-width: 320px) {
+          .ssp-h1 { font-size: 20px !important; }
         }
         /* ── Carbon overrides: rounded inputs ── */
         .cds--text-input-wrapper .cds--text-input,
@@ -707,7 +727,7 @@ export default function App() {
       )}
 
       {/* ── CONTENT WRAPPER ── */}
-      <div style={ isDesktop ? { marginLeft:220, minHeight:"100vh" } : { maxWidth:500, margin:"0 auto" } }>
+      <div style={ isDesktop ? { marginLeft:240, minHeight:"100vh", maxWidth:"calc(100vw - 240px)" } : { maxWidth:500, margin:"0 auto", width:"100%" } }>
 
       {/* ── HOME TAB ── */}
       {tab==="home" && (
@@ -1150,7 +1170,7 @@ export default function App() {
             {view==="list" && (
               <>
                 {/* Status filter pills */}
-                <div style={{ display:"flex", gap:6, overflowX:"auto", marginBottom:16, paddingBottom:2 }}>
+                <div className="pills-row" style={{ marginBottom:16 }}>
                   {[["all","All",orders.length], ...Object.entries(C.statuses).map(([k,v])=>[k,v.label,counts[k]])].map(([key,label,cnt])=>(
                     <button key={key} style={{ padding:"8px 16px", borderRadius:100, border:"none", background: filterStatus===key ? "#1B3F45" : "white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterStatus===key ? "white" : "#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }} onClick={()=>setFilterStatus(key)}>
                       {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
@@ -1159,18 +1179,18 @@ export default function App() {
                 </div>
 
                 {/* Client + Date filters */}
-                <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
+                <div className="filter-row" style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
                   {clients.length > 0 && (
-                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ flex:1, minWidth:140, fontSize:13, padding:"10px 36px 10px 12px", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>
+                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ flex:"1 1 130px", minWidth:0, fontSize:13, padding:"10px 36px 10px 12px", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>
                       <option value="all">All clients</option>
                       {[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
                     </Select>
                   )}
-                  <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:140 }}>
-                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ fontSize:13, padding:"10px 12px", color: filterDate?"#1B3F45":"#5A7A80" }}/>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, flex:"1 1 130px", minWidth:0 }}>
+                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ flex:1, minWidth:0, fontSize:13, padding:"10px 12px", color: filterDate?"#1B3F45":"#5A7A80" }}/>
                     {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#5A7A80", cursor:"pointer", whiteSpace:"nowrap" }}>✕</button>}
                   </div>
-                  <button onClick={exportToExcel} style={{ padding:"10px 14px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", whiteSpace:"nowrap" }}>↓ Excel</button>
+                  <button onClick={exportToExcel} style={{ padding:"10px 14px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>↓ Excel</button>
                 </div>
                 {/* Swipe hint — desaparece tras primera interacción */}
                 {!swipeHintSeen && !selectMode && filteredOrders.length > 0 && (
@@ -2161,19 +2181,19 @@ export default function App() {
                     </div>
 
                     {/* Items table */}
-                    <table style={{ width:"100%", borderCollapse:"collapse", marginBottom:12, tableLayout:"fixed" }}>
-                      <colgroup>
-                        <col style={{ width:"46%" }}/>
+                    <table className="inv-table" style={{ width:"100%", borderCollapse:"collapse", marginBottom:12, tableLayout:"fixed" }}>
+                      <colgroup className="inv-table">
+                        <col style={{ width:"48%" }}/>
                         <col style={{ width:"10%" }}/>
-                        <col style={{ width:"22%" }}/>
+                        <col className="hide-xs" style={{ width:"20%" }}/>
                         <col style={{ width:"22%" }}/>
                       </colgroup>
                       <thead>
                         <tr style={{ borderBottom:"1.5px solid #E8E4DC" }}>
-                          <th style={{ textAlign:"left", fontSize:9, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 4px 7px 0", fontWeight:700 }}>Description</th>
-                          <th style={{ textAlign:"right", fontSize:9, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Qty</th>
-                          <th style={{ textAlign:"right", fontSize:9, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Unit</th>
-                          <th style={{ textAlign:"right", fontSize:9, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 7px", fontWeight:700 }}>Total</th>
+                          <th style={{ textAlign:"left", fontSize:10, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 4px 8px 0", fontWeight:700 }}>Descripción</th>
+                          <th style={{ textAlign:"right", fontSize:10, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 8px", fontWeight:700 }}>Cant.</th>
+                          <th className="hide-xs" style={{ textAlign:"right", fontSize:10, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 8px", fontWeight:700 }}>Precio</th>
+                          <th style={{ textAlign:"right", fontSize:10, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.07em", padding:"4px 0 8px", fontWeight:700 }}>Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2183,12 +2203,12 @@ export default function App() {
                           const tot = qty * unit;
                           return (
                             <tr key={i} style={{ borderBottom:"1px solid #E8E4DC" }}>
-                              <td style={{ padding:"7px 4px 7px 0", verticalAlign:"top" }}>
-                                <div style={{ fontSize:12, fontWeight:600, color:"#1B3F45", wordBreak:"break-word" }}>{it.desc||"—"}</div>
+                              <td style={{ padding:"8px 4px 8px 0", verticalAlign:"top" }}>
+                                <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{it.desc||"—"}</div>
                               </td>
-                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{qty}</td>
-                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:11, color:"#5A7A80", verticalAlign:"top" }}>{C.currency} {fmt(unit)}</td>
-                              <td style={{ padding:"7px 0", textAlign:"right", fontSize:12, fontWeight:700, color:"#1B3F45", verticalAlign:"top" }}>{C.currency} {fmt(tot)}</td>
+                              <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{qty}</td>
+                              <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{C.currency} {fmt(unit)}</td>
+                              <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1B3F45", verticalAlign:"top" }}>{C.currency} {fmt(tot)}</td>
                             </tr>
                           );
                         })}
