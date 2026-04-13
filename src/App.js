@@ -1337,294 +1337,59 @@ export default function App() {
               </>
             )}
 
-            {/* ── NEW ORDER — WIZARD 3 PASOS ── */}
+            {/* ── NEW ORDER — PANTALLA ÚNICA ── */}
             {view==="new" && (()=>{
               const pieceTotal = (draft.lineItems||[]).reduce((s,li)=>s+lineTotal(li),0);
               const clientName = draft.client || "";
+              const items = draft.lineItems||[];
 
-              /* ── PASO 1: Cliente ── */
-              if(newOrderStep===1) {
-                const allClients = clients.length > 0 ? clients : [];
-                const filtered = allClients.filter(c=>{
-                  const n = (c.company||c.name||"").toLowerCase();
-                  return n.includes(clientSearch.toLowerCase());
-                });
-                return (
-                  <div style={{ paddingBottom:"max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
-                    <input ref={draftPhotoRef} type="file" accept="image/*" style={{display:"none"}} onChange={()=>{}}/>
-                    <div style={{ padding:"16px 22px 10px" }}>
-                      <div style={{ fontSize:10, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.1em", textTransform:"uppercase" }}>¿Para quién es?</div>
-                    </div>
-                    {/* Card de clientes */}
-                    <div style={{ margin:"0 16px", background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
-                      {/* Buscador */}
-                      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                        <input value={clientSearch} onChange={e=>setClientSearch(e.target.value)} placeholder="Buscar cliente..." style={{ flex:1, border:"none", outline:"none", fontSize:14, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent" }}/>
-                        {clientSearch && <button onClick={()=>setClientSearch("")} style={{ background:"none", border:"none", color:"#9DB5B9", cursor:"pointer", fontSize:16, padding:0 }}>×</button>}
-                      </div>
-                      <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
-                      {/* Lista de clientes */}
-                      {filtered.length === 0 && clientSearch && (
-                        <div style={{ padding:"16px 14px", fontSize:13, color:"#9DB5B9", textAlign:"center" }}>Sin resultados para "{clientSearch}"</div>
-                      )}
-                      {filtered.map((c, idx)=>{
-                        const name = c.company||c.name;
-                        const initials = name.split(" ").map(w=>w[0]||"").join("").slice(0,2).toUpperCase();
-                        const orderCount = orders.filter(o=>o.clientId===c.id||o.client===name).length;
-                        const isSelected = draft.clientId===c.id;
-                        return (
-                          <button key={c.id} onClick={()=>{ setDraft(d=>({...d,clientId:c.id,client:name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); setNewOrderStep(2); }}
-                            style={{ width:"100%", background: isSelected?"#F0F6F7":"white", border:"none", borderTop: idx>0?"0.5px solid #E8E4DC":"none", padding:"12px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
-                            <div style={{ width:36, height:36, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                              <span style={{ fontSize:13, fontWeight:700, color:"#C9933A" }}>{initials}</span>
-                            </div>
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45" }}>{name}</div>
-                              <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1 }}>{orderCount} {orderCount===1?"orden anterior":"órdenes anteriores"}</div>
-                            </div>
-                            {isSelected && (
-                              <div style={{ width:20, height:20, borderRadius:"50%", background:"#198038", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                                <Icon name="check" size={12} color="white"/>
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                      {filtered.length > 0 && <div style={{ height:"0.5px", background:"#E8E4DC" }}/>}
-                      {/* + Crear nuevo cliente */}
-                      <button onClick={()=>{ setSheetClient({name:"",address:"",phone:"",email:""}); setNewClientSheet(true); }}
-                        style={{ width:"100%", background:"none", border:"none", padding:"14px", cursor:"pointer", display:"flex", alignItems:"center", gap:10, justifyContent:"center" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                        <span style={{ fontSize:14, fontWeight:600, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Crear nuevo cliente</span>
-                      </button>
-                    </div>
-                    {/* Botón continuar fijo */}
-                    <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200 }}>
-                      <button disabled={!draft.client} onClick={()=>{ setNewOrderStep(2); if(!(draft.lineItems||[]).length) setDraft(d=>({...d,lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); }}
-                        style={{ width:"100%", padding:"16px", background:draft.client?"#1B3F45":"#E8E4DC", color:draft.client?"white":"#9DB5B9", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:draft.client?"pointer":"default" }}>
-                        Continuar →
-                      </button>
-                    </div>
-                    {/* Bottom sheet — nuevo cliente */}
-                    {newClientSheet && (<>
-                      <div onClick={()=>setNewClientSheet(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:300 }}/>
-                      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"white", borderRadius:"24px 24px 0 0", padding:"0 0 max(28px, env(safe-area-inset-bottom, 28px))", zIndex:301 }}>
-                        {/* Handle */}
-                        <div style={{ padding:"14px 0 0", display:"flex", justifyContent:"center" }}>
-                          <div style={{ width:36, height:4, borderRadius:2, background:"#E8E4DC" }}/>
-                        </div>
-                        {/* Título */}
-                        <div style={{ padding:"16px 24px 4px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                          <span style={{ fontSize:18, fontWeight:700, color:"#1B3F45" }}>Nuevo cliente</span>
-                          <button onClick={()=>setNewClientSheet(false)} style={{ background:"#F0F6F7", border:"none", borderRadius:"50%", width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                          </button>
-                        </div>
-                        {/* Campo principal */}
-                        <div style={{ padding:"16px 24px 0" }}>
-                          <input
-                            autoFocus
-                            placeholder="Nombre de la empresa *"
-                            value={sheetClient.name}
-                            onChange={e=>setSheetClient(s=>({...s,name:e.target.value}))}
-                            style={{ width:"100%", padding:"16px", fontSize:16, fontWeight:600, color:"#1B3F45",
-                              border: sheetClient.name.trim()?"2px solid #1B3F45":"2px solid #E8E4DC",
-                              borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif",
-                              background: sheetClient.name.trim()?"#F0F6F7":"white",
-                              outline:"none", boxSizing:"border-box", transition:"all 0.15s" }}/>
-                        </div>
-                        {/* Campos opcionales */}
-                        <div style={{ padding:"10px 24px 0", display:"flex", flexDirection:"column", gap:10 }}>
-                          {[
-                            { key:"address", placeholder:"Dirección", type:"text",
-                              icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> },
-                            { key:"phone",   placeholder:"Teléfono",  type:"tel",
-                              icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.59A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg> },
-                            { key:"email",   placeholder:"Email",     type:"email",
-                              icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg> },
-                          ].map(f=>(
-                            <div key={f.key} style={{ display:"flex", alignItems:"center", gap:10, padding:"11px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, background:"white" }}>
-                              {f.icon}
-                              <input
-                                placeholder={f.placeholder}
-                                value={sheetClient[f.key]||""}
-                                onChange={e=>setSheetClient(s=>({...s,[f.key]:e.target.value}))}
-                                type={f.type}
-                                style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#5A7A80",
-                                  fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{ padding:"10px 24px 0", display:"flex", alignItems:"center", gap:6 }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
-                          <span style={{ fontSize:11, color:"#9DB5B9" }}>Dirección, teléfono y email son opcionales</span>
-                        </div>
-                        {/* Botón */}
-                        <div style={{ padding:"16px 24px 0" }}>
-                          <button disabled={!sheetClient.name.trim()} onClick={()=>{
-                            const nc={...newClient(),name:sheetClient.name.trim(),address:sheetClient.address,phone:sheetClient.phone,email:sheetClient.email};
-                            setClients(prev=>[...prev,nc]);
-                            setDraft(d=>({...d,clientId:nc.id,client:nc.name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]}));
-                            setNewClientSheet(false);
-                            setNewOrderStep(2);
-                          }} style={{ width:"100%", padding:"17px", background:sheetClient.name.trim()?"#C9933A":"#E8E4DC",
-                            color:sheetClient.name.trim()?"white":"#9DB5B9", border:"none", borderRadius:16,
-                            fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700,
-                            cursor:sheetClient.name.trim()?"pointer":"default",
-                            boxShadow: sheetClient.name.trim()?"0 4px 14px rgba(201,147,58,0.3)":"none",
-                            transition:"all 0.15s" }}>
-                            Crear cliente →
-                          </button>
-                        </div>
-                      </div>
-                    </>)}
-                  </div>
-                );
-              }
-
-              /* ── PASO 2: Piezas ── */
-              if(newOrderStep===2) {
-                const items = draft.lineItems||[];
-                const dupItem = (li) => {
-                  const copy = {...li, id:Date.now()+Math.random()};
-                  const idx = items.findIndex(i=>i.id===li.id);
-                  const arr = [...items]; arr.splice(idx+1,0,copy);
+              const dupItem = (li) => {
+                const copy = {...li, id:Date.now()+Math.random()};
+                const idx = items.findIndex(i=>i.id===li.id);
+                const arr = [...items]; arr.splice(idx+1,0,copy);
+                setDraft(d=>({...d,lineItems:arr}));
+              };
+              const delItem = (id) => setDraft(d=>({...d,lineItems:d.lineItems.filter(i=>i.id!==id)}));
+              const updItem = (id, patch) => setDraft(d=>({...d,lineItems:d.lineItems.map(i=>i.id===id?{...i,...patch}:i)}));
+              const stepQty = (id, delta) => {
+                const cur = parseInt(items.find(i=>i.id===id)?.qty)||1;
+                updItem(id,{qty:String(Math.max(1,cur+delta))});
+              };
+              const onHandleTouchStart = (e, idx) => { dragTouchStartY.current = e.touches[0].clientY; setDragIdx(idx); };
+              const onHandleTouchMove = (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const el = document.elementFromPoint(touch.clientX, touch.clientY);
+                const card = el?.closest('[data-piece-idx]');
+                if(card) setDragOverIdx(parseInt(card.dataset.pieceIdx));
+              };
+              const onHandleTouchEnd = () => {
+                if(dragIdx!==null && dragOverIdx!==null && dragIdx!==dragOverIdx){
+                  const arr=[...items];
+                  const [moved]=arr.splice(dragIdx,1);
+                  arr.splice(dragOverIdx,0,moved);
                   setDraft(d=>({...d,lineItems:arr}));
-                };
-                const delItem = (id) => setDraft(d=>({...d,lineItems:d.lineItems.filter(i=>i.id!==id)}));
-                const updItem = (id, patch) => setDraft(d=>({...d,lineItems:d.lineItems.map(i=>i.id===id?{...i,...patch}:i)}));
-                const stepQty = (id, delta) => {
-                  const cur = parseInt(items.find(i=>i.id===id)?.qty)||1;
-                  updItem(id,{qty:String(Math.max(1,cur+delta))});
-                };
-                /* touch drag handlers */
-                const onHandleTouchStart = (e, idx) => {
-                  dragTouchStartY.current = e.touches[0].clientY;
-                  setDragIdx(idx);
-                };
-                const onHandleTouchMove = (e) => {
-                  e.preventDefault();
-                  const touch = e.touches[0];
-                  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-                  const card = el?.closest('[data-piece-idx]');
-                  if(card) setDragOverIdx(parseInt(card.dataset.pieceIdx));
-                };
-                const onHandleTouchEnd = () => {
-                  if(dragIdx!==null && dragOverIdx!==null && dragIdx!==dragOverIdx){
-                    const arr=[...items];
-                    const [moved]=arr.splice(dragIdx,1);
-                    arr.splice(dragOverIdx,0,moved);
-                    setDraft(d=>({...d,lineItems:arr}));
-                  }
-                  setDragIdx(null); setDragOverIdx(null);
-                };
-                /* desktop drag */
-                const onDragStart = (e,idx) => { e.dataTransfer.effectAllowed="move"; setDragIdx(idx); };
-                const onDragOver  = (e,idx) => { e.preventDefault(); setDragOverIdx(idx); };
-                const onDrop      = (e,idx) => {
-                  e.preventDefault();
-                  if(dragIdx!==null && dragIdx!==idx){
-                    const arr=[...items];
-                    const [moved]=arr.splice(dragIdx,1);
-                    arr.splice(idx,0,moved);
-                    setDraft(d=>({...d,lineItems:arr}));
-                  }
-                  setDragIdx(null); setDragOverIdx(null);
-                };
-                return (
-                  <div style={{ paddingBottom:"max(120px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
-                    <input ref={piecePhotoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}}
-                      onChange={e=>{
-                        const f=e.target.files[0]; if(!f||!editingPieceId)return;
-                        const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ updItem(editingPieceId,{photo:c}); setEditingPieceId(null); }); }; r.readAsDataURL(f);
-                      }}/>
-                    <div style={{ padding:"10px 20px 6px" }}>
-                      <span style={{ fontSize:12, color:"#9DB5B9", fontWeight:600, letterSpacing:"0.05em", textTransform:"uppercase" }}>
-                        {items.length} {items.length===1?"pieza":"piezas"} · {clientName}
-                      </span>
-                    </div>
-                    <div style={{ padding:"0 16px" }}>
-                      {items.map((li,idx)=>{
-                        const isDragging = dragIdx===idx;
-                        const isOver    = dragOverIdx===idx && dragIdx!==idx;
-                        return (
-                          <div key={li.id} data-piece-idx={idx}
-                            draggable onDragStart={e=>onDragStart(e,idx)} onDragOver={e=>onDragOver(e,idx)} onDrop={e=>onDrop(e,idx)} onDragEnd={()=>{setDragIdx(null);setDragOverIdx(null);}}
-                            style={{ background:"white", borderRadius:12, marginBottom:10, overflow:"hidden",
-                              border: isOver?"1.5px solid #C9933A":"0.5px solid #E8E4DC",
-                              opacity: isDragging?0.45:1,
-                              transition:"opacity 0.15s, border 0.1s" }}>
-                            {/* Cabecera */}
-                            <div style={{ display:"flex", alignItems:"center", gap:0, padding:"8px 10px 8px 0", borderBottom:"0.5px solid #F0F6F7" }}>
-                              {/* Handle — draggable */}
-                              <div
-                                onTouchStart={e=>onHandleTouchStart(e,idx)}
-                                onTouchMove={onHandleTouchMove}
-                                onTouchEnd={onHandleTouchEnd}
-                                style={{ padding:"6px 12px", cursor:"grab", touchAction:"none", display:"flex", flexDirection:"column", gap:3, opacity:0.4 }}>
-                                {[0,1,2].map(r=><div key={r} style={{ width:16, height:1.5, background:"#1B3F45", borderRadius:1 }}/>)}
-                              </div>
-                              <span style={{ fontSize:11, fontWeight:700, color:"#1B3F45", letterSpacing:"0.06em", textTransform:"uppercase", flex:1 }}>Pieza {idx+1}</span>
-                              {/* Acciones */}
-                              <div style={{ display:"flex", alignItems:"center", gap:0 }}>
-                                <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
-                                  style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 7px", display:"flex", alignItems:"center" }}>
-                                  <Icon name="camera" size={14} color={li.photo?"#C9933A":"#9DB5B9"}/>
-                                </button>
-                                <button onClick={()=>dupItem(li)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 7px", display:"flex", alignItems:"center" }}>
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                                </button>
-                                {items.length>1 && (
-                                  <button onClick={()=>delItem(li.id)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 7px", display:"flex", alignItems:"center" }}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#da1e28" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            {/* Cuerpo */}
-                            <div style={{ padding:"10px 14px 12px" }}>
-                              <textarea placeholder="¿Qué hay que hacer? (ej. Engaste Pavé, pulido, grabado…)" value={li.desc||""} onChange={e=>updItem(li.id,{desc:e.target.value})}
-                                style={{ width:"100%", minHeight:52, border:"none", outline:"none", resize:"none", fontSize:14, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
-                              <div style={{ height:"0.5px", background:"#F0F6F7", margin:"8px 0" }}/>
-                              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                                <input placeholder="Material / tipo" value={li.material||""} onChange={e=>updItem(li.id,{material:e.target.value})}
-                                  style={{ flex:1, border:"none", outline:"none", fontSize:12, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
-                                {/* Stepper de cantidad */}
-                                <div style={{ display:"flex", alignItems:"center", gap:0, background:"#F7F5F0", borderRadius:8, overflow:"hidden", flexShrink:0 }}>
-                                  <button onClick={()=>stepQty(li.id,-1)} style={{ background:"none", border:"none", cursor:"pointer", padding:"5px 10px", fontSize:16, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>−</button>
-                                  <span style={{ fontSize:13, fontWeight:700, color:"#1B3F45", minWidth:20, textAlign:"center", fontFamily:"'IBM Plex Sans', sans-serif" }}>{li.qty||1}</span>
-                                  <button onClick={()=>stepQty(li.id,1)} style={{ background:"none", border:"none", cursor:"pointer", padding:"5px 10px", fontSize:16, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>+</button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      <button onClick={()=>setDraft(d=>({...d,lineItems:[...(d.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:"",photo:null}]}))}
-                        style={{ width:"100%", border:"1.5px dashed #C9933A", borderRadius:12, background:"none", padding:"14px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:16 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                        <span style={{ fontSize:14, fontWeight:600, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Agregar otra pieza</span>
-                      </button>
-                    </div>
-                    <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200 }}>
-                      <button onClick={()=>setNewOrderStep(3)}
-                        style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>
-                        Continuar →
-                      </button>
-                    </div>
-                  </div>
-                );
-              }
+                }
+                setDragIdx(null); setDragOverIdx(null);
+              };
+              const onDragStart = (e,idx) => { e.dataTransfer.effectAllowed="move"; setDragIdx(idx); };
+              const onDragOver  = (e,idx) => { e.preventDefault(); setDragOverIdx(idx); };
+              const onDrop      = (e,idx) => {
+                e.preventDefault();
+                if(dragIdx!==null && dragIdx!==idx){
+                  const arr=[...items]; const [moved]=arr.splice(dragIdx,1); arr.splice(idx,0,moved);
+                  setDraft(d=>({...d,lineItems:arr}));
+                }
+                setDragIdx(null); setDragOverIdx(null);
+              };
 
-              /* ── PASO 3: Detalles ── */
               const addDays = (n) => { const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().split("T")[0]; };
               const quickDates = [
                 { label:"1 semana",  date: addDays(7)  },
                 { label:"2 semanas", date: addDays(14) },
                 { label:"1 mes",     date: addDays(30) },
               ];
-              const clientInitials = clientName.split(" ").map(w=>w[0]||"").join("").slice(0,2).toUpperCase();
+
               const saveOrder = () => {
                 const order={...draft, amount:pieceTotal};
                 setOrders([order,...orders]);
@@ -1635,73 +1400,237 @@ export default function App() {
                 setView("list");
                 showToast("Orden guardada");
               };
-              return (
-                <div style={{ padding:"16px 16px max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
 
-                  {/* Resumen visual */}
-                  <div style={{ background:"#F0F6F7", borderRadius:20, padding:"20px", marginBottom:24 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom: (draft.lineItems||[]).some(li=>li.desc) ? 14 : 0 }}>
-                      <div style={{ width:44, height:44, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <span style={{ fontSize:15, fontWeight:700, color:"#C9933A" }}>{clientInitials}</span>
+              const allClients = clients.length > 0 ? clients : [];
+              const filtered = allClients.filter(c=>{
+                const n = (c.company||c.name||"").toLowerCase();
+                return n.includes(clientSearch.toLowerCase());
+              });
+
+              const SectionLabel = ({num, text}) => (
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+                  <div style={{ width:26, height:26, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <span style={{ fontSize:12, fontWeight:800, color:"#C9933A" }}>{num}</span>
+                  </div>
+                  <span style={{ fontSize:13, fontWeight:800, color:"#1B3F45", letterSpacing:"0.04em", textTransform:"uppercase" }}>{text}</span>
+                </div>
+              );
+
+              return (
+                <div style={{ paddingBottom:"max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
+                  <input ref={draftPhotoRef} type="file" accept="image/*" style={{display:"none"}} onChange={()=>{}}/>
+                  <input ref={piecePhotoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}}
+                    onChange={e=>{
+                      const f=e.target.files[0]; if(!f||!editingPieceId)return;
+                      const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ updItem(editingPieceId,{photo:c}); setEditingPieceId(null); }); }; r.readAsDataURL(f);
+                    }}/>
+
+                  {/* ── SECCIÓN 1: CLIENTE ── */}
+                  <div style={{ padding:"20px 16px 0" }}>
+                    <SectionLabel num="1" text="Cliente"/>
+                    <div style={{ background:"white", borderRadius:16, border:"1px solid #E8E4DC", overflow:"hidden" }}>
+                      {/* Buscador */}
+                      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"13px 14px" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input value={clientSearch} onChange={e=>setClientSearch(e.target.value)} placeholder="Buscar cliente..." style={{ flex:1, border:"none", outline:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent" }}/>
+                        {clientSearch && <button onClick={()=>setClientSearch("")} style={{ background:"none", border:"none", color:"#9DB5B9", cursor:"pointer", fontSize:18, padding:0, lineHeight:1 }}>×</button>}
                       </div>
-                      <div>
-                        <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45" }}>{clientName}</div>
-                        <div style={{ fontSize:12, color:"#5A7A80", marginTop:2 }}>
-                          {(draft.lineItems||[]).length} {(draft.lineItems||[]).length===1?"pieza":"piezas"}
-                        </div>
-                      </div>
+                      <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
+                      {filtered.length === 0 && clientSearch && (
+                        <div style={{ padding:"16px 14px", fontSize:14, color:"#9DB5B9", textAlign:"center" }}>Sin resultados para "{clientSearch}"</div>
+                      )}
+                      {filtered.map((c, idx)=>{
+                        const name = c.company||c.name;
+                        const initials = name.split(" ").map(w=>w[0]||"").join("").slice(0,2).toUpperCase();
+                        const orderCount = orders.filter(o=>o.clientId===c.id||o.client===name).length;
+                        const isSelected = draft.clientId===c.id;
+                        return (
+                          <button key={c.id} onClick={()=>{ setDraft(d=>({...d,clientId:c.id,client:name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); }}
+                            style={{ width:"100%", background: isSelected?"#F0F6F7":"white", border:"none", borderTop: idx>0?"0.5px solid #E8E4DC":"none", padding:"14px", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
+                            <div style={{ width:40, height:40, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                              <span style={{ fontSize:14, fontWeight:700, color:"#C9933A" }}>{initials}</span>
+                            </div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>{name}</div>
+                              <div style={{ fontSize:12, color:"#9DB5B9", marginTop:2 }}>{orderCount} {orderCount===1?"orden anterior":"órdenes anteriores"}</div>
+                            </div>
+                            {isSelected
+                              ? <div style={{ width:22, height:22, borderRadius:"50%", background:"#198038", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon name="check" size={13} color="white"/></div>
+                              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C8C4BC" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+                            }
+                          </button>
+                        );
+                      })}
+                      {filtered.length > 0 && <div style={{ height:"0.5px", background:"#E8E4DC" }}/>}
+                      <button onClick={()=>{ setSheetClient({name:"",address:"",phone:"",email:""}); setNewClientSheet(true); }}
+                        style={{ width:"100%", background:"none", border:"none", padding:"15px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:10, justifyContent:"center" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Crear nuevo cliente</span>
+                      </button>
                     </div>
-                    {(draft.lineItems||[]).filter(li=>li.desc).map((li,i)=>(
-                      <div key={li.id} style={{ display:"flex", alignItems:"flex-start", gap:10, marginTop: i===0?0:8 }}>
-                        <div style={{ width:6, height:6, borderRadius:"50%", background:"#C9933A", marginTop:5, flexShrink:0 }}/>
-                        <span style={{ fontSize:13, color:"#1B3F45", lineHeight:1.4 }}>{li.desc}{li.qty&&li.qty!=="1"?` × ${li.qty}`:""}</span>
-                      </div>
-                    ))}
                   </div>
 
-                  {/* Fecha de entrega */}
-                  <div style={{ marginBottom:24 }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:12 }}>
-                      ¿Cuándo debe estar listo?
+                  {/* Divisor */}
+                  <div style={{ margin:"24px 16px 0", height:"1px", background:"#E8E4DC" }}/>
+
+                  {/* ── SECCIÓN 2: PIEZAS ── */}
+                  <div style={{ padding:"20px 16px 0" }}>
+                    <SectionLabel num="2" text={`Piezas${items.length ? " · "+items.length : ""}`}/>
+                    <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+                      {items.map((li,idx)=>{
+                        const isDragging = dragIdx===idx;
+                        const isOver    = dragOverIdx===idx && dragIdx!==idx;
+                        return (
+                          <div key={li.id} data-piece-idx={idx}
+                            draggable onDragStart={e=>onDragStart(e,idx)} onDragOver={e=>onDragOver(e,idx)} onDrop={e=>onDrop(e,idx)} onDragEnd={()=>{setDragIdx(null);setDragOverIdx(null);}}
+                            style={{ background:"white", borderRadius:16, marginBottom:10, overflow:"hidden",
+                              border: isOver?"1.5px solid #C9933A":"1px solid #E8E4DC",
+                              opacity: isDragging?0.45:1, transition:"opacity 0.15s, border 0.1s" }}>
+                            {/* Cabecera */}
+                            <div style={{ display:"flex", alignItems:"center", padding:"10px 12px 10px 0", borderBottom:"0.5px solid #F0F6F7" }}>
+                              <div onTouchStart={e=>onHandleTouchStart(e,idx)} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd}
+                                style={{ padding:"6px 12px", cursor:"grab", touchAction:"none", display:"flex", flexDirection:"column", gap:3, opacity:0.35, flexShrink:0 }}>
+                                {[0,1,2].map(r=><div key={r} style={{ width:16, height:1.5, background:"#1B3F45", borderRadius:1 }}/>)}
+                              </div>
+                              <span style={{ fontSize:12, fontWeight:800, color:"#1B3F45", letterSpacing:"0.07em", textTransform:"uppercase", flex:1 }}>Pieza {idx+1}</span>
+                              <div style={{ display:"flex", alignItems:"center" }}>
+                                <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
+                                  style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 8px", display:"flex", alignItems:"center" }}>
+                                  <Icon name="camera" size={15} color={li.photo?"#C9933A":"#9DB5B9"}/>
+                                </button>
+                                <button onClick={()=>dupItem(li)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 8px", display:"flex", alignItems:"center" }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                </button>
+                                {items.length>1 && (
+                                  <button onClick={()=>delItem(li.id)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 8px", display:"flex", alignItems:"center" }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#da1e28" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            {/* Cuerpo */}
+                            <div style={{ padding:"12px 14px 14px" }}>
+                              <textarea placeholder="¿Qué hay que hacer? (ej. Engaste Pavé, pulido, grabado…)" value={li.desc||""} onChange={e=>updItem(li.id,{desc:e.target.value})}
+                                style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
+                              <div style={{ height:"0.5px", background:"#F0F6F7", margin:"10px 0" }}/>
+                              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                                <input placeholder="Material / tipo" value={li.material||""} onChange={e=>updItem(li.id,{material:e.target.value})}
+                                  style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
+                                <div style={{ display:"flex", alignItems:"center", background:"#F7F5F0", borderRadius:10, overflow:"hidden", flexShrink:0 }}>
+                                  <button onClick={()=>stepQty(li.id,-1)} style={{ background:"none", border:"none", cursor:"pointer", padding:"7px 12px", fontSize:17, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>−</button>
+                                  <span style={{ fontSize:14, fontWeight:700, color:"#1B3F45", minWidth:22, textAlign:"center", fontFamily:"'IBM Plex Sans', sans-serif" }}>{li.qty||1}</span>
+                                  <button onClick={()=>stepQty(li.id,1)} style={{ background:"none", border:"none", cursor:"pointer", padding:"7px 12px", fontSize:17, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>+</button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <button onClick={()=>setDraft(d=>({...d,lineItems:[...(d.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:"",photo:null}]}))}
+                        style={{ width:"100%", border:"1.5px dashed #C9933A", borderRadius:14, background:"none", padding:"15px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:4 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Agregar otra pieza</span>
+                      </button>
                     </div>
-                    <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+                  </div>
+
+                  {/* Divisor */}
+                  <div style={{ margin:"24px 16px 0", height:"1px", background:"#E8E4DC" }}/>
+
+                  {/* ── SECCIÓN 3: FECHA Y NOTAS ── */}
+                  <div style={{ padding:"20px 16px 0" }}>
+                    <SectionLabel num="3" text="Fecha y notas"/>
+                    {/* Fechas rápidas */}
+                    <div style={{ display:"flex", gap:8, marginBottom:12 }}>
                       {quickDates.map(qd=>(
                         <button key={qd.label} onClick={()=>setDraft(d=>({...d,deadline:qd.date}))}
-                          style={{ flex:1, padding:"10px 4px", borderRadius:12, border: draft.deadline===qd.date?"2px solid #1B3F45":"1.5px solid #E8E4DC",
+                          style={{ flex:1, padding:"12px 4px", borderRadius:12,
+                            border: draft.deadline===qd.date?"2px solid #1B3F45":"1.5px solid #E8E4DC",
                             background: draft.deadline===qd.date?"#1B3F45":"white",
                             color: draft.deadline===qd.date?"white":"#5A7A80",
-                            fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif",
-                            transition:"all 0.15s" }}>
+                            fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", transition:"all 0.15s" }}>
                           {qd.label}
                         </button>
                       ))}
                     </div>
                     <input type="date" value={draft.deadline} onChange={e=>setDraft(d=>({...d,deadline:e.target.value}))}
-                      style={{ width:"100%", padding:"12px 14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:14, color: draft.deadline?"#1B3F45":"#9DB5B9",
-                        fontFamily:"'IBM Plex Sans', sans-serif", background:"white", boxSizing:"border-box", outline:"none" }}/>
-                  </div>
-
-                  {/* Notas */}
-                  <div style={{ marginBottom:8 }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:12 }}>
-                      Notas <span style={{ fontWeight:400, textTransform:"none", letterSpacing:0 }}>(opcional)</span>
-                    </div>
+                      style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:15, color: draft.deadline?"#1B3F45":"#9DB5B9",
+                        fontFamily:"'IBM Plex Sans', sans-serif", background:"white", boxSizing:"border-box", outline:"none", marginBottom:14 }}/>
                     <textarea value={draft.description} onChange={e=>setDraft(d=>({...d,description:e.target.value}))}
                       placeholder="Instrucciones especiales, referencia del cliente, acabado deseado…"
                       rows={3}
-                      style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:14, color:"#1B3F45",
+                      style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:15, color:"#1B3F45",
                         fontFamily:"'IBM Plex Sans', sans-serif", resize:"none", background:"white", boxSizing:"border-box", outline:"none", lineHeight:1.5 }}/>
                   </div>
 
-                  {/* Guardar — fixed */}
-                  <div style={{ position:"fixed", bottom:"max(24px, env(safe-area-inset-bottom, 24px))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200 }}>
-                    <button onClick={saveOrder}
-                      style={{ width:"100%", padding:"18px", background:"#C9933A", color:"white", border:"none", borderRadius:16,
-                        fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer",
-                        boxShadow:"0 4px 16px rgba(201,147,58,0.35)", letterSpacing:"0.01em" }}>
-                      Guardar orden
+                  {/* ── BOTÓN FIJO ── */}
+                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#F2EDE4", padding:"12px 16px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:200 }}>
+                    <button disabled={!draft.client} onClick={saveOrder}
+                      style={{ width:"100%", padding:"17px", background: draft.client?"#C9933A":"#E8E4DC", color: draft.client?"white":"#9DB5B9", border:"none", borderRadius:14,
+                        fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor: draft.client?"pointer":"default",
+                        boxShadow: draft.client?"0 4px 16px rgba(201,147,58,0.3)":"none", transition:"all 0.2s" }}>
+                      {draft.client ? `Guardar orden · ${clientName}` : "Selecciona un cliente primero"}
                     </button>
                   </div>
+
+                  {/* ── BOTTOM SHEET: NUEVO CLIENTE ── */}
+                  {newClientSheet && (<>
+                    <div onClick={()=>setNewClientSheet(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:300 }}/>
+                    <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"white", borderRadius:"24px 24px 0 0", padding:"0 0 max(28px, env(safe-area-inset-bottom, 28px))", zIndex:301 }}>
+                      <div style={{ padding:"14px 0 0", display:"flex", justifyContent:"center" }}>
+                        <div style={{ width:36, height:4, borderRadius:2, background:"#E8E4DC" }}/>
+                      </div>
+                      <div style={{ padding:"16px 24px 4px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                        <span style={{ fontSize:18, fontWeight:800, color:"#1B3F45" }}>Nuevo cliente</span>
+                        <button onClick={()=>setNewClientSheet(false)} style={{ background:"#F0F6F7", border:"none", borderRadius:"50%", width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                      <div style={{ padding:"16px 24px 0" }}>
+                        <input autoFocus placeholder="Nombre de la empresa *" value={sheetClient.name} onChange={e=>setSheetClient(s=>({...s,name:e.target.value}))}
+                          style={{ width:"100%", padding:"16px", fontSize:16, fontWeight:600, color:"#1B3F45",
+                            border: sheetClient.name.trim()?"2px solid #1B3F45":"2px solid #E8E4DC",
+                            borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif",
+                            background: sheetClient.name.trim()?"#F0F6F7":"white",
+                            outline:"none", boxSizing:"border-box", transition:"all 0.15s" }}/>
+                      </div>
+                      <div style={{ padding:"10px 24px 0", display:"flex", flexDirection:"column", gap:10 }}>
+                        {[
+                          { key:"address", placeholder:"Dirección", type:"text",
+                            icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> },
+                          { key:"phone",   placeholder:"Teléfono",  type:"tel",
+                            icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.59A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg> },
+                          { key:"email",   placeholder:"Email",     type:"email",
+                            icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg> },
+                        ].map(f=>(
+                          <div key={f.key} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, background:"white" }}>
+                            {f.icon}
+                            <input placeholder={f.placeholder} value={sheetClient[f.key]||""} onChange={e=>setSheetClient(s=>({...s,[f.key]:e.target.value}))} type={f.type}
+                              style={{ flex:1, border:"none", outline:"none", fontSize:14, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ padding:"10px 24px 0", display:"flex", alignItems:"center", gap:6 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+                        <span style={{ fontSize:12, color:"#9DB5B9" }}>Dirección, teléfono y email son opcionales</span>
+                      </div>
+                      <div style={{ padding:"16px 24px 0" }}>
+                        <button disabled={!sheetClient.name.trim()} onClick={()=>{
+                          const nc={...newClient(),name:sheetClient.name.trim(),address:sheetClient.address,phone:sheetClient.phone,email:sheetClient.email};
+                          setClients(prev=>[...prev,nc]);
+                          setDraft(d=>({...d,clientId:nc.id,client:nc.name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]}));
+                          setNewClientSheet(false);
+                        }} style={{ width:"100%", padding:"17px", background:sheetClient.name.trim()?"#C9933A":"#E8E4DC",
+                          color:sheetClient.name.trim()?"white":"#9DB5B9", border:"none", borderRadius:16,
+                          fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700,
+                          cursor:sheetClient.name.trim()?"pointer":"default",
+                          boxShadow: sheetClient.name.trim()?"0 4px 14px rgba(201,147,58,0.3)":"none",
+                          transition:"all 0.15s" }}>
+                          Crear cliente →
+                        </button>
+                      </div>
+                    </div>
+                  </>)}
                 </div>
               );
             })()}
