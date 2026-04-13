@@ -25,10 +25,10 @@ const CONFIG = {
   subFieldLabel: "Setting",
   piecesLabel: "Pieces",
   statuses: {
-    received:   { label: "Pendiente",  color: "#C9933A" },
-    inprogress: { label: "Revisión",   color: "#1B3F45" },
-    done:       { label: "Aprobada",   color: "#198038" },
-    invoiced:   { label: "Facturada",  color: "#5A7A80" },
+    received:   { label: "Pending",    color: "#C9933A" },
+    inprogress: { label: "In Review",  color: "#1B3F45" },
+    done:       { label: "Approved",   color: "#198038" },
+    invoiced:   { label: "Invoiced",   color: "#5A7A80" },
   },
 };
 
@@ -71,25 +71,13 @@ const compressPhoto = (dataUrl) => new Promise(res => {
   img.src = dataUrl;
 });
 const fmt      = n => Number(n||0).toFixed(2);
-const genInvNumber = (existing) => {
-  const y = new Date().getFullYear();
-  const m = String(new Date().getMonth()+1).padStart(2,"0");
-  const seq = String(existing.length + 1).padStart(3,"0");
-  return `RS-${y}${m}-${seq}`;
-};
-
-const nextInvNumberForClient = (invoices, clientName) => {
-  if (!clientName) return genInvNumber(invoices);
-  // Find all invoices for this client, get the last one's number
-  const clientInvs = invoices.filter(i => i.client === clientName);
-  if (clientInvs.length === 0) return genInvNumber(invoices);
-  const last = clientInvs[clientInvs.length - 1].number || "";
-  // Try to parse trailing sequence number: RS-YYYYMM-NNN or any-NNN
-  const match = last.match(/^(.*?)(\d+)$/);
-  if (!match) return genInvNumber(invoices);
-  const prefix = match[1];
-  const seq = String(parseInt(match[2], 10) + 1).padStart(match[2].length, "0");
-  return `${prefix}${seq}`;
+// Invoice number format: R{clientSeq}{year}  e.g. R12026, R22026
+// Each client has their own sequential count
+const genClientInvNumber = (invoices, clientName) => {
+  const year = new Date().getFullYear();
+  const clientInvs = (invoices || []).filter(i => i.client === clientName);
+  const seq = clientInvs.length + 1;
+  return `R${seq}${year}`;
 };
 
 // ─── ICONS ──────────────────────────────────────────────
@@ -428,7 +416,7 @@ export default function App() {
       ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }))
       : [{ id:Date.now()+Math.random(), desc: o.description||`Order #${o.id}`, qty:"1", unitPrice:String(o.amount||""), price:String(o.amount||""), orderRef:o.id }];
     setItems(invoiceItems);
-    setInvNumber(nextInvNumberForClient(invoices, o.client));
+    setInvNumber(genClientInvNumber(invoices, o.client));
     setTab("invoice");
     setInvView("new");
   };
@@ -766,8 +754,8 @@ export default function App() {
                   <Icon name="gem" size={28} color="white"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:18, fontWeight:600, color:"#1B3F45", letterSpacing:"-0.01em" }}>Nueva orden</div>
-                  <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:3 }}>Crear orden de trabajo</div>
+                  <div style={{ fontSize:18, fontWeight:600, color:"#1B3F45", letterSpacing:"-0.01em" }}>New order</div>
+                  <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:3 }}>Create work order</div>
                 </div>
               </div>
               <div style={{ width:36, height:36, borderRadius:10, background:"rgba(27,63,69,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -800,18 +788,18 @@ export default function App() {
                 <div style={{ border:"2px solid #C9933A", borderRadius:12, overflow:"hidden" }}>
                   {/* Header dorado sólido */}
                   <div style={{ background:"#C9933A", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:14, fontWeight:500, color:"white" }}>Requieren atención</span>
+                    <span style={{ fontSize:14, fontWeight:500, color:"white" }}>Needs attention</span>
                     <div style={{ background:"rgba(255,255,255,0.2)", borderRadius:20, padding:"2px 10px" }}>
-                      <span style={{ fontSize:12, fontWeight:700, color:"white" }}>{urgentes.length} urgentes</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:"white" }}>{urgentes.length} urgent</span>
                     </div>
                   </div>
                   {/* Filas */}
                   {urgentes.map((o, idx) => {
                     const isToday = o.deadline === todayStr;
                     const isOverdue = o.deadline < todayStr;
-                    const labelFecha = isOverdue ? "Vencida" : isToday ? "Hoy" : "Mañana";
+                    const labelFecha = isOverdue ? "Overdue" : isToday ? "Today" : "Tomorrow";
                     const desc = trunca4(o.description || [o.field1, o.field2].filter(Boolean).join(" · "));
-                    const tipo = o.status === "inprogress" ? "Revisión" : "Entrega";
+                    const tipo = o.status === "inprogress" ? "In Review" : "Delivery";
                     const piezas = o.pieces || "—";
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
@@ -846,7 +834,7 @@ export default function App() {
               const d = new Date(); d.setDate(d.getDate()+i);
               days.push(d.toISOString().split("T")[0]);
             }
-            const DAYS_ES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            const DAYS_ES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]; // already English
 
             const active = orders.filter(o => o.status !== "done" && o.status !== "invoiced");
             const withDeadline = active.filter(o => o.deadline).sort((a,b) => a.deadline.localeCompare(b.deadline));
@@ -856,10 +844,10 @@ export default function App() {
 
             const getUrgency = (deadline) => {
               if(!deadline) return { accent:"transparent", label:null };
-              if(deadline < todayStr) return { accent:"#da1e28", label:"Vencida" };
-              if(deadline === todayStr) return { accent:"#C9933A", label:"Hoy" };
+              if(deadline < todayStr) return { accent:"#da1e28", label:"Overdue" };
+              if(deadline === todayStr) return { accent:"#C9933A", label:"Today" };
               const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(todayStr+"T12:00:00"))/(864e5));
-              if(diff === 1) return { accent:"#C9933A", label:"Mañana" };
+              if(diff === 1) return { accent:"#C9933A", label:"Tomorrow" };
               if(diff <= 7)  return { accent:"#C9933A", label:null };
               return { accent:"transparent", label:null };
             };
@@ -867,8 +855,8 @@ export default function App() {
             const statusBorderColor = { received:"#C9933A", inprogress:"#1B3F45", done:"#198038", invoiced:"#5A7A80" };
 
             const d = new Date();
-            const dias  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-            const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+            const dias  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            const meses = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
             const headerDate = `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
 
             return (
@@ -878,7 +866,7 @@ export default function App() {
 
                   {/* Parte A: Header */}
                   <div style={{ padding:"16px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:17, fontWeight:800, color:"#1B3F45" }}>Órdenes del día</span>
+                    <span style={{ fontSize:17, fontWeight:800, color:"#1B3F45" }}>Today's Orders</span>
                     <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{headerDate}</span>
                   </div>
 
@@ -915,8 +903,8 @@ export default function App() {
                   <div style={{ padding:"10px 16px", background:"#F7F5F0" }}>
                     <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>
                       {ordersForDay.length > 0
-                        ? `${ordersForDay.length} ${ordersForDay.length===1?"orden":"órdenes"} para este día`
-                        : "Sin órdenes para este día"}
+                        ? `${ordersForDay.length} ${ordersForDay.length===1?"order":"orders"} for this day`
+                        : "No orders for this day"}
                     </span>
                   </div>
 
@@ -925,7 +913,7 @@ export default function App() {
 
                   {/* Cards de órdenes */}
                   {sorted.length === 0 && (
-                    <div style={{ padding:"28px 16px", textAlign:"center", color:"#5A7A80", fontSize:14 }}>Sin órdenes pendientes</div>
+                    <div style={{ padding:"28px 16px", textAlign:"center", color:"#5A7A80", fontSize:14 }}>No pending orders</div>
                   )}
                   {sorted.map((o, idx) => {
                     const urg = getUrgency(o.deadline);
@@ -936,7 +924,7 @@ export default function App() {
                       if(/handwritten|scanned|extract/i.test(rawDesc)) return "Orden escaneada";
                       return rawDesc.length > 25 ? rawDesc.slice(0,25) + "…" : rawDesc;
                     })();
-                    const fmtDl = o.deadline ? new Date(o.deadline+"T12:00:00").toLocaleDateString("es-CH",{day:"numeric",month:"short"}) : null;
+                    const fmtDl = o.deadline ? new Date(o.deadline+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : null;
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"15px 16px", cursor:"pointer", textAlign:"left", display:"block" }}>
@@ -961,7 +949,7 @@ export default function App() {
                                 </span>
                               </>
                             ) : (
-                              <span style={{ fontSize:12, color:"#5A7A80" }}>Sin fecha</span>
+                              <span style={{ fontSize:12, color:"#5A7A80" }}>No date</span>
                             )}
                           </div>
                           <StatusPill status={o.status}/>
@@ -975,7 +963,7 @@ export default function App() {
                     <>
                       <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
                       <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"15px 16px", background:"#F7F5F0", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
-                        Ver todas las órdenes →
+                        View all orders →
                       </button>
                     </>
                   )}
@@ -1110,24 +1098,24 @@ export default function App() {
                   {/* Today's date block */}
                   <div style={{ background:"#1B3F45", borderRadius:16, padding:"8px 14px", textAlign:"center", minWidth:54, flexShrink:0 }}>
                     <div style={{ fontSize:28, fontWeight:900, color:"white", lineHeight:1 }}>{new Date().getDate()}</div>
-                    <div style={{ fontSize:10, fontWeight:700, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", textTransform:"uppercase", marginTop:1 }}>{new Date().toLocaleDateString("es-ES",{month:"short"}).replace(".","")}</div>
+                    <div style={{ fontSize:10, fontWeight:700, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", textTransform:"uppercase", marginTop:1 }}>{new Date().toLocaleDateString("en-US",{month:"short"})}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize:12, color:"#9DB5B9", fontWeight:500, marginBottom:2 }}>{new Date().toLocaleDateString("es-ES",{weekday:"long"})}</div>
-                    <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1 }}>Órdenes</div>
+                    <div style={{ fontSize:12, color:"#9DB5B9", fontWeight:500, marginBottom:2 }}>{new Date().toLocaleDateString("en-US",{weekday:"long"})}</div>
+                    <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1 }}>Orders</div>
                   </div>
                 </div>
               ) : (
                 <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                   <button onClick={()=>{ if(view==="edit") setView("detail"); else if(view==="new" && newOrderStep>1) setNewOrderStep(s=>s-1); else setView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                   <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>
-                    {view==="new" ? "Nueva orden" : view==="edit" ? "Edit Order" : view==="detail" ? selectedOrder?.client : "Órdenes"}
+                    {view==="new" ? "New order" : view==="edit" ? "Edit order" : view==="detail" ? selectedOrder?.client : "Orders"}
                   </div>
                 </div>
               )}
 
               {view==="new" && (
-                <div style={{ fontSize:12, fontWeight:600, color:"#9DB5B9" }}>{newOrderStep} de 3</div>
+                <div style={{ fontSize:12, fontWeight:600, color:"#9DB5B9" }}>{newOrderStep} of 3</div>
               )}
               {view==="list" && (
                 <div style={{ display:"flex", gap:8 }}>
@@ -1195,7 +1183,7 @@ export default function App() {
                 {/* Swipe hint — desaparece tras primera interacción */}
                 {!swipeHintSeen && !selectMode && filteredOrders.length > 0 && (
                   <div style={{ textAlign:"center", fontSize:9, color:"#9DB5B9", fontWeight:500, letterSpacing:"0.04em", marginBottom:12, fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                    ← Desliza para marcar listo &nbsp;·&nbsp; Desliza para eliminar →
+                    ← Swipe to mark done &nbsp;·&nbsp; Swipe to delete →
                   </div>
                 )}
 
@@ -1204,18 +1192,18 @@ export default function App() {
                   const today = new Date().toISOString().split("T")[0];
                   const getUrgency = (deadline) => {
                     if(!deadline) return { accent:"transparent", label:null, bg:"#F0F6F7" };
-                    if(deadline < today) return { accent:"#da1e28", label:"Vencida", bg:"#FFF0F0" };
-                    if(deadline === today) return { accent:"#C9933A", label:"Hoy", bg:"#FFF8ED" };
+                    if(deadline < today) return { accent:"#da1e28", label:"Overdue", bg:"#FFF0F0" };
+                    if(deadline === today) return { accent:"#C9933A", label:"Today", bg:"#FFF8ED" };
                     const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
-                    if(diff === 1) return { accent:"#C9933A", label:"Mañana", bg:"#FFF8ED" };
-                    if(diff <= 7)  return { accent:"#C9933A", label:`${diff} días`, bg:"#FFF8ED" };
+                    if(diff === 1) return { accent:"#C9933A", label:"Tomorrow", bg:"#FFF8ED" };
+                    if(diff <= 7)  return { accent:"#C9933A", label:`${diff} days`, bg:"#FFF8ED" };
                     return { accent:"#1B3F45", label:null, bg:"#F0F6F7" };
                   };
                   const urg = getUrgency(o.deadline);
                   const isChecked = selectedOrderIds.has(o.id);
                   const deadlineDate = o.deadline ? new Date(o.deadline+"T12:00:00") : null;
                   const deadlineDay = deadlineDate ? deadlineDate.getDate() : null;
-                  const deadlineMon = deadlineDate ? deadlineDate.toLocaleDateString("es-ES",{month:"short"}).replace(".","").toUpperCase() : null;
+                  const deadlineMon = deadlineDate ? deadlineDate.toLocaleDateString("en-GB",{month:"short"}).toUpperCase() : null;
                   const swipeDx = swipingCard?.id === o.id ? swipingCard.dx : 0;
                   const isMoving = swipingCard?.id === o.id;
 
@@ -1226,7 +1214,7 @@ export default function App() {
                       <div style={{ position:"absolute", inset:0, background:"#E8F3EF", borderRadius:20, display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:22 }}>
                         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
                           <Icon name="check" size={22} color="#1B6048"/>
-                          <span style={{ fontSize:10, color:"#1B6048", fontWeight:700, fontFamily:"'IBM Plex Sans', sans-serif" }}>Listo</span>
+                          <span style={{ fontSize:10, color:"#1B6048", fontWeight:700, fontFamily:"'IBM Plex Sans', sans-serif" }}>Done</span>
                         </div>
                       </div>
                       {/* Fondo rojo — acción "Eliminar" (se revela con swipe derecha) */}
@@ -1298,13 +1286,13 @@ export default function App() {
                                 </div>
                                 <div style={{ width:"1px", height:40, background: urg.accent !== "transparent" ? `${urg.accent}30` : "#D8D4CC", flexShrink:0 }}/>
                                 <div>
-                                  <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:3 }}>Entrega</div>
+                                  <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:3 }}>Due</div>
                                   {urg.label && <div style={{ fontSize:14, fontWeight:800, color: urg.accent }}>{urg.label}</div>}
-                                  {!urg.label && <div style={{ fontSize:13, fontWeight:600, color:"#5A7A80" }}>{deadlineDate.toLocaleDateString("es-ES",{weekday:"long"})}</div>}
+                                  {!urg.label && <div style={{ fontSize:13, fontWeight:600, color:"#5A7A80" }}>{deadlineDate.toLocaleDateString("en-US",{weekday:"long"})}</div>}
                                 </div>
                               </>
                             ) : (
-                              <div style={{ fontSize:13, color:"#9DB5B9", fontStyle:"italic" }}>Sin fecha de entrega</div>
+                              <div style={{ fontSize:13, color:"#9DB5B9", fontStyle:"italic" }}>No due date</div>
                             )}
                           </div>
 
@@ -1385,9 +1373,9 @@ export default function App() {
 
               const addDays = (n) => { const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().split("T")[0]; };
               const quickDates = [
-                { label:"1 semana",  date: addDays(7)  },
-                { label:"2 semanas", date: addDays(14) },
-                { label:"1 mes",     date: addDays(30) },
+                { label:"1 week",    date: addDays(7)  },
+                { label:"2 weeks",   date: addDays(14) },
+                { label:"1 month",   date: addDays(30) },
               ];
 
               const saveOrder = () => {
@@ -1398,7 +1386,7 @@ export default function App() {
                 setNewOrderStep(1);
                 setClientSearch("");
                 setView("list");
-                showToast("Orden guardada");
+                showToast("Order saved");
               };
 
               const allClients = clients.length > 0 ? clients : [];
@@ -1427,17 +1415,17 @@ export default function App() {
 
                   {/* ── SECCIÓN 1: CLIENTE ── */}
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="1" text="Cliente"/>
+                    <SectionLabel num="1" text="Client"/>
                     <div style={{ background:"white", borderRadius:16, border:"1px solid #E8E4DC", overflow:"hidden" }}>
                       {/* Buscador */}
                       <div style={{ display:"flex", alignItems:"center", gap:10, padding:"13px 14px" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                        <input value={clientSearch} onChange={e=>setClientSearch(e.target.value)} placeholder="Buscar cliente..." style={{ flex:1, border:"none", outline:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent" }}/>
+                        <input value={clientSearch} onChange={e=>setClientSearch(e.target.value)} placeholder="Search client..." style={{ flex:1, border:"none", outline:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent" }}/>
                         {clientSearch && <button onClick={()=>setClientSearch("")} style={{ background:"none", border:"none", color:"#9DB5B9", cursor:"pointer", fontSize:18, padding:0, lineHeight:1 }}>×</button>}
                       </div>
                       <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
                       {filtered.length === 0 && clientSearch && (
-                        <div style={{ padding:"16px 14px", fontSize:14, color:"#9DB5B9", textAlign:"center" }}>Sin resultados para "{clientSearch}"</div>
+                        <div style={{ padding:"16px 14px", fontSize:14, color:"#9DB5B9", textAlign:"center" }}>No results for "{clientSearch}"</div>
                       )}
                       {filtered.map((c, idx)=>{
                         const name = c.company||c.name;
@@ -1452,7 +1440,7 @@ export default function App() {
                             </div>
                             <div style={{ flex:1, minWidth:0 }}>
                               <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>{name}</div>
-                              <div style={{ fontSize:12, color:"#9DB5B9", marginTop:2 }}>{orderCount} {orderCount===1?"orden anterior":"órdenes anteriores"}</div>
+                              <div style={{ fontSize:12, color:"#9DB5B9", marginTop:2 }}>{orderCount} {orderCount===1?"previous order":"previous orders"}</div>
                             </div>
                             {isSelected
                               ? <div style={{ width:22, height:22, borderRadius:"50%", background:"#198038", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon name="check" size={13} color="white"/></div>
@@ -1465,7 +1453,7 @@ export default function App() {
                       <button onClick={()=>{ setSheetClient({name:"",address:"",phone:"",email:""}); setNewClientSheet(true); }}
                         style={{ width:"100%", background:"none", border:"none", padding:"15px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:10, justifyContent:"center" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Crear nuevo cliente</span>
+                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Create new client</span>
                       </button>
                     </div>
                   </div>
@@ -1475,7 +1463,7 @@ export default function App() {
 
                   {/* ── SECCIÓN 2: PIEZAS ── */}
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="2" text={`Piezas${items.length ? " · "+items.length : ""}`}/>
+                    <SectionLabel num="2" text={`Pieces${items.length ? " · "+items.length : ""}`}/>
                     <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                       {items.map((li,idx)=>{
                         const isDragging = dragIdx===idx;
@@ -1492,7 +1480,7 @@ export default function App() {
                                 style={{ padding:"6px 12px", cursor:"grab", touchAction:"none", display:"flex", flexDirection:"column", gap:3, opacity:0.35, flexShrink:0 }}>
                                 {[0,1,2].map(r=><div key={r} style={{ width:16, height:1.5, background:"#1B3F45", borderRadius:1 }}/>)}
                               </div>
-                              <span style={{ fontSize:12, fontWeight:800, color:"#1B3F45", letterSpacing:"0.07em", textTransform:"uppercase", flex:1 }}>Pieza {idx+1}</span>
+                              <span style={{ fontSize:12, fontWeight:800, color:"#1B3F45", letterSpacing:"0.07em", textTransform:"uppercase", flex:1 }}>Piece {idx+1}</span>
                               <div style={{ display:"flex", alignItems:"center" }}>
                                 <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
                                   style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 8px", display:"flex", alignItems:"center" }}>
@@ -1510,11 +1498,11 @@ export default function App() {
                             </div>
                             {/* Cuerpo */}
                             <div style={{ padding:"12px 14px 14px" }}>
-                              <textarea placeholder="¿Qué hay que hacer? (ej. Engaste Pavé, pulido, grabado…)" value={li.desc||""} onChange={e=>updItem(li.id,{desc:e.target.value})}
+                              <textarea placeholder="What needs to be done? (e.g. Pavé setting, polishing, engraving…)" value={li.desc||""} onChange={e=>updItem(li.id,{desc:e.target.value})}
                                 style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
                               <div style={{ height:"0.5px", background:"#F0F6F7", margin:"10px 0" }}/>
                               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                                <input placeholder="Material / tipo" value={li.material||""} onChange={e=>updItem(li.id,{material:e.target.value})}
+                                <input placeholder="Material / type" value={li.material||""} onChange={e=>updItem(li.id,{material:e.target.value})}
                                   style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
                                 <div style={{ display:"flex", alignItems:"center", background:"#F7F5F0", borderRadius:10, overflow:"hidden", flexShrink:0 }}>
                                   <button onClick={()=>stepQty(li.id,-1)} style={{ background:"none", border:"none", cursor:"pointer", padding:"7px 12px", fontSize:17, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>−</button>
@@ -1529,7 +1517,7 @@ export default function App() {
                       <button onClick={()=>setDraft(d=>({...d,lineItems:[...(d.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:"",photo:null}]}))}
                         style={{ width:"100%", border:"1.5px dashed #C9933A", borderRadius:14, background:"none", padding:"15px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:4 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Agregar otra pieza</span>
+                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Add another piece</span>
                       </button>
                     </div>
                   </div>
@@ -1539,7 +1527,7 @@ export default function App() {
 
                   {/* ── SECCIÓN 3: FECHA Y NOTAS ── */}
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="3" text="Fecha y notas"/>
+                    <SectionLabel num="3" text="Date & notes"/>
                     {/* Fechas rápidas */}
                     <div style={{ display:"flex", gap:8, marginBottom:12 }}>
                       {quickDates.map(qd=>(
@@ -1557,7 +1545,7 @@ export default function App() {
                       style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:15, color: draft.deadline?"#1B3F45":"#9DB5B9",
                         fontFamily:"'IBM Plex Sans', sans-serif", background:"white", boxSizing:"border-box", outline:"none", marginBottom:14 }}/>
                     <textarea value={draft.description} onChange={e=>setDraft(d=>({...d,description:e.target.value}))}
-                      placeholder="Instrucciones especiales, referencia del cliente, acabado deseado…"
+                      placeholder="Special instructions, client reference, desired finish…"
                       rows={3}
                       style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:15, color:"#1B3F45",
                         fontFamily:"'IBM Plex Sans', sans-serif", resize:"none", background:"white", boxSizing:"border-box", outline:"none", lineHeight:1.5 }}/>
@@ -1569,7 +1557,7 @@ export default function App() {
                       style={{ width:"100%", padding:"17px", background: draft.client?"#C9933A":"#E8E4DC", color: draft.client?"white":"#9DB5B9", border:"none", borderRadius:14,
                         fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor: draft.client?"pointer":"default",
                         boxShadow: draft.client?"0 4px 16px rgba(201,147,58,0.3)":"none", transition:"all 0.2s" }}>
-                      {draft.client ? `Guardar orden · ${clientName}` : "Selecciona un cliente primero"}
+                      {draft.client ? `Save order · ${clientName}` : "Select a client first"}
                     </button>
                   </div>
 
@@ -1581,13 +1569,13 @@ export default function App() {
                         <div style={{ width:36, height:4, borderRadius:2, background:"#E8E4DC" }}/>
                       </div>
                       <div style={{ padding:"16px 24px 4px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                        <span style={{ fontSize:18, fontWeight:800, color:"#1B3F45" }}>Nuevo cliente</span>
+                        <span style={{ fontSize:18, fontWeight:800, color:"#1B3F45" }}>New client</span>
                         <button onClick={()=>setNewClientSheet(false)} style={{ background:"#F0F6F7", border:"none", borderRadius:"50%", width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                         </button>
                       </div>
                       <div style={{ padding:"16px 24px 0" }}>
-                        <input autoFocus placeholder="Nombre de la empresa *" value={sheetClient.name} onChange={e=>setSheetClient(s=>({...s,name:e.target.value}))}
+                        <input autoFocus placeholder="Company name *" value={sheetClient.name} onChange={e=>setSheetClient(s=>({...s,name:e.target.value}))}
                           style={{ width:"100%", padding:"16px", fontSize:16, fontWeight:600, color:"#1B3F45",
                             border: sheetClient.name.trim()?"2px solid #1B3F45":"2px solid #E8E4DC",
                             borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif",
@@ -1596,9 +1584,9 @@ export default function App() {
                       </div>
                       <div style={{ padding:"10px 24px 0", display:"flex", flexDirection:"column", gap:10 }}>
                         {[
-                          { key:"address", placeholder:"Dirección", type:"text",
+                          { key:"address", placeholder:"Address", type:"text",
                             icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> },
-                          { key:"phone",   placeholder:"Teléfono",  type:"tel",
+                          { key:"phone",   placeholder:"Phone",    type:"tel",
                             icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.59A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg> },
                           { key:"email",   placeholder:"Email",     type:"email",
                             icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg> },
@@ -1612,7 +1600,7 @@ export default function App() {
                       </div>
                       <div style={{ padding:"10px 24px 0", display:"flex", alignItems:"center", gap:6 }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
-                        <span style={{ fontSize:12, color:"#9DB5B9" }}>Dirección, teléfono y email son opcionales</span>
+                        <span style={{ fontSize:12, color:"#9DB5B9" }}>Address, phone and email are optional</span>
                       </div>
                       <div style={{ padding:"16px 24px 0" }}>
                         <button disabled={!sheetClient.name.trim()} onClick={()=>{
@@ -1626,7 +1614,7 @@ export default function App() {
                           cursor:sheetClient.name.trim()?"pointer":"default",
                           boxShadow: sheetClient.name.trim()?"0 4px 14px rgba(201,147,58,0.3)":"none",
                           transition:"all 0.15s" }}>
-                          Crear cliente →
+                          Create client →
                         </button>
                       </div>
                     </div>
@@ -1692,14 +1680,14 @@ export default function App() {
             {view==="detail" && selectedOrder && (()=>{
               const st = selectedOrder.status;
               const today = new Date().toISOString().split("T")[0];
-              const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short",year:"numeric"}) : "—";
+              const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
               const dlPast = selectedOrder.deadline && selectedOrder.deadline < today;
               const orderTotal = (selectedOrder.lineItems||[]).length > 0
                 ? (selectedOrder.lineItems).reduce((s,li)=>s+lineTotal(li),0)
                 : parseFloat(selectedOrder.amount)||0;
 
               /* ── Progress bar helpers ── */
-              const STEPS = ["Recibida","En trabajo","Terminada","Facturada"];
+              const STEPS = ["Received","In Progress","Completed","Invoiced"];
               const activeIdx = { received:1, inprogress:2, done:3, invoiced:-1 }[st] ?? 1;
               const isCompleted = idx => st==="invoiced" || idx < activeIdx;
               const isActive    = idx => st!=="invoiced" && idx===activeIdx;
@@ -1718,9 +1706,9 @@ export default function App() {
                         <Icon name="alert" size={18} color="#8A6220"/>
                       </div>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>Pendiente</div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>Pending</div>
                         <div style={{ fontSize:10, color:"#BA9B55", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                          Recibida {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · Entrega ${fmtDate(selectedOrder.deadline)}` : ""}
+                          Received {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · Due ${fmtDate(selectedOrder.deadline)}` : ""}
                         </div>
                       </div>
                     </div>
@@ -1731,9 +1719,9 @@ export default function App() {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
                       </div>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>En revisión</div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>In Review</div>
                         <div style={{ fontSize:10, color:"#5A7A80", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                          Recibida {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · Entrega ${fmtDate(selectedOrder.deadline)}` : ""}
+                          Received {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · Due ${fmtDate(selectedOrder.deadline)}` : ""}
                         </div>
                       </div>
                     </div>
@@ -1744,8 +1732,8 @@ export default function App() {
                         <Icon name="checkCircle" size={18} color="#1B6048"/>
                       </div>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B6048", fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?"Facturada":"Terminada"}</div>
-                        <div style={{ fontSize:10, color:"#3B8060", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?"Factura generada":"Lista para facturar"}</div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#1B6048", fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?"Invoiced":"Completed"}</div>
+                        <div style={{ fontSize:10, color:"#3B8060", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?"Invoice created":"Ready to invoice"}</div>
                       </div>
                     </div>
                   )}
@@ -1788,7 +1776,7 @@ export default function App() {
                       </div>
                       {selectedOrder.deadline && (
                         <div style={{ textAlign:"right" }}>
-                          <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Entrega</div>
+                          <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Due date</div>
                           <div style={{ fontSize:14, fontWeight:600, color: dlPast?"#E24B4A":"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{fmtDate(selectedOrder.deadline)}</div>
                         </div>
                       )}
@@ -1797,7 +1785,7 @@ export default function App() {
                     {/* Fila B — Descripción */}
                     {selectedOrder.description && (
                       <div style={{ padding:"13px 16px", borderBottom:"0.5px solid #F5F3EF" }}>
-                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5, fontFamily:"'IBM Plex Sans', sans-serif" }}>Descripción</div>
+                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5, fontFamily:"'IBM Plex Sans', sans-serif" }}>Description</div>
                         <div style={{ fontSize:13, color:"#1B3F45", lineHeight:1.6, fontFamily:"'IBM Plex Sans', sans-serif" }}>{selectedOrder.description}</div>
                       </div>
                     )}
@@ -1832,13 +1820,13 @@ export default function App() {
                     {(st==="received"||st==="inprogress") && (
                       <button onClick={()=>setConfirmSheet({ type:"done", order:selectedOrder })}
                         style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                        <Icon name="check" size={18} color="#C9933A"/> Marcar como terminada
+                        <Icon name="check" size={18} color="#C9933A"/> Mark as completed
                       </button>
                     )}
                     {st==="done" && (
                       <button onClick={()=>setConfirmSheet({ type:"invoice", order:selectedOrder })}
                         style={{ width:"100%", padding:"16px", background:"#C9933A", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                        <Icon name="invoice" size={18} color="white"/> Generar factura
+                        <Icon name="invoice" size={18} color="white"/> Create invoice
                       </button>
                     )}
                     {st==="invoiced" && (()=>{
@@ -1847,11 +1835,11 @@ export default function App() {
                         <div style={{ display:"flex", gap:10 }}>
                           <button onClick={()=>setWorkOrderPreview(selectedOrder)}
                             style={{ flex:1, padding:"15px 8px", background:"#E0EDEF", color:"#1B3F45", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                            <Icon name="print" size={16} color="#1B3F45"/> Orden de trabajo
+                            <Icon name="print" size={16} color="#1B3F45"/> Work order
                           </button>
-                          <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast("No se encontró la factura","#da1e28"); }}
+                          <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast("Invoice not found","#da1e28"); }}
                             style={{ flex:1, padding:"15px 8px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                            <Icon name="invoice" size={16} color="#C9933A"/> Imprimir factura
+                            <Icon name="invoice" size={16} color="#C9933A"/> Print invoice
                           </button>
                         </div>
                       );
@@ -1901,7 +1889,7 @@ export default function App() {
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.client || "—"}</div>
-                        <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.number} · {new Date(inv.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short",year:"numeric"})}</div>
+                        <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.number} · {new Date(inv.date+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div>
                       </div>
                       <div style={{ textAlign:"right", flexShrink:0 }}>
                         <div style={{ fontSize:16, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.01em" }}>{C.currency} {fmt(invTotal)}</div>
@@ -1925,7 +1913,7 @@ export default function App() {
               const validItems = items.filter(it=>it.desc||it.unitPrice||it.price).map(it=>({...it, price: String(lineTotal(it))}));
               const inv = {
                 id: Date.now(),
-                number: invNumber || genInvNumber(invoices),
+                number: invNumber || genClientInvNumber(invoices, invClient),
                 client: invClient,
                 clientAddress: invClientAddress,
                 date: invDate,
@@ -1971,7 +1959,7 @@ export default function App() {
                             const sel = clients.find(c=>c.name===e.target.value || c.company===e.target.value);
                             setInvClient(e.target.value);
                             setInvClientAddress(sel ? [sel.company&&sel.name?sel.company:"", sel.address].filter(Boolean).join("\n") : "");
-                            setInvNumber(nextInvNumberForClient(invoices, e.target.value));
+                            setInvNumber(genClientInvNumber(invoices, e.target.value));
                           }}>
                             <option value="">— Select client —</option>
                             {clients.map(c=><option key={c.id} value={c.company||c.name}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
@@ -1980,7 +1968,7 @@ export default function App() {
                       }
                     </Field>
                     <Field label="Invoice number">
-                      <Input placeholder="RS-202601-001" value={invNumber} onChange={e=>setInvNumber(e.target.value)}/>
+                      <Input placeholder="R12026" value={invNumber} onChange={e=>setInvNumber(e.target.value)}/>
                     </Field>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                       <Field label="Date"><Input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)}/></Field>
@@ -2060,7 +2048,7 @@ export default function App() {
                   <button disabled={!invClient||items.every(it=>!it.desc&&!it.price)}
                     onClick={()=>saveInvoice(true)}
                     style={{ width:"100%", padding:"15px", background: (!invClient||items.every(it=>!it.desc&&!it.price))?"#C6C6C6":"#C9933A", color:"white", border:"none", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor: (!invClient||items.every(it=>!it.desc&&!it.price))?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                    <Icon name="invoice" size={18} color="white"/> Guardar factura
+                    <Icon name="invoice" size={18} color="white"/> Save invoice
                   </button>
                 </div>
               </>
@@ -2164,7 +2152,7 @@ export default function App() {
                   <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#F2EDE4", padding:"12px 16px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
                     <button onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}
                       style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                      <Icon name="print" size={18} color="#C9933A"/> Imprimir factura
+                      <Icon name="print" size={18} color="#C9933A"/> Print invoice
                     </button>
                   </div>
                 </div>
@@ -2231,7 +2219,7 @@ export default function App() {
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</div>
                             <div style={{ fontSize:12, color:"#9DB5B9", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                              {orderCount > 0 ? `${orderCount} ${orderCount===1?"orden":"órdenes"}` : c.address?.split("\n")[0] || "Sin órdenes"}
+                              {orderCount > 0 ? `${orderCount} ${orderCount===1?"order":"orders"}` : c.address?.split("\n")[0] || "No orders"}
                             </div>
                           </div>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C8C4BC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
@@ -2286,9 +2274,9 @@ export default function App() {
                   <span style={{ fontSize:11, color:"#9DB5B9" }}>Dirección, teléfono y email son opcionales</span>
                 </div>
                 {clientView==="edit" && (
-                  <button onClick={()=>showConfirm("¿Eliminar este cliente? Sus órdenes se conservarán.",()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Cliente eliminado","#da1e28"); })}
+                  <button onClick={()=>showConfirm("Delete this client? Their orders will be kept.",()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Client deleted","#da1e28"); })}
                     style={{ background:"none", border:"none", color:"#da1e28", fontSize:13, fontWeight:600, cursor:"pointer", padding:"0 0 16px", display:"block" }}>
-                    Eliminar cliente
+                    Delete client
                   </button>
                 )}
                 <button
@@ -2313,7 +2301,7 @@ export default function App() {
                     cursor:(clientDraft.company||clientDraft.name)?"pointer":"default",
                     boxShadow:(clientDraft.company||clientDraft.name)?"0 4px 14px rgba(201,147,58,0.3)":"none",
                     transition:"all 0.15s" }}>
-                  {clientView==="edit" ? "Guardar cambios" : "Guardar cliente"}
+                  {clientView==="edit" ? "Save changes" : "Save client"}
                 </button>
               </div>
             )}
@@ -2670,8 +2658,8 @@ export default function App() {
                 <Icon name="pencil" size={18} color="#1B3F45"/>
               </div>
               <div>
-                <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Editar orden</div>
-                <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Cambiar datos, items o fecha</div>
+                <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Edit order</div>
+                <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Update details, items or date</div>
               </div>
             </button>
 
@@ -2683,8 +2671,8 @@ export default function App() {
                   <Icon name="check" size={18} color="#1B6048"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Marcar como terminada</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>El trabajo está completado</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Mark as completed</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Work is completed</div>
                 </div>
               </button>
             )}
@@ -2697,8 +2685,8 @@ export default function App() {
                   <Icon name="invoice" size={18} color="#8A6220"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Generar factura</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Crear factura con esta orden</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Create invoice</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Create invoice for this order</div>
                 </div>
               </button>
             )}
@@ -2716,8 +2704,8 @@ export default function App() {
                   <Icon name="trash" size={18} color="#A32D2D"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#A32D2D", fontFamily:"'IBM Plex Sans', sans-serif" }}>Eliminar orden</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Esta acción no se puede deshacer</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#A32D2D", fontFamily:"'IBM Plex Sans', sans-serif" }}>Delete order</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>This cannot be undone</div>
                 </div>
               </button>
             )}
@@ -2764,8 +2752,8 @@ export default function App() {
             <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
-              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Marcar como terminada</div>
-              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>Confirma que el trabajo está completado</div>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Mark as completed</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>Confirm that the work is completed</div>
               <OrderSummary/>
               <button onClick={()=>{
                 close();
@@ -2775,7 +2763,7 @@ export default function App() {
               }} style={{ width:"100%", padding:"15px", background:"#1B3F45", color:"white", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
                 <Icon name="check" size={16} color="#C9933A"/> Confirmar — está terminada
               </button>
-              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancelar</button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancel</button>
             </div>
           </div>
         );
@@ -2787,16 +2775,16 @@ export default function App() {
             <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
-              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Generar factura</div>
-              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>Esto creará la factura con estos datos</div>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Create invoice</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>This will create an invoice with these details</div>
               <OrderSummary/>
               <button onClick={()=>{
                 close();
                 loadOrderIntoInvoice(order);
               }} style={{ width:"100%", padding:"15px", background:"#C9933A", color:"white", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
-                <Icon name="invoice" size={16} color="white"/> Confirmar y generar factura
+                <Icon name="invoice" size={16} color="white"/> Confirm and create invoice
               </button>
-              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancelar</button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancel</button>
             </div>
           </div>
         );
@@ -2808,13 +2796,13 @@ export default function App() {
             <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
-              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Eliminar orden</div>
-              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:14, fontFamily:"'IBM Plex Sans', sans-serif" }}>¿Estás segura?</div>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Delete order</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:14, fontFamily:"'IBM Plex Sans', sans-serif" }}>Are you sure?</div>
               {/* Advertencia */}
               <div style={{ display:"flex", alignItems:"flex-start", gap:10, background:"#FCEBEB", borderRadius:8, padding:"8px 10px", marginBottom:14 }}>
                 <Icon name="alert" size={16} color="#A32D2D"/>
                 <span style={{ fontSize:10, color:"#A32D2D", lineHeight:1.4, fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                  Esta acción no se puede deshacer. Se eliminará toda la información de la orden #{order.id}
+                  This cannot be undone. All information for order #{order.id} will be permanently deleted.
                 </span>
               </div>
               <OrderSummary/>
@@ -2824,9 +2812,9 @@ export default function App() {
                 if(selectedId===order.id) setView("list");
                 showToast("Orden eliminada","#da1e28");
               }} style={{ width:"100%", padding:"15px", background:"#FCEBEB", color:"#A32D2D", border:"1px solid #F7C1C1", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", marginBottom:10 }}>
-                Sí, eliminar orden
+                Yes, delete order
               </button>
-              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancelar</button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancel</button>
             </div>
           </div>
         );
