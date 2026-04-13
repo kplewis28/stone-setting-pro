@@ -133,7 +133,7 @@ const StatusPill = ({ status }) => {
   const badge = SA_BADGE[status];
   if(!st || !badge) return null;
   return (
-    <span style={{ background: badge.bg, color: badge.color, border:`1px solid ${badge.border}`, borderRadius:6, padding:"2px 10px", fontSize:11, fontWeight:600, fontFamily:"'IBM Plex Sans', sans-serif", letterSpacing:"0.04em", whiteSpace:"nowrap" }}>
+    <span style={{ background: badge.bg, color: badge.color, border:`1px solid ${badge.border}`, borderRadius:20, padding:"4px 12px", fontSize:11, fontWeight:700, fontFamily:"'IBM Plex Sans', sans-serif", letterSpacing:"0.03em", whiteSpace:"nowrap" }}>
       {st.label}
     </span>
   );
@@ -208,7 +208,7 @@ const BtnGhost = ({ children, onClick, disabled, style={} }) => (
 
 // Stone Art card — 16px radius, generous padding, subtle shadow
 const Card = ({ children, onClick, style={} }) => (
-  <div onClick={onClick} style={{ background:"#ffffff", padding:"20px 22px", marginBottom:14, border:"0.5px solid #E8E4DC", borderRadius:16, boxShadow:"0 2px 8px rgba(27,63,69,0.07)", cursor: onClick ? "pointer" : "default", ...style }}>
+  <div onClick={onClick} style={{ background:"#ffffff", padding:"22px 24px", marginBottom:16, border:"0.5px solid #E8E4DC", borderRadius:18, boxShadow:"0 2px 10px rgba(27,63,69,0.08)", cursor: onClick ? "pointer" : "default", ...style }}>
     {children}
   </div>
 );
@@ -1216,7 +1216,7 @@ export default function App() {
 
                       {/* Tarjeta deslizable */}
                       <div
-                        onTouchStart={e => {
+                        onTouchStart={e=>{
                           if(selectMode) return;
                           setSwipingCard({ id:o.id, startX:e.touches[0].clientX, dx:0 });
                         }}
@@ -1247,7 +1247,7 @@ export default function App() {
                         }}
                         style={{ position:"relative", transform:`translateX(${swipeDx}px)`, transition: isMoving?"none":"transform 0.3s ease",
                           background: isChecked?"#FFF3F0":"white", border: isChecked?"2px solid #da1e2840":"1.5px solid #F0EDE8",
-                          borderRadius:20, padding:"16px", display:"flex", alignItems:"stretch", gap:14,
+                          borderRadius:20, padding:"18px 16px", display:"flex", alignItems:"stretch", gap:14,
                           cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", userSelect:"none" }}>
 
                         {/* Select checkbox (solo en modo selección) */}
@@ -1264,33 +1264,33 @@ export default function App() {
                         <div style={{ flex:1, minWidth:0 }}>
                           {/* Client name + status */}
                           <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:10 }}>
-                            <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{o.client || "—"}</div>
+                            <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{o.client || "—"}</div>
                             <StatusPill status={o.status}/>
                           </div>
 
                           {/* Delivery date — prominent */}
-                          <div style={{ display:"flex", alignItems:"center", gap:10, background: urg.bg, borderRadius:12, padding:"10px 14px", marginBottom: o.description ? 10 : 0 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:12, background: urg.bg, borderRadius:12, padding:"12px 14px", marginBottom: o.description ? 10 : 0 }}>
                             {deadlineDay ? (
                               <>
                                 <div style={{ textAlign:"center", flexShrink:0 }}>
-                                  <div style={{ fontSize:28, fontWeight:900, color: urg.accent !== "transparent" ? urg.accent : "#1B3F45", lineHeight:1 }}>{deadlineDay}</div>
-                                  <div style={{ fontSize:10, fontWeight:700, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", letterSpacing:"0.08em", marginTop:1 }}>{deadlineMon}</div>
+                                  <div style={{ fontSize:32, fontWeight:900, color: urg.accent !== "transparent" ? urg.accent : "#1B3F45", lineHeight:1 }}>{deadlineDay}</div>
+                                  <div style={{ fontSize:11, fontWeight:700, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", letterSpacing:"0.06em", marginTop:2 }}>{deadlineMon}</div>
                                 </div>
-                                <div style={{ width:"1px", height:36, background: urg.accent !== "transparent" ? `${urg.accent}30` : "#D8D4CC", flexShrink:0 }}/>
+                                <div style={{ width:"1px", height:40, background: urg.accent !== "transparent" ? `${urg.accent}30` : "#D8D4CC", flexShrink:0 }}/>
                                 <div>
-                                  <div style={{ fontSize:10, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:2 }}>Entrega</div>
-                                  {urg.label && <div style={{ fontSize:13, fontWeight:800, color: urg.accent }}>{urg.label}</div>}
-                                  {!urg.label && <div style={{ fontSize:12, fontWeight:600, color:"#5A7A80" }}>{deadlineDate.toLocaleDateString("es-ES",{weekday:"long"})}</div>}
+                                  <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:3 }}>Entrega</div>
+                                  {urg.label && <div style={{ fontSize:14, fontWeight:800, color: urg.accent }}>{urg.label}</div>}
+                                  {!urg.label && <div style={{ fontSize:13, fontWeight:600, color:"#5A7A80" }}>{deadlineDate.toLocaleDateString("es-ES",{weekday:"long"})}</div>}
                                 </div>
                               </>
                             ) : (
-                              <div style={{ fontSize:12, color:"#9DB5B9", fontStyle:"italic" }}>Sin fecha de entrega</div>
+                              <div style={{ fontSize:13, color:"#9DB5B9", fontStyle:"italic" }}>Sin fecha de entrega</div>
                             )}
                           </div>
 
                           {/* Description */}
                           {o.description && (
-                            <div style={{ fontSize:12, color:"#7A9AA0", lineHeight:1.4, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{o.description}</div>
+                            <div style={{ fontSize:13, color:"#7A9AA0", lineHeight:1.5, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{o.description}</div>
                           )}
                         </div>
                       </div>
@@ -1818,7 +1818,7 @@ export default function App() {
                                   : null
                               }
                             </div>
-                            <span style={{ fontSize:9, fontWeight:500, color: isCompleted(idx)?"#1B3F45": isActive(idx)?"#C9933A":"#9DB5B9", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap" }}>{label}</span>
+                            <span style={{ fontSize:10, fontWeight:500, color: isCompleted(idx)?"#1B3F45": isActive(idx)?"#C9933A":"#9DB5B9", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap" }}>{label}</span>
                           </div>
                           {idx < STEPS.length-1 && (
                             <div style={{ flex:1, height:2, background: isCompleted(idx+1)?"#1B3F45":"#E8E4DC", margin:"0 3px", marginBottom:14 }}/>
@@ -1832,48 +1832,48 @@ export default function App() {
                   <div style={{ margin:"0 16px", background:"white", border:"0.5px solid #E8E4DC", borderRadius:12, overflow:"hidden" }}>
 
                     {/* Fila A — Order ID + Entrega */}
-                    <div style={{ padding:"10px 14px", borderBottom:"0.5px solid #F5F3EF", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                    <div style={{ padding:"13px 16px", borderBottom:"0.5px solid #F5F3EF", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                       <div>
-                        <div style={{ fontSize:9, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3, fontFamily:"'IBM Plex Sans', sans-serif" }}>Order ID</div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>#{selectedOrder.id}</div>
+                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Order ID</div>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>#{selectedOrder.id}</div>
                       </div>
                       {selectedOrder.deadline && (
                         <div style={{ textAlign:"right" }}>
-                          <div style={{ fontSize:9, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3, fontFamily:"'IBM Plex Sans', sans-serif" }}>Entrega</div>
-                          <div style={{ fontSize:13, fontWeight:500, color: dlPast?"#E24B4A":"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{fmtDate(selectedOrder.deadline)}</div>
+                          <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Entrega</div>
+                          <div style={{ fontSize:14, fontWeight:600, color: dlPast?"#E24B4A":"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{fmtDate(selectedOrder.deadline)}</div>
                         </div>
                       )}
                     </div>
 
                     {/* Fila B — Descripción */}
                     {selectedOrder.description && (
-                      <div style={{ padding:"10px 14px", borderBottom:"0.5px solid #F5F3EF" }}>
-                        <div style={{ fontSize:9, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Descripción</div>
-                        <div style={{ fontSize:12, color:"#1B3F45", lineHeight:1.5, fontFamily:"'IBM Plex Sans', sans-serif" }}>{selectedOrder.description}</div>
+                      <div style={{ padding:"13px 16px", borderBottom:"0.5px solid #F5F3EF" }}>
+                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5, fontFamily:"'IBM Plex Sans', sans-serif" }}>Descripción</div>
+                        <div style={{ fontSize:13, color:"#1B3F45", lineHeight:1.6, fontFamily:"'IBM Plex Sans', sans-serif" }}>{selectedOrder.description}</div>
                       </div>
                     )}
 
                     {/* Filas C — Items */}
                     {(selectedOrder.lineItems||[]).filter(li=>li.desc).map((li, idx, arr) => (
-                      <div key={li.id} style={{ padding:"10px 14px", borderBottom: idx<arr.length-1||orderTotal>0?"0.5px solid #F5F3EF":"none", display:"flex", alignItems:"center", gap:12 }}>
-                        <div style={{ width:36, height:36, borderRadius:8, background:"#E0ECED", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                          <Icon name="gem" size={16} color="#5A7A80"/>
+                      <div key={li.id} style={{ padding:"13px 16px", borderBottom: idx<arr.length-1||orderTotal>0?"0.5px solid #F5F3EF":"none", display:"flex", alignItems:"center", gap:12 }}>
+                        <div style={{ width:40, height:40, borderRadius:10, background:"#E0ECED", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <Icon name="gem" size={18} color="#5A7A80"/>
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:12, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{li.desc}</div>
-                          {(li.qty&&li.qty!=="1") && <div style={{ fontSize:10, color:"#9DB5B9", fontFamily:"'IBM Plex Sans', sans-serif" }}>×{li.qty}</div>}
+                          <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{li.desc}</div>
+                          {(li.qty&&li.qty!=="1") && <div style={{ fontSize:11, color:"#9DB5B9", fontFamily:"'IBM Plex Sans', sans-serif", marginTop:2 }}>×{li.qty}</div>}
                         </div>
                         {lineTotal(li)>0 && (
-                          <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", flexShrink:0 }}>{C.currency} {fmt(lineTotal(li))}</div>
+                          <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", flexShrink:0 }}>{C.currency} {fmt(lineTotal(li))}</div>
                         )}
                       </div>
                     ))}
 
                     {/* Fila D — Total */}
                     {orderTotal > 0 && (
-                      <div style={{ padding:"10px 14px", background:"#F7F5F0", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <span style={{ fontSize:12, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Total</span>
-                        <span style={{ fontSize:16, fontWeight:500, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.currency} {fmt(orderTotal)}</span>
+                      <div style={{ padding:"13px 16px", background:"#F7F5F0", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                        <span style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Total</span>
+                        <span style={{ fontSize:18, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.currency} {fmt(orderTotal)}</span>
                       </div>
                     )}
                   </div>
@@ -2268,25 +2268,30 @@ export default function App() {
                     <BtnPrimary onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ maxWidth:220, margin:"0 auto" }}>+ Add client</BtnPrimary>
                   </div>
                 )}
-                {clients.map((c, idx) => {
-                  const orderCount = orders.filter(o=>o.clientId===c.id||o.client===(c.company||c.name)).length;
-                  const priorityColor = idx === 0 ? "#da1e28" : idx === 1 ? "#C9933A" : idx === 2 ? "#C9933A" : "#5A7A80";
-                  return (
-                    <button key={c.id} onClick={()=>{ setSelectedClientId(c.id); setClientView("detail"); }}
-                      style={{ width:"100%", background:"white", border:"none", borderRadius:16, padding:"14px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 8px rgba(0,0,0,0.06)" }}>
-                      <div style={{ width:40, height:40, borderRadius:12, background:"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <span style={{ fontSize:16, fontWeight:900, color:priorityColor, lineHeight:1 }}>{idx+1}</span>
-                      </div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.company || c.name}</div>
-                        <div style={{ fontSize:12, color:"rgba(0,0,0,0.38)", fontWeight:500, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                          {c.company && c.name ? c.name : c.address?.split("\n")[0] || ""}
-                        </div>
-                      </div>
-                      {orderCount > 0 && <span style={{ fontSize:11, fontWeight:700, color:"#5A7A80", background:"#F0F6F7", padding:"3px 9px", borderRadius:8, flexShrink:0 }}>{orderCount} order{orderCount!==1?"s":""}</span>}
-                    </button>
-                  );
-                })}
+                {clients.length > 0 && (
+                  <div style={{ background:"white", borderRadius:16, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
+                    {clients.map((c, idx) => {
+                      const name = c.company || c.name;
+                      const initials = name.split(" ").map(w=>w[0]||"").join("").slice(0,2).toUpperCase();
+                      const orderCount = orders.filter(o=>o.clientId===c.id||o.client===name).length;
+                      return (
+                        <button key={c.id} onClick={()=>{ setSelectedClientId(c.id); setClientView("detail"); }}
+                          style={{ width:"100%", background:"white", border:"none", borderTop: idx>0?"0.5px solid #F0F0EE":"none", padding:"14px 16px", cursor:"pointer", display:"flex", alignItems:"center", gap:14, textAlign:"left" }}>
+                          <div style={{ width:42, height:42, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                            <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", letterSpacing:"0.02em" }}>{initials}</span>
+                          </div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</div>
+                            <div style={{ fontSize:12, color:"#9DB5B9", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                              {orderCount > 0 ? `${orderCount} ${orderCount===1?"orden":"órdenes"}` : c.address?.split("\n")[0] || "Sin órdenes"}
+                            </div>
+                          </div>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C8C4BC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </>
             )}
 
