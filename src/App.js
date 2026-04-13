@@ -1774,11 +1774,9 @@ export default function App() {
                             </div>
                             {/* Cuerpo */}
                             <div style={{ padding:"12px 14px 14px" }}>
-                              <textarea placeholder="What needs to be done? Start with a number for quantity, e.g. 3 rings to polish" value={li.desc||""} onChange={e=>{
-                                const val = e.target.value;
-                                const match = val.match(/^(\d+)\s+\S/);
-                                updItem(li.id, match ? {desc:val, qty:String(parseInt(match[1]))} : {desc:val});
-                              }}
+                              <textarea placeholder="What needs to be done? Start with a number for quantity, e.g. 3 rings to polish" value={li.desc||""}
+                                onChange={e=>updItem(li.id,{desc:e.target.value})}
+                                onBlur={e=>{ const m=e.target.value.match(/^(\d+)\s+\S/); if(m) updItem(li.id,{qty:String(parseInt(m[1]))}); }}
                                 style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
                               {/* Photo section */}
                               <div style={{ marginTop:10 }}>
