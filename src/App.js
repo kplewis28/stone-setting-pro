@@ -1518,16 +1518,6 @@ export default function App() {
                                 updItem(li.id, match ? {desc:val, qty:String(parseInt(match[1]))} : {desc:val});
                               }}
                                 style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
-                              <div style={{ height:"0.5px", background:"#F0F6F7", margin:"10px 0" }}/>
-                              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                                <input placeholder="Material / type" value={li.material||""} onChange={e=>updItem(li.id,{material:e.target.value})}
-                                  style={{ flex:1, border:"none", outline:"none", fontSize:13, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
-                                <div style={{ display:"flex", alignItems:"center", background:"#F7F5F0", borderRadius:10, overflow:"hidden", flexShrink:0 }}>
-                                  <button onClick={()=>stepQty(li.id,-1)} style={{ background:"none", border:"none", cursor:"pointer", padding:"7px 12px", fontSize:17, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>−</button>
-                                  <span style={{ fontSize:14, fontWeight:700, color:"#1B3F45", minWidth:22, textAlign:"center", fontFamily:"'IBM Plex Sans', sans-serif" }}>{li.qty||1}</span>
-                                  <button onClick={()=>stepQty(li.id,1)} style={{ background:"none", border:"none", cursor:"pointer", padding:"7px 12px", fontSize:17, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>+</button>
-                                </div>
-                              </div>
                               {/* Photo section */}
                               <div style={{ marginTop:10 }}>
                                 {li.photo ? (
