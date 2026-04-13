@@ -222,6 +222,8 @@ export default function App() {
   const [invView, setInvView]   = useState("list");
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [invPorto, setInvPorto] = useState("");
+  const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
+  const [filterInvClient, setFilterInvClient] = useState("all");
   const [invClientAddress, setInvClientAddress] = useState("");
   const [invNumber, setInvNumber] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -1857,50 +1859,106 @@ export default function App() {
         <div style={{ animation:"fadeUp 0.3s ease" }}>
 
           {/* ── LIST VIEW ── */}
-          {invView==="list" && (
-            <>
-              <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <div>
-                    <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>Invoices</div>
-                    {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
-                  </div>
-                  <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
-                    style={{ background:"#C9933A", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", letterSpacing:"-0.01em" }}>
-                    + New
-                  </button>
-                </div>
-              </div>
-              <div style={{ padding: isDesktop?"0 40px 60px":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
-                {invoices.length === 0 && (
-                  <div style={{ textAlign:"center", padding:"48px 24px" }}>
-                    <div style={{ width:72, height:72, borderRadius:22, background:PASTELS.invoice, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}><Icon name="receipt" size={32} color="#5A7A80"/></div>
-                    <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", marginBottom:6, letterSpacing:"-0.01em" }}>No invoices yet</div>
-                    <div style={{ fontSize:13, color:"#5A7A80", lineHeight:1.6 }}>Invoices created from orders appear here.<br/>You can also create one manually.</div>
-                  </div>
-                )}
-                {[...invoices].reverse().map((inv) => {
-                  const invTotal = inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate) + (parseFloat(inv.porto)||0);
-                  return (
-                    <button key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); }}
-                      style={{ width:"100%", background:"white", border:"1.5px solid #F0EDE8", borderRadius:20, padding:"18px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
-                      <div style={{ width:46, height:46, borderRadius:14, background:"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <Icon name="receipt" size={22} color="#5A7A80"/>
-                      </div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.client || "—"}</div>
-                        <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.number} · {new Date(inv.date+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div>
-                      </div>
-                      <div style={{ textAlign:"right", flexShrink:0 }}>
-                        <div style={{ fontSize:16, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.01em" }}>{C.currency} {fmt(invTotal)}</div>
-                        <span style={{ fontSize:11, fontWeight:700, color: inv.printed?"#198038":"#C9933A", marginTop:3, display:"block" }}>{inv.printed?"Impresa":"Guardada"}</span>
-                      </div>
+          {invView==="list" && (()=>{
+            const invClients = [...new Set(invoices.map(i=>i.client).filter(Boolean))].sort();
+            const filtered = [...invoices].reverse().filter(inv => {
+              if(filterInvStatus === "printed" && !inv.printed) return false;
+              if(filterInvStatus === "unprinted" && inv.printed) return false;
+              if(filterInvClient !== "all" && inv.client !== filterInvClient) return false;
+              return true;
+            });
+            const totalFiltered = filtered.reduce((s,inv)=>s+(inv.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(inv.porto)||0)),0);
+            return (
+              <>
+                {/* Header */}
+                <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div>
+                      <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>Invoices</div>
+                      {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
+                    </div>
+                    <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
+                      style={{ background:"#C9933A", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", letterSpacing:"-0.01em" }}>
+                      + New
                     </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
+                  </div>
+                </div>
+
+                {/* Filters + cards */}
+                <div style={{ padding: isDesktop?"0 40px 60px":"16px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+
+                  {invoices.length > 0 && (
+                    <>
+                      {/* Status pills */}
+                      <div className="pills-row" style={{ marginBottom:10 }}>
+                        {[
+                          { key:"all",       label:"All",       count: invoices.length },
+                          { key:"unprinted", label:"Unprinted", count: invoices.filter(i=>!i.printed).length },
+                          { key:"printed",   label:"Printed",   count: invoices.filter(i=>i.printed).length  },
+                        ].map(({key, label, count}) => (
+                          <button key={key} onClick={()=>setFilterInvStatus(key)}
+                            style={{ padding:"8px 16px", borderRadius:100, border:"none", background: filterInvStatus===key?"#1B3F45":"white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterInvStatus===key?"white":"#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                            {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{count}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Client filter */}
+                      {invClients.length > 1 && (
+                        <div style={{ marginBottom:14 }}>
+                          <select value={filterInvClient} onChange={e=>setFilterInvClient(e.target.value)}
+                            style={{ ...selectBase, fontSize:13, padding:"10px 36px 10px 12px", color: filterInvClient!=="all"?"#1B3F45":"#5A7A80" }}>
+                            <option value="all">All clients</option>
+                            {invClients.map(c=><option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Results summary */}
+                      {(filterInvStatus!=="all" || filterInvClient!=="all") && filtered.length > 0 && (
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, padding:"0 2px" }}>
+                          <span style={{ fontSize:12, color:"#9DB5B9", fontWeight:500 }}>{filtered.length} result{filtered.length!==1?"s":""}</span>
+                          <span style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{C.currency} {fmt(totalFiltered)}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {invoices.length === 0 && (
+                    <div style={{ textAlign:"center", padding:"48px 24px" }}>
+                      <div style={{ width:72, height:72, borderRadius:22, background:PASTELS.invoice, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}><Icon name="receipt" size={32} color="#5A7A80"/></div>
+                      <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", marginBottom:6, letterSpacing:"-0.01em" }}>No invoices yet</div>
+                      <div style={{ fontSize:13, color:"#5A7A80", lineHeight:1.6 }}>Invoices created from orders appear here.<br/>You can also create one manually.</div>
+                    </div>
+                  )}
+
+                  {invoices.length > 0 && filtered.length === 0 && (
+                    <div style={{ textAlign:"center", padding:"40px 24px", color:"#9DB5B9", fontSize:14 }}>No invoices match this filter</div>
+                  )}
+
+                  {filtered.map((inv) => {
+                    const invTotal = inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate) + (parseFloat(inv.porto)||0);
+                    return (
+                      <button key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); }}
+                        style={{ width:"100%", background:"white", border:"1.5px solid #F0EDE8", borderRadius:20, padding:"18px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
+                        <div style={{ width:46, height:46, borderRadius:14, background: inv.printed?"#E8F3EF":"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <Icon name="receipt" size={22} color={inv.printed?"#1B6048":"#5A7A80"}/>
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.client || "—"}</div>
+                          <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{inv.number} · {new Date(inv.date+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div>
+                        </div>
+                        <div style={{ textAlign:"right", flexShrink:0 }}>
+                          <div style={{ fontSize:16, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.01em" }}>{C.currency} {fmt(invTotal)}</div>
+                          <span style={{ fontSize:11, fontWeight:700, color: inv.printed?"#198038":"#C9933A", marginTop:3, display:"block" }}>{inv.printed?"Printed":"Saved"}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
 
           {/* ── NEW INVOICE VIEW ── */}
           {invView==="new" && (()=>{
