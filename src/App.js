@@ -285,7 +285,7 @@ const BtnPrimary = ({ children, onClick, disabled, style={} }) => (
     kind="primary"
     onClick={onClick}
     disabled={disabled}
-    style={{ display:"flex", alignItems:"center", gap:8, ...style }}
+    style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, maxWidth:"100%", ...style }}
   >
     {children}
   </Button>
@@ -296,7 +296,7 @@ const BtnGhost = ({ children, onClick, disabled, style={} }) => (
     kind="ghost"
     onClick={onClick}
     disabled={disabled}
-    style={{ display:"flex", alignItems:"center", gap:8, ...style }}
+    style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, maxWidth:"100%", ...style }}
   >
     {children}
   </Button>
