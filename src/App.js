@@ -46,6 +46,109 @@ const PASTELS = {
   invoiced:   "#F0F6F7",  // teal-pale
 };
 
+const TRANS = {
+  en: {
+    tabHome:"Home", tabScan:"Scan", tabOrders:"Orders", tabClients:"Clients", tabInvoice:"Invoice",
+    signInTo:"Sign in to continue", emailLabel:"Email", passwordLabel:"Password", signingIn:"Signing in\u2026", signInBtn:"Sign in",
+    profileLanguage:"Language", profileChangePw:"Change password", profileSignOut:"Sign out",
+    changePwTitle:"Change password", newPasswordLabel:"New password", confirmPwLabel:"Confirm password",
+    pwMinChars:"Minimum 6 characters", repeatPw:"Repeat new password",
+    pwUpdated:"Password updated", enterNewPw:"Enter a new password.", pwNoMatch:"Passwords don\u2019t match.", pwMin6:"Minimum 6 characters.",
+    savingLabel:"Saving\u2026", updatePwBtn:"Update password",
+    goodMorning:"Good morning", goodAfternoon:"Good afternoon", goodEvening:"Good evening",
+    newOrderBtn:"New order", createWorkOrderSub:"Create work order",
+    needsAttention:"Needs attention",
+    statusReceived:"Pending", statusInprogress:"In Review", statusDone:"Approved", statusInvoiced:"Invoiced",
+    allFilter:"All", allClients:"All clients",
+    overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
+    workOrderBtn:"Work order", createInvoiceBtn:"Create invoice", printInvoiceBtn:"Print invoice",
+    swipeHint:"\u2190 Swipe to mark done \u00a0\u00b7\u00a0 Swipe to delete \u2192",
+    selectBtn:"Select", cancelBtn:"Cancel",
+    newOrderTitle:"New order", editOrderTitle:"Edit order",
+    chooseClientSection:"Choose a client", chooseClientSub:"Who is this order for? Select an existing client or create a new one.",
+    addPiecesSection:"Add the pieces", addPiecesSub:"Start the description with a number to set the quantity (e.g. \"3 rings\"). Add as many as needed.",
+    setDeadlineSection:"Set the delivery deadline", setDeadlineSub:"When does this order need to be ready? You can also add special instructions.",
+    searchClientPlaceholder:"Search client...", createNewClientBtn:"Create new client",
+    addAnotherPieceBtn:"Add another piece",
+    addPhotoBtn:"Add photo of this piece",
+    week1:"1 week", weeks2:"2 weeks", month1:"1 month",
+    selectClientFirst:"Select a client first",
+    specialInstructionsPlaceholder:"Special instructions, client reference, desired finish\u2026",
+    descPlaceholder:"What needs to be done? Start with a number for quantity, e.g. 3 rings to polish",
+    markCompletedBtn:"Mark as completed", printBtn:"Print",
+    totalLabel:"Total",
+    readyToInvoice:"Ready to invoice", invoiceCreatedLabel:"Invoice created",
+    receivedStep:"Received", inProgressStep:"In Progress", completedStep:"Completed", invoicedStep:"Invoiced",
+    pendingStatus:"Pending", inReviewStatus:"In Review",
+    invoicesTitle:"Invoices", noInvoicesYet:"No invoices yet",
+    noInvoicesDesc:"Invoices created from orders appear here.\nYou can also create one manually.",
+    unprintedFilter:"Unprinted", printedFilter:"Printed",
+    postageLabel:"Postage", postageNotAdded:"Postage not added", postageScrollUp:"Scroll up to add shipping cost before saving.",
+    postageHint:"Don't forget to add shipping cost",
+    saveInvoiceBtn:"Save invoice", saveAndPrintBtn:"Save & print",
+    invoiceSaved:"Invoice saved",
+    clientsTitle:"Clients", newClientTitle:"New client", noClientsYet:"No clients yet",
+    nameLabel:"Name", companyLabel:"Company", addressLabel:"Address", phoneLabel:"Phone",
+    saveClientBtn:"Save client", clientSaved:"Client saved",
+    orderSaved:"Order saved", orderUpdated:"Order updated",
+    deleteOrderConfirm:"Delete order",
+    areYouSure:"Are you sure?",
+    donePromptBtn:"Confirm \u2014 order completed",
+    noOrdersYet:"No orders yet",
+    noOrdersDesc:"Your orders will appear here.",
+  },
+  de: {
+    tabHome:"Start", tabScan:"Scan", tabOrders:"Auftr\u00e4ge", tabClients:"Kunden", tabInvoice:"Rechnung",
+    signInTo:"Bitte anmelden", emailLabel:"E-Mail", passwordLabel:"Passwort", signingIn:"Anmelden\u2026", signInBtn:"Anmelden",
+    profileLanguage:"Sprache", profileChangePw:"Passwort \u00e4ndern", profileSignOut:"Abmelden",
+    changePwTitle:"Passwort \u00e4ndern", newPasswordLabel:"Neues Passwort", confirmPwLabel:"Passwort best\u00e4tigen",
+    pwMinChars:"Mindestens 6 Zeichen", repeatPw:"Neues Passwort wiederholen",
+    pwUpdated:"Passwort aktualisiert", enterNewPw:"Bitte ein neues Passwort eingeben.", pwNoMatch:"Passw\u00f6rter stimmen nicht \u00fcberein.", pwMin6:"Mindestens 6 Zeichen.",
+    savingLabel:"Speichern\u2026", updatePwBtn:"Passwort aktualisieren",
+    goodMorning:"Guten Morgen", goodAfternoon:"Guten Tag", goodEvening:"Guten Abend",
+    newOrderBtn:"Neuer Auftrag", createWorkOrderSub:"Arbeitsauftrag erstellen",
+    needsAttention:"Dringend",
+    statusReceived:"Ausstehend", statusInprogress:"In Bearbeitung", statusDone:"Abgeschlossen", statusInvoiced:"Verrechnet",
+    allFilter:"Alle", allClients:"Alle Kunden",
+    overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
+    workOrderBtn:"Arbeitsauftrag", createInvoiceBtn:"Rechnung erstellen", printInvoiceBtn:"Rechnung drucken",
+    swipeHint:"\u2190 Wischen = Fertig \u00a0\u00b7\u00a0 \u2192 Wischen = L\u00f6schen",
+    selectBtn:"Ausw\u00e4hlen", cancelBtn:"Abbrechen",
+    newOrderTitle:"Neuer Auftrag", editOrderTitle:"Auftrag bearbeiten",
+    chooseClientSection:"Kunden w\u00e4hlen", chooseClientSub:"F\u00fcr wen ist dieser Auftrag? Bestehenden Kunden w\u00e4hlen oder neu anlegen.",
+    addPiecesSection:"St\u00fccke hinzuf\u00fcgen", addPiecesSub:"Beschreibung mit einer Zahl beginnen, z.B. \"3 Ringe\". Beliebig viele hinzuf\u00fcgen.",
+    setDeadlineSection:"Lieferfrist festlegen", setDeadlineSub:"Wann muss der Auftrag fertig sein? Besondere Anweisungen k\u00f6nnen hier eingegeben werden.",
+    searchClientPlaceholder:"Kunden suchen...", createNewClientBtn:"Neuen Kunden erstellen",
+    addAnotherPieceBtn:"Weiteres St\u00fcck hinzuf\u00fcgen",
+    addPhotoBtn:"Foto dieses St\u00fcks hinzuf\u00fcgen",
+    week1:"1 Woche", weeks2:"2 Wochen", month1:"1 Monat",
+    selectClientFirst:"Zuerst Kunden ausw\u00e4hlen",
+    specialInstructionsPlaceholder:"Besondere Anweisungen, Kundenreferenz, gew\u00fcnschte Oberfl\u00e4che\u2026",
+    descPlaceholder:"Was soll gemacht werden? Mit einer Zahl f\u00fcr die Menge beginnen, z.B. 3 Ringe polieren",
+    markCompletedBtn:"Als abgeschlossen markieren", printBtn:"Drucken",
+    totalLabel:"Gesamt",
+    readyToInvoice:"Bereit zur Verrechnung", invoiceCreatedLabel:"Rechnung erstellt",
+    receivedStep:"Erhalten", inProgressStep:"In Bearbeitung", completedStep:"Abgeschlossen", invoicedStep:"Verrechnet",
+    pendingStatus:"Ausstehend", inReviewStatus:"In Bearbeitung",
+    invoicesTitle:"Rechnungen", noInvoicesYet:"Noch keine Rechnungen",
+    noInvoicesDesc:"Aus Auftr\u00e4gen erstellte Rechnungen erscheinen hier.\nSie k\u00f6nnen auch manuell eine erstellen.",
+    unprintedFilter:"Nicht gedruckt", printedFilter:"Gedruckt",
+    postageLabel:"Porto", postageNotAdded:"Porto nicht hinzugef\u00fcgt", postageScrollUp:"Bitte nach oben scrollen und Porto eintragen.",
+    postageHint:"Porto nicht vergessen",
+    saveInvoiceBtn:"Rechnung speichern", saveAndPrintBtn:"Speichern & drucken",
+    invoiceSaved:"Rechnung gespeichert",
+    clientsTitle:"Kunden", newClientTitle:"Neuer Kunde", noClientsYet:"Noch keine Kunden",
+    nameLabel:"Name", companyLabel:"Firma", addressLabel:"Adresse", phoneLabel:"Telefon",
+    saveClientBtn:"Kunden speichern", clientSaved:"Kunde gespeichert",
+    orderSaved:"Auftrag gespeichert", orderUpdated:"Auftrag aktualisiert",
+    deleteOrderConfirm:"Auftrag l\u00f6schen",
+    areYouSure:"Sind Sie sicher?",
+    donePromptBtn:"Best\u00e4tigen \u2014 Auftrag abgeschlossen",
+    noOrdersYet:"Noch keine Auftr\u00e4ge",
+    noOrdersDesc:"Ihre Auftr\u00e4ge erscheinen hier.",
+  }
+};
+
 const SAMPLE_ORDERS = [
   { id:"0041", client:"Juwelier Müller AG",  received:"2026-03-10", field1:"Diamond",  field2:"Pavé",    pieces:3, status:"inprogress", notes:"Rush order",        amount:0   },
   { id:"0040", client:"Goldsmith Bern",      received:"2026-03-12", field1:"Ruby",     field2:"Prong",   pieces:1, status:"done",       notes:"",                  amount:180 },
@@ -660,7 +763,10 @@ export default function App() {
   const selectedOrder = orders.find(o=>o.id===selectedId);
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const greeting = hour < 12 ? "goodMorning" : hour < 18 ? "goodAfternoon" : "goodEvening";
+
+  const t = key => TRANS[lang]?.[key] ?? TRANS.en[key] ?? key;
+  const statusLabel = k => ({ received: t("statusReceived"), inprogress: t("statusInprogress"), done: t("statusDone"), invoiced: t("statusInvoiced") })[k] || k;
 
   // ── AUTH HELPERS ──
   const signIn = async () => {
@@ -676,15 +782,15 @@ export default function App() {
   };
 
   const changePassword = async () => {
-    if (!newPw) { setPwError("Enter a new password."); return; }
-    if (newPw !== newPwConfirm) { setPwError("Passwords don't match."); return; }
-    if (newPw.length < 6) { setPwError("Minimum 6 characters."); return; }
+    if (!newPw) { setPwError(t("enterNewPw")); return; }
+    if (newPw !== newPwConfirm) { setPwError(t("pwNoMatch")); return; }
+    if (newPw.length < 6) { setPwError(t("pwMin6")); return; }
     setPwLoading(true); setPwError("");
     const { error } = await supabase.auth.updateUser({ password: newPw });
     if (error) { setPwError(error.message); setPwLoading(false); return; }
     setChangePwOpen(false); setNewPw(""); setNewPwConfirm("");
     setPwLoading(false);
-    showToast("Password updated");
+    showToast(t("pwUpdated"));
   };
 
   // ── LOADING / LOGIN SCREENS ──
@@ -700,15 +806,15 @@ export default function App() {
       <div style={{ width:"100%", maxWidth:360, background:"white", borderRadius:24, padding:"36px 28px", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
         <img src="/logo.png" alt={C.businessName} style={{ height:52, objectFit:"contain", display:"block", marginBottom:8 }} onError={e=>e.target.style.display="none"}/>
         <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", marginBottom:4 }}>{C.businessName}</div>
-        <div style={{ fontSize:13, color:"#5A7A80", marginBottom:28 }}>Sign in to continue</div>
+        <div style={{ fontSize:13, color:"#5A7A80", marginBottom:28 }}>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.signInTo ?? TRANS.en.signInTo}</div>
         <div style={{ marginBottom:14 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>Email</div>
+          <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.emailLabel ?? TRANS.en.emailLabel}</div>
           <input type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&signIn()}
             placeholder="email@example.com"
             style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
         </div>
         <div style={{ marginBottom:20 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>Password</div>
+          <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.passwordLabel ?? TRANS.en.passwordLabel}</div>
           <input type="password" value={authPw} onChange={e=>setAuthPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&signIn()}
             placeholder="••••••••"
             style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
@@ -716,7 +822,7 @@ export default function App() {
         {authError && <div style={{ fontSize:13, color:"#da1e28", marginBottom:14, background:"#FFF0F0", border:"1px solid #F7C1C1", borderRadius:10, padding:"10px 12px" }}>{authError}</div>}
         <button onClick={signIn} disabled={authLoading}
           style={{ width:"100%", padding:"15px", background: authLoading?"#E8E4DC":"#1B3F45", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor: authLoading?"default":"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-          {authLoading ? <><div style={{ width:16, height:16, border:"2px solid white", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/> Signing in…</> : "Sign in"}
+          {authLoading ? <><div style={{ width:16, height:16, border:"2px solid white", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.signingIn ?? TRANS.en.signingIn}</> : (TRANS[localStorage.getItem("ssp_lang")||"en"]?.signInBtn ?? TRANS.en.signInBtn)}
         </button>
       </div>
     </div>
@@ -854,7 +960,7 @@ export default function App() {
                       </div>
                       {/* Language */}
                       <div style={{ padding:"10px 16px", borderBottom:"0.5px solid #F0EDE8" }}>
-                        <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>Language</div>
+                        <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>{t("profileLanguage")}</div>
                         <div style={{ display:"flex", gap:6 }}>
                           {[{code:"en",label:"English"},{code:"de",label:"Deutsch"}].map(l=>(
                             <button key={l.code} onClick={()=>{ setLang(l.code); localStorage.setItem("ssp_lang",l.code); }}
@@ -2145,6 +2251,37 @@ export default function App() {
             const draftTax   = draftSub * C.taxRate;
             const draftTotal = draftSub + draftPorto + draftTax;
             // Orders done but not yet invoiced (exclude already linked)
+            const syncInvoiceToSheets = (inv) => {
+              const sheetsUrl = process.env.REACT_APP_SHEETS_URL;
+              if (!sheetsUrl) return;
+              const sub   = inv.items.reduce((s, it) => s + lineTotal(it), 0);
+              const porto = parseFloat(inv.porto) || 0;
+              const mwst  = sub * C.taxRate;
+              const total = sub + porto + mwst;
+              const payload = {
+                sheet: "Facturas",
+                invoiceNumber: inv.number,
+                date: inv.date,
+                client: inv.client,
+                clientAddress: inv.clientAddress || "",
+                items: inv.items.map(it => ({
+                  desc: it.desc || "",
+                  qty: parseFloat(it.qty) || 1,
+                  unitPrice: parseFloat(it.unitPrice) || parseFloat(it.price) || 0,
+                  total: lineTotal(it),
+                })),
+                subtotal: sub,
+                mwst: mwst,
+                porto: porto,
+                total: total,
+              };
+              fetch(sheetsUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              }).catch(err => console.error("[Sheets] Invoice sync failed:", err));
+            };
+
             const saveInvoice = (print) => {
               const validItems = items.filter(it=>it.desc||it.unitPrice||it.price).map(it=>({...it, price: String(lineTotal(it))}));
               const inv = {
@@ -2162,6 +2299,7 @@ export default function App() {
               const linkedIds = validItems.map(it=>it.orderRef).filter(Boolean);
               if(linkedIds.length) setOrders(orders.map(o=>linkedIds.includes(o.id)?{...o,status:"invoiced"}:o));
               setInvoices([...invoices, inv]);
+              syncInvoiceToSheets(inv);
               if(print) printInvoiceDoc(inv);
               setInvView("list");
               showToast("Invoice saved","#198038");
