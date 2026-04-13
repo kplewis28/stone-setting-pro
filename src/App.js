@@ -766,7 +766,6 @@ export default function App() {
   const greeting = hour < 12 ? "goodMorning" : hour < 18 ? "goodAfternoon" : "goodEvening";
 
   const t = key => TRANS[lang]?.[key] ?? TRANS.en[key] ?? key;
-  const statusLabel = k => ({ received: t("statusReceived"), inprogress: t("statusInprogress"), done: t("statusDone"), invoiced: t("statusInvoiced") })[k] || k;
 
   // ── AUTH HELPERS ──
   const signIn = async () => {
