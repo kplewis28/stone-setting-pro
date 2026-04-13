@@ -1353,10 +1353,6 @@ export default function App() {
               };
               const delItem = (id) => setDraft(d=>({...d,lineItems:d.lineItems.filter(i=>i.id!==id)}));
               const updItem = (id, patch) => setDraft(d=>({...d,lineItems:d.lineItems.map(i=>i.id===id?{...i,...patch}:i)}));
-              const stepQty = (id, delta) => {
-                const cur = parseInt(items.find(i=>i.id===id)?.qty)||1;
-                updItem(id,{qty:String(Math.max(1,cur+delta))});
-              };
               const onHandleTouchStart = (e, idx) => { dragTouchStartY.current = e.touches[0].clientY; setDragIdx(idx); };
               const onHandleTouchMove = (e) => {
                 e.preventDefault();
