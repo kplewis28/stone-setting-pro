@@ -447,49 +447,61 @@ export default function App() {
       return `<tr><td>${it.desc || "—"}</td><td class="right">${qty}</td><td class="right">${fmtCHF(unit)}</td><td class="right">${fmtCHF(tot)}</td></tr>`;
     }).join("");
 
+    // Build recipient block — avoid repeating client name if address already starts with it
+    const addrLines = (inv.clientAddress || "").split("\n").map(l=>l.trim()).filter(Boolean);
+    const addrWithoutName = addrLines.length && addrLines[0].toLowerCase() === (inv.client||"").trim().toLowerCase()
+      ? addrLines.slice(1)
+      : addrLines;
+    const addrHtml = addrWithoutName.join("<br>");
+
     const html = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
+<meta name="format-detection" content="telephone=no,address=no,email=no">
 <title>Rechnung ${inv.number}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #222; padding: 40px 50px; max-width: 800px; margin: 0 auto; }
-  .address { font-size:10pt; color:#444; margin-bottom:28px; line-height:1.7; }
-  .rechnung-title { font-size:21pt; font-weight:bold; letter-spacing:4px; color:#8E8E93; border:3px solid #C7C7CC; display:inline-block; padding:4px 14px; margin-bottom:6px; text-transform:uppercase; }
-  .datum { font-size:11pt; font-weight:bold; margin-bottom:28px; }
-  .recipient-block { float:right; text-align:left; font-size:11pt; line-height:1.8; margin-top:-80px; margin-bottom:32px; }
+  a { color:inherit !important; text-decoration:none !important; pointer-events:none !important; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; }
+  .page { width: 100%; max-width: 176mm; margin: 0 auto; padding: 0; }
+  .logo { margin-bottom: 14px; }
+  .address { font-size:8.5pt; color:#555; margin-bottom:18px; line-height:1.6; }
+  .rechnung-title { font-size:17pt; font-weight:bold; letter-spacing:3px; color:#8E8E93; border:2.5px solid #C7C7CC; display:inline-block; padding:3px 10px; margin-bottom:4px; text-transform:uppercase; }
+  .datum { font-size:9.5pt; font-weight:bold; margin-bottom:0; }
+  .recipient-block { float:right; text-align:left; font-size:9.5pt; line-height:1.7; margin-top:-64px; margin-bottom:20px; min-width:180px; }
   .clearfix::after { content:""; display:table; clear:both; }
-  table { width:100%; border-collapse:collapse; margin-top:40px; margin-bottom:0; }
+  table { width:100%; border-collapse:collapse; margin-top:20px; margin-bottom:0; }
   thead tr { background:#e8edf2; color:#1a1a1a; }
-  thead th { padding:8px 10px; font-size:11pt; text-align:left; }
+  thead th { padding:5px 8px; font-size:9pt; text-align:left; }
   thead th.right { text-align:right; }
-  tbody tr td { padding:8px 10px; border-bottom:1px solid #e0e0e0; font-size:11pt; }
+  tbody tr td { padding:5px 8px; border-bottom:1px solid #e8e8e8; font-size:9.5pt; }
   tbody tr td.right { text-align:right; }
-  .totals td { padding:5px 10px; font-size:11pt; }
+  .totals td { padding:3px 8px; font-size:9.5pt; }
   .totals td.right { text-align:right; }
-  .totals .total-row td { font-weight:bold; font-size:13pt; border-top:2px solid #222; padding-top:8px; }
-  .total-row td.big { font-size:14pt; text-decoration:underline; }
-  .footer { margin-top:40px; font-size:10.5pt; line-height:1.9; color:#333; }
+  .totals .total-row td { font-weight:bold; font-size:11pt; border-top:1.5px solid #222; padding-top:6px; }
+  .total-row td.big { font-size:12pt; text-decoration:underline; }
+  .bank-section { margin-top:16px; display:flex; align-items:flex-start; gap:16px; }
+  .footer { font-size:8.5pt; line-height:1.7; color:#444; }
   .footer strong { color:#111; }
-  .thanks { margin-top:24px; font-size:11pt; }
+  .thanks { margin-top:14px; font-size:9pt; }
   @media print {
-    @page { size: A4; margin: 12mm 14mm; }
-    html, body { height: 100%; padding: 0; margin: 0; }
-    body { transform-origin: top left; transform: scale(0.82); width: 122%; }
+    @page { size: letter portrait; margin: 14mm 18mm; }
+    html, body { margin:0; padding:0; }
+    .page { max-width:100%; }
   }
 </style></head>
 <body>
-  <div style="margin-bottom:24px;">
-    <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:90px;object-fit:contain;">
+<div class="page">
+  <div class="logo">
+    <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:70px;object-fit:contain;">
   </div>
   <div class="address">${C.address.replace(/\n/g,"<br>")}<br>Telefon ${C.phone}</div>
   <div class="clearfix">
     <div>
-      <div class="rechnung-title">RECHNUNG</div>
+      <div class="rechnung-title">RECHNUNG</div><br>
       <div class="datum">DATUM: ${new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
     </div>
     <div class="recipient-block">
-      <strong>${inv.client}</strong><br>
-      ${inv.clientAddress ? inv.clientAddress.replace(/\n/g,"<br>")+"<br>" : ""}
-      ${inv.number}
+      <strong>${inv.client||""}</strong>${addrHtml ? "<br>"+addrHtml : ""}<br>
+      <span style="color:#555;">${inv.number}</span>
     </div>
   </div>
   <table>
@@ -498,26 +510,27 @@ export default function App() {
   </table>
   <table class="totals" style="margin-top:0;">
     <tbody>
-      <tr><td colspan="1" class="right" style="color:#555;padding:5px 10px;">Total ohne ${C.taxLabel}</td><td class="right" style="width:22%;padding:5px 10px;">${fmtCHF(sub)}</td></tr>
-      ${porto > 0 ? `<tr><td class="right" style="color:#555;padding:5px 10px;">Porto</td><td class="right" style="padding:5px 10px;">${fmtCHF(porto)}</td></tr>` : ""}
-      <tr><td class="right" style="color:#555;padding:5px 10px;">${(C.taxRate*100).toFixed(1).replace(".",",")}% ${C.taxLabel}</td><td class="right" style="padding:5px 10px;">${fmtCHF(mwst)}</td></tr>
-      <tr class="total-row"><td class="right" style="padding:8px 10px;"><strong>RECHNUNGSBETRAG</strong></td><td class="right big" style="padding:8px 10px;">CHF ${Number(total).toFixed(2).replace(".",",")}</td></tr>
+      <tr><td class="right" style="color:#555;">Total ohne ${C.taxLabel}</td><td class="right" style="width:22%;">${fmtCHF(sub)}</td></tr>
+      ${porto > 0 ? `<tr><td class="right" style="color:#555;">Porto</td><td class="right">${fmtCHF(porto)}</td></tr>` : ""}
+      <tr><td class="right" style="color:#555;">${(C.taxRate*100).toFixed(1).replace(".",",")}% ${C.taxLabel}</td><td class="right">${fmtCHF(mwst)}</td></tr>
+      <tr class="total-row"><td class="right"><strong>RECHNUNGSBETRAG</strong></td><td class="right big">CHF ${Number(total).toFixed(2).replace(".",",")}</td></tr>
     </tbody>
   </table>
-  <div style="margin-top:24px;text-align:left;">
-    <img src="${window.location.origin}/qr.png" alt="QR Zahlung" style="width:120px;height:120px;object-fit:contain;">
-  </div>
-  <div class="footer">
-    Zahlungsempfänger: <strong>${C.businessName}</strong><br>
-    ${C.bankDetails}<br>
-    ${C.paymentTerms}<br>
-    MWST-Nr. ${C.vatId}
+  <div class="bank-section">
+    <img src="${window.location.origin}/qr.png" alt="QR Zahlung" style="width:90px;height:90px;object-fit:contain;flex-shrink:0;">
+    <div class="footer">
+      Zahlungsempfänger: <strong>${C.businessName}</strong><br>
+      <span style="font-family:monospace;font-size:8.5pt;">${C.bankDetails}</span><br>
+      ${C.paymentTerms}<br>
+      MWST-Nr. ${C.vatId}
+    </div>
   </div>
   <div class="thanks">
-    <br>Danke für Ihren geschätzten Auftrag.<br><br>
+    Danke für Ihren geschätzten Auftrag.<br><br>
     Freundliche Grüsse<br><br>
     ${C.ownerName}
   </div>
+</div>
   ${autoprint ? ["<script>window.onload=()=>{ window.print(); }</","script>"].join("") : ""}
 </body></html>`;
     const w = window.open("", "_blank");
