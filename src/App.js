@@ -347,6 +347,8 @@ const compressPhoto = (dataUrl) => new Promise(res => {
   img.src = dataUrl;
 });
 const fmt      = n => Number(n||0).toFixed(2);
+// Swiss rounding: round final invoice total to nearest 0.05 CHF (Rappenrundung)
+const roundCHF = n => Math.round(n * 20) / 20;
 // Invoice number format: R{clientSeq}{year}  e.g. R12026, R22026
 // Each client has their own sequential count
 const genClientInvNumber = (invoices, clientName) => {
@@ -736,7 +738,7 @@ export default function App() {
     const sub    = inv.items.reduce((s,it) => s + lineTotal(it), 0);
     const porto  = parseFloat(inv.porto) || 0;
     const mwst   = sub * C.taxRate;
-    const total  = sub + porto + mwst;
+    const total  = roundCHF(sub + porto + mwst);
     const rowsHtml = inv.items.map(it => {
       const qty  = parseFloat(it.qty)||1;
       const unit = parseFloat(it.unitPrice)||parseFloat(it.price)||0;
@@ -2405,7 +2407,7 @@ export default function App() {
                   )}
 
                   {filtered.map((inv) => {
-                    const invTotal = inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate) + (parseFloat(inv.porto)||0);
+                    const invTotal = roundCHF(inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate) + (parseFloat(inv.porto)||0));
                     return (
                       <button key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); }}
                         style={{ width:"100%", background:"white", border:"1.5px solid #F0EDE8", borderRadius:20, padding:"18px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
@@ -2433,7 +2435,7 @@ export default function App() {
             const draftSub   = items.reduce((s,it)=>s+lineTotal(it),0);
             const draftPorto = parseFloat(invPorto)||0;
             const draftTax   = draftSub * C.taxRate;
-            const draftTotal = draftSub + draftPorto + draftTax;
+            const draftTotal = roundCHF(draftSub + draftPorto + draftTax);
             // Orders done but not yet invoiced (exclude already linked)
             const syncInvoiceToSheets = (inv) => {
               const url = C.sheetsUrl || process.env.REACT_APP_SHEETS_URL;
@@ -2441,7 +2443,7 @@ export default function App() {
               const sub   = inv.items.reduce((s, it) => s + lineTotal(it), 0);
               const porto = parseFloat(inv.porto) || 0;
               const mwst  = sub * C.taxRate;
-              const total = sub + porto + mwst;
+              const total = roundCHF(sub + porto + mwst);
               const payload = {
                 sheet: "Facturas",
                 invoiceNumber: inv.number,
@@ -2657,7 +2659,7 @@ export default function App() {
             const invSub   = inv.items.reduce((s,it)=>s+lineTotal(it),0);
             const invPortoVal = parseFloat(inv.porto)||0;
             const invMwst  = invSub * C.taxRate;
-            const invTotal = invSub + invPortoVal + invMwst;
+            const invTotal = roundCHF(invSub + invPortoVal + invMwst);
             return (
               <>
                 <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
@@ -3485,7 +3487,7 @@ export default function App() {
         const price    = parseFloat(unitPrice) || 0;
         const sub      = qty * price;
         const mwst     = sub * C.taxRate;
-        const total    = sub + porto + mwst;
+        const total    = roundCHF(sub + porto + mwst);
         const fC       = n => `CHF ${Number(n).toFixed(2).replace(".", ",")}`;
         const invNr    = `RS-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,"0")}-${order.id}`;
         const desc     = [order.field1, order.field2].filter(Boolean).join(" · ");
