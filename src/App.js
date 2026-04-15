@@ -1779,16 +1779,19 @@ export default function App() {
                                 onChange={e=>updItem(li.id,{desc:e.target.value})}
                                 style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
                               {/* Qty row */}
-                              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:10, paddingTop:10, borderTop:"0.5px solid #F0F6F7" }}>
-                                <span style={{ fontSize:12, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em" }}>Units</span>
-                                <div style={{ display:"flex", alignItems:"center", gap:0, background:"#F7F5F0", borderRadius:10, overflow:"hidden" }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10, paddingTop:10, borderTop:"0.5px solid #F0F6F7" }}>
+                                <span style={{ fontSize:12, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", flexShrink:0 }}>Units</span>
+                                <div style={{ display:"flex", alignItems:"center", gap:0, background:"#F7F5F0", borderRadius:10, overflow:"hidden", flex:1 }}>
                                   <button onClick={()=>{ const cur=Math.max(1,(parseInt(li.qty)||1)-1); updItem(li.id,{qty:String(cur)}); }}
-                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"7px 13px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>−</button>
-                                  <input type="number" min="1" value={li.qty||"1"}
-                                    onChange={e=>updItem(li.id,{qty:e.target.value||"1"})}
-                                    style={{ width:44, textAlign:"center", border:"none", outline:"none", background:"transparent", fontSize:15, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", padding:0 }}/>
+                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"10px 14px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif", flexShrink:0 }}>−</button>
+                                  <input
+                                    type="number" min="1" value={li.qty||""}
+                                    onChange={e=>updItem(li.id,{qty:e.target.value})}
+                                    onBlur={e=>{ if(!e.target.value||parseInt(e.target.value)<1) updItem(li.id,{qty:"1"}); }}
+                                    placeholder="1"
+                                    style={{ flex:1, textAlign:"center", border:"none", outline:"none", background:"transparent", fontSize:16, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", padding:"10px 0", minWidth:0 }}/>
                                   <button onClick={()=>{ const cur=(parseInt(li.qty)||1)+1; updItem(li.id,{qty:String(cur)}); }}
-                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"7px 13px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>+</button>
+                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"10px 14px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif", flexShrink:0 }}>+</button>
                                 </div>
                               </div>
                               {/* Photo section */}
