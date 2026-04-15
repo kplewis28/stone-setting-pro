@@ -327,7 +327,6 @@ const newOrder     = () => ({ id: String(Date.now()).slice(-4), client:"", clien
 const newClient    = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
 const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", qty:"1", unitPrice:"", price:"" });
 const lineTotal    = it => (parseFloat(it.qty)||1) * (parseFloat(it.unitPrice)||parseFloat(it.price)||0);
-const cleanDesc    = s => (s||"").trim();
 const genOrderNumber = (orders, clientName) => {
   const clientOrders = (orders||[]).filter(o => o.client === clientName);
   const nums = clientOrders.map(o=>parseInt(o.orderNumber)||0).filter(n=>n>0);
@@ -724,7 +723,7 @@ export default function App() {
     setInvDate(new Date().toISOString().split("T")[0]);
     setInvPorto("");
     const invoiceItems = (o.lineItems||[]).length > 0
-      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:cleanDesc(li.desc), qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }))
+      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc||"", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }))
       : [{ id:Date.now()+Math.random(), desc: o.description||`Order #${o.id}`, qty:"1", unitPrice:String(o.amount||""), price:String(o.amount||""), orderRef:o.id }];
     setItems(invoiceItems);
     setInvNumber(genClientInvNumber(invoices, o.client));
@@ -743,7 +742,7 @@ export default function App() {
       const qty  = parseFloat(it.qty)||1;
       const unit = parseFloat(it.unitPrice)||parseFloat(it.price)||0;
       const tot  = qty * unit;
-      return `<tr><td>${cleanDesc(it.desc) || "—"}</td><td class="right">${qty}</td><td class="right">${fmtCHF(unit)}</td><td class="right">${fmtCHF(tot)}</td></tr>`;
+      return `<tr><td>${it.desc || "—"}</td><td class="right">${qty}</td><td class="right">${fmtCHF(unit)}</td><td class="right">${fmtCHF(tot)}</td></tr>`;
     }).join("");
 
     // Build recipient block — avoid repeating client name if address already starts with it
@@ -2269,7 +2268,7 @@ export default function App() {
                           <Icon name="gem" size={18} color="#5A7A80"/>
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{cleanDesc(li.desc)}</div>
+                          <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{li.desc||"—"}</div>
                           {(li.qty&&li.qty!=="1") && <div style={{ fontSize:11, color:"#9DB5B9", fontFamily:"'IBM Plex Sans', sans-serif", marginTop:2 }}>×{li.qty}</div>}
                         </div>
                         {lineTotal(li)>0 && (
@@ -2451,7 +2450,7 @@ export default function App() {
                 client: inv.client,
                 clientAddress: inv.clientAddress || "",
                 items: inv.items.map(it => ({
-                  desc: cleanDesc(it.desc),
+                  desc: it.desc||"",
                   qty: parseFloat(it.qty) || 1,
                   unitPrice: parseFloat(it.unitPrice) || parseFloat(it.price) || 0,
                   total: lineTotal(it),
