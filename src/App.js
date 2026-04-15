@@ -1775,10 +1775,22 @@ export default function App() {
                             </div>
                             {/* Cuerpo */}
                             <div style={{ padding:"12px 14px 14px" }}>
-                              <textarea placeholder="What needs to be done? Start with a number for quantity, e.g. 3 rings to polish" value={li.desc||""}
+                              <textarea placeholder="Describe the work to be done…" value={li.desc||""}
                                 onChange={e=>updItem(li.id,{desc:e.target.value})}
-                                onBlur={e=>{ const m=e.target.value.match(/^(\d+)\s+\S/); if(m) updItem(li.id,{qty:String(parseInt(m[1]))}); }}
                                 style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
+                              {/* Qty row */}
+                              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:10, paddingTop:10, borderTop:"0.5px solid #F0F6F7" }}>
+                                <span style={{ fontSize:12, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em" }}>Units</span>
+                                <div style={{ display:"flex", alignItems:"center", gap:0, background:"#F7F5F0", borderRadius:10, overflow:"hidden" }}>
+                                  <button onClick={()=>{ const cur=Math.max(1,(parseInt(li.qty)||1)-1); updItem(li.id,{qty:String(cur)}); }}
+                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"7px 13px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>−</button>
+                                  <input type="number" min="1" value={li.qty||"1"}
+                                    onChange={e=>updItem(li.id,{qty:e.target.value||"1"})}
+                                    style={{ width:44, textAlign:"center", border:"none", outline:"none", background:"transparent", fontSize:15, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", padding:0 }}/>
+                                  <button onClick={()=>{ const cur=(parseInt(li.qty)||1)+1; updItem(li.id,{qty:String(cur)}); }}
+                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"7px 13px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>+</button>
+                                </div>
+                              </div>
                               {/* Photo section */}
                               <div style={{ marginTop:10 }}>
                                 {li.photo ? (
