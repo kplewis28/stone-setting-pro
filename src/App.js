@@ -545,9 +545,13 @@ export default function App() {
   const [noteAlert, setNoteAlert] = useState(null); // { date, text } to show on load
   const [dayModal, setDayModal]   = useState(null); // date string or null
 
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+  const [isTablet,  setIsTablet]  = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
   useEffect(() => {
-    const onResize = () => setIsDesktop(window.innerWidth >= 768);
+    const onResize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+      setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+    };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -935,6 +939,10 @@ export default function App() {
 
   const t = key => TRANS[lang]?.[key] ?? TRANS.en[key] ?? key;
 
+  // ── RESPONSIVE HELPERS ──
+  const SHEET_MAX = isTablet ? 640 : 500;   // bottom sheet / fixed bar max-width
+  const WRAP_MAX  = isDesktop ? "calc(100vw - 240px)" : isTablet ? 720 : 500;
+
   // ── AUTH HELPERS ──
   const signIn = async () => {
     setAuthLoading(true); setAuthError("");
@@ -1088,14 +1096,14 @@ export default function App() {
       )}
 
       {/* ── CONTENT WRAPPER ── */}
-      <div style={ isDesktop ? { marginLeft:240, minHeight:"100vh", maxWidth:"calc(100vw - 240px)" } : { maxWidth:500, margin:"0 auto", width:"100%" } }>
+      <div style={ isDesktop ? { marginLeft:240, minHeight:"100vh", maxWidth:"calc(100vw - 240px)" } : { maxWidth:WRAP_MAX, margin:"0 auto", width:"100%" } }>
 
       {/* ── HOME TAB ── */}
       {tab==="home" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
 
           {/* ── S1: HEADER ── */}
-          <div style={{ padding: isDesktop ? "36px 40px 20px" : "max(56px, env(safe-area-inset-top, 56px)) 22px 18px", background:"white" }}>
+          <div style={{ padding: isDesktop ? "36px 40px 20px" : isTablet ? "max(32px, env(safe-area-inset-top, 32px)) 32px 18px" : "max(56px, env(safe-area-inset-top, 56px)) 22px 18px", background:"white" }}>
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{greeting},</div>
@@ -1153,7 +1161,7 @@ export default function App() {
           </div>
 
           {/* ── S2: CTA PRINCIPAL ── */}
-          <div style={{ padding: isDesktop ? "0 40px 20px" : "0 22px 18px", background:"white" }}>
+          <div style={{ padding: isDesktop ? "0 40px 20px" : isTablet ? "0 32px 18px" : "0 22px 18px", background:"white" }}>
             <button onClick={()=>{ setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); setTab("orders"); setView("new"); }} style={{ width:"100%", background:PASTELS.orders, border:"none", borderRadius:20, padding:"20px 20px 22px", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
               <div style={{ display:"flex", alignItems:"center", gap:16 }}>
                 <div style={{ width:60, height:60, borderRadius:18, background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -1190,7 +1198,7 @@ export default function App() {
               return words.length <= 4 ? txt : words.slice(0,4).join(" ") + "…";
             };
             return (
-              <div style={{ padding: isDesktop ? "0 40px 20px" : "0 22px 18px" }}>
+              <div style={{ padding: isDesktop ? "0 40px 20px" : isTablet ? "0 32px 18px" : "0 22px 18px" }}>
                 <div style={{ border:"2px solid #C9933A", borderRadius:12, overflow:"hidden" }}>
                   {/* Header dorado sólido */}
                   <div style={{ background:"#C9933A", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -1266,7 +1274,7 @@ export default function App() {
             const headerDate = `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
 
             return (
-              <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : "0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+              <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : isTablet ? "0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" : "0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
                 {/* ── Contenedor unificado ── */}
                 <div style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
 
@@ -1383,12 +1391,12 @@ export default function App() {
       {/* ── SCAN TAB ── */}
       {tab==="scan" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
-          <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white", display:"flex", alignItems:"center", gap:14 }}>
+          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white", display:"flex", alignItems:"center", gap:14 }}>
             <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
             <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("scanTitle")}</div>
           </div>
 
-          <div style={{ padding: isDesktop?"0 40px 60px":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+          <div style={{ padding: isDesktop?"0 40px 60px":isTablet?"0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
             <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ setImgData(c); setPhotoStep("preview"); }); }; r.readAsDataURL(f); }}/>
 
             {photoStep==="capture" && (
@@ -1496,7 +1504,7 @@ export default function App() {
       {tab==="orders" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* HEADER */}
-          <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
+          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               {/* Left: date block (list) or back + title (other views) */}
               {view==="list" ? (
@@ -1563,7 +1571,7 @@ export default function App() {
             </div>
           )}
 
-          <div style={{ padding: view==="new" ? 0 : view==="detail" ? (isDesktop?"20px 0 120px":"12px 0 max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))") : isDesktop?"16px 40px 60px":"16px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+          <div style={{ padding: view==="new" ? 0 : view==="detail" ? (isDesktop?"20px 0 120px":"12px 0 max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))") : isDesktop?"16px 40px 60px":isTablet?"16px 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"16px 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
 
             {/* ── LIST ── */}
             {view==="list" && (
@@ -1749,7 +1757,7 @@ export default function App() {
 
                 {/* Bulk delete bar */}
                 {selectMode && selectedOrderIds.size > 0 && (
-                  <div style={{ position:"fixed", bottom:"max(80px, calc(72px + env(safe-area-inset-bottom, 0px)))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:468, zIndex:200, animation:"fadeUp 0.2s ease" }}>
+                  <div style={{ position:"fixed", bottom:"max(80px, calc(72px + env(safe-area-inset-bottom, 0px)))", left:"50%", transform:"translateX(-50%)", width:"calc(100% - 32px)", maxWidth:SHEET_MAX, zIndex:200, animation:"fadeUp 0.2s ease" }}>
                     <button onClick={()=>{
                       const count = selectedOrderIds.size;
                       showConfirm(`Delete ${count} order${count>1?"s":""}? This cannot be undone.`,()=>{
@@ -2014,7 +2022,7 @@ export default function App() {
                   </div>
 
                   {/* ── BOTÓN FIJO ── */}
-                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#F2EDE4", padding:"12px 16px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:200 }}>
+                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"#F2EDE4", padding:"12px 20px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:200 }}>
                     <button disabled={!draft.client} onClick={saveOrder}
                       style={{ width:"100%", padding:"17px", background: draft.client?"#C9933A":"#E8E4DC", color: draft.client?"white":"#9DB5B9", border:"none", borderRadius:14,
                         fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor: draft.client?"pointer":"default",
@@ -2026,7 +2034,7 @@ export default function App() {
                   {/* ── BOTTOM SHEET: NUEVO CLIENTE ── */}
                   {newClientSheet && (<>
                     <div onClick={()=>setNewClientSheet(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:300 }}/>
-                    <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"white", borderRadius:"24px 24px 0 0", padding:"0 0 max(28px, env(safe-area-inset-bottom, 28px))", zIndex:301 }}>
+                    <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"white", borderRadius:"24px 24px 0 0", padding:"0 0 max(28px, env(safe-area-inset-bottom, 28px))", zIndex:301 }}>
                       <div style={{ padding:"14px 0 0", display:"flex", justifyContent:"center" }}>
                         <div style={{ width:36, height:4, borderRadius:2, background:"#E8E4DC" }}/>
                       </div>
@@ -2278,7 +2286,7 @@ export default function App() {
                   </div>
 
                   {/* ── 5. BOTÓN PRINCIPAL FIJO AL FONDO ── */}
-                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#F2EDE4", padding:"12px 16px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
+                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"#F2EDE4", padding:"12px 20px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
                     {(st==="received"||st==="inprogress") && (
                       <button onClick={()=>setConfirmSheet({ type:"done", order:selectedOrder })}
                         style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
@@ -2331,7 +2339,7 @@ export default function App() {
             return (
               <>
                 {/* Header */}
-                <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
+                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
@@ -2345,7 +2353,7 @@ export default function App() {
                 </div>
 
                 {/* Filters + cards */}
-                <div style={{ padding: isDesktop?"0 40px 60px":"16px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+                <div style={{ padding: isDesktop?"0 40px 60px":isTablet?"16px 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"16px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
 
                   {invoices.length > 0 && (
                     <>
@@ -2485,7 +2493,7 @@ export default function App() {
             return (
               <>
                 {/* Header with live total */}
-                <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
+                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
@@ -2501,7 +2509,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div style={{ padding: isDesktop?"0 40px 60px":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+                <div style={{ padding: isDesktop?"0 40px 60px":isTablet?"0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
 
                   {/* Client + date */}
                   <Card>
@@ -2652,7 +2660,7 @@ export default function App() {
             const invTotal = invSub + invPortoVal + invMwst;
             return (
               <>
-                <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
+                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
@@ -2662,7 +2670,7 @@ export default function App() {
                     <button onClick={()=>showConfirm(`${t("deleteOrderConfirm")} ${inv.number}? ${t("cannotUndone")}.`,()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); showToast(t("invoiceDeleted"),"#da1e28"); })} style={{ width:36, height:36, borderRadius:11, background:"#fff1f1", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#da1e28"/></button>
                   </div>
                 </div>
-                <div style={{ padding: isDesktop?"20px 40px 100px":"20px 16px max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
+                <div style={{ padding: isDesktop?"20px 40px 100px":isTablet?"20px 32px max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))":"20px 16px max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
 
                   {/* ── INVOICE PREVIEW CARD ── */}
                   <div style={{ background:"white", border:"1.5px solid #E8E4DC", borderRadius:16, padding:"28px 24px", marginBottom:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
@@ -2737,7 +2745,7 @@ export default function App() {
                   </div>
 
                   {/* Botón fijo al fondo */}
-                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#F2EDE4", padding:"12px 16px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
+                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"#F2EDE4", padding:"12px 20px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
                     <button onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}
                       style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                       <Icon name="print" size={18} color="#C9933A"/> {t("printInvoiceBtn")}
@@ -2755,7 +2763,7 @@ export default function App() {
       {tab==="clients" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* Header */}
-          <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
+          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {clientView!=="list" && (
@@ -2779,7 +2787,7 @@ export default function App() {
             </div>
           </div>
 
-          <div style={{ padding: isDesktop?"20px 40px 60px":"20px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+          <div style={{ padding: isDesktop?"20px 40px 60px":isTablet?"20px 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"20px 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
 
             {/* ── LIST ── */}
             {clientView==="list" && (
@@ -2954,7 +2962,7 @@ export default function App() {
 
       {/* ── BOTTOM NAV (mobile only, hidden during wizard) ── */}
       {!isDesktop && !(tab==="orders" && view==="new") && (
-        <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#ffffff", borderTop:"none", boxShadow:"0 -4px 20px rgba(27,63,69,0.07)", display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
+        <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:WRAP_MAX, background:"#ffffff", borderTop:"none", boxShadow:"0 -4px 20px rgba(27,63,69,0.07)", display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
           {[
             { key:"home",    icon:"orders",  label:t("tabHome")    },
             { key:"scan",    icon:"scan",    label:t("tabScan")    },
@@ -3231,7 +3239,7 @@ export default function App() {
       {optionsMenu && (
         <div style={{ position:"fixed", inset:0, background:"rgba(27,63,69,0.35)", zIndex:3000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
              onClick={()=>setOptionsMenu(null)}>
-          <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"12px 0 max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
+          <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"12px 0 max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease" }}
                onClick={e=>e.stopPropagation()}>
             {/* Handle */}
             <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
@@ -3339,7 +3347,7 @@ export default function App() {
         if(type === "done") return (
           <div style={{ position:"fixed", inset:0, background:"rgba(27,63,69,0.35)", zIndex:3500, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
                onClick={close}>
-            <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
+            <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
               <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("markCompletedBtn")}</div>
@@ -3362,7 +3370,7 @@ export default function App() {
         if(type === "invoice") return (
           <div style={{ position:"fixed", inset:0, background:"rgba(27,63,69,0.35)", zIndex:3500, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
                onClick={close}>
-            <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
+            <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
               <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("createInvoiceForOrder")}</div>
@@ -3383,7 +3391,7 @@ export default function App() {
         if(type === "delete") return (
           <div style={{ position:"fixed", inset:0, background:"rgba(27,63,69,0.35)", zIndex:3500, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
                onClick={close}>
-            <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
+            <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
               <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("deleteOrderBtn")}</div>
@@ -3423,7 +3431,7 @@ export default function App() {
       {changePwOpen && (
         <>
           <div onClick={()=>{ setChangePwOpen(false); setNewPw(""); setNewPwConfirm(""); setPwError(""); }} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:3000 }}/>
-          <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"white", borderRadius:"24px 24px 0 0", padding:"0 0 max(28px, env(safe-area-inset-bottom, 28px))", zIndex:3001 }}>
+          <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"white", borderRadius:"24px 24px 0 0", padding:"0 0 max(28px, env(safe-area-inset-bottom, 28px))", zIndex:3001 }}>
             <div style={{ padding:"14px 0 0", display:"flex", justifyContent:"center" }}>
               <div style={{ width:36, height:4, borderRadius:2, background:"#E8E4DC" }}/>
             </div>
@@ -3457,7 +3465,7 @@ export default function App() {
       {/* ── CONFIRM MODAL ── */}
       {confirmModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:3000, display:"flex", alignItems:"flex-end", justifyContent:"center", padding:"0 16px 32px" }}>
-          <div style={{ background:"white", borderRadius:24, padding:"24px 24px 20px", width:"100%", maxWidth:468, animation:"fadeUp 0.2s ease", textAlign:"left" }}>
+          <div style={{ background:"white", borderRadius:24, padding:"24px 24px 20px", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease", textAlign:"left" }}>
             <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", marginBottom:8, textAlign:"center", letterSpacing:"-0.01em" }}>{t("areYouSure")}</div>
             <div style={{ fontSize:14, color:"#5A7A80", textAlign:"center", lineHeight:1.5, marginBottom:24 }}>{confirmModal.message}</div>
             <button onClick={()=>{ confirmModal.onConfirm(); setConfirmModal(null); }} style={{ width:"100%", padding:"16px", background:"#da1e28", color:"white", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:10 }}>
