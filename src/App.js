@@ -97,6 +97,89 @@ const TRANS = {
     donePromptBtn:"Confirm \u2014 order completed",
     noOrdersYet:"No orders yet",
     noOrdersDesc:"Your orders will appear here.",
+    todaysOrders:"Today's Orders",
+    noOrdersForDay:"No orders for this day",
+    noPendingOrders:"No pending orders",
+    viewAllOrders:"View all orders \u2192",
+    noDate:"No date",
+    scanTitle:"Scan Delivery Note",
+    takePhoto:"Take a photo",
+    cameraDesc:"Point your camera at the printed sheet inside the box. The AI reads everything automatically.",
+    openCamera:"Open Camera",
+    chooseGallery:"Choose from Gallery",
+    tipsTitle:"Tips for best results",
+    analyzeBtn:"Analyze with AI",
+    retakePhoto:"\u21a9 Retake photo",
+    aiReadThis:"AI read this",
+    confirmDetailsTitle:"Confirm details",
+    createOrderBtn:"Create Order",
+    orderCreatedTitle:"Order created!",
+    orderCreatedDesc:"It\u2019s now in your orders list.",
+    goToOrders:"Go to Orders \u2192",
+    scanAnother:"Scan another",
+    subtotalLabel:"Subtotal",
+    savedStatus:"Saved",
+    newBtn:"+ New",
+    noInvoicesMatch:"No invoices match this filter",
+    editClientTitle:"Edit Client",
+    noClientsDesc:"Add your clients to assign them to orders and invoices automatically.",
+    addClientBtn:"+ Add client",
+    noOrdersForClient:"No orders for this client yet.",
+    newOrderForClient:"+ New order for this client",
+    addOrderForDay:"Add order for this day",
+    notesLabel:"Notes",
+    activeAlert:"Active alert",
+    notePlaceholder:"Write a note for this day\u2026",
+    alertInfo:"An alert will be shown when the app is opened on this day.",
+    noteForToday:"Note for today",
+    gotItBtn:"Got it",
+    orderCompletedTitle:"Order completed!",
+    createInvoicePrompt:"Would you like to create an invoice for this order now?",
+    notNowBtn:"Not now",
+    yesCreateInvoice:"Yes, create invoice",
+    markedAsDone:"Marked as Done",
+    editOrderMenu:"Edit order",
+    editOrderSub:"Update details, items or date",
+    workCompletedSub:"Work is completed",
+    createInvoiceForOrder:"Create invoice for this order",
+    cannotUndone:"This cannot be undone",
+    orderIdLabel:"Order ID",
+    dueDateLabel:"Due date",
+    descriptionLabel:"Description",
+    pieceLabel:"Piece",
+    unitsLabel:"Units",
+    descPiecePlaceholder:"Describe the work to be done\u2026",
+    itemsForInvoice:"Items for invoice",
+    addItemBtn:"+ Add item",
+    saveChangesBtn:"Save changes",
+    itemsLabel:"Items",
+    editLabel:"Edit",
+    invoiceNotFound:"Invoice not found",
+    invoiceDeleted:"Invoice deleted",
+    clientDeleted:"Client deleted",
+    clientFieldLabel:"Client *",
+    workDescLabel:"Work description",
+    receivedDateLabel:"Received date",
+    deliveryDateLabel:"Delivery date",
+    addNewClientLink:"+ Add new client",
+    selectClientOption:"\u2014 Select client \u2014",
+    createClientBtn:"Create client \u2192",
+    addFromOrder:"+ Add items from another order\u2026",
+    deleteOrderBtn:"Delete order",
+    saveOrderBtn:"Save order",
+    ordersHeader:"Orders",
+    newClientHeader:"New client",
+    receivedLabel:"Received",
+    completedLabel:"Completed",
+    invoicedLabel:"Invoiced",
+    ordersSection:"Orders",
+    invoiceSheetSubtitle:"This will create an invoice with these details",
+    confirmCreateInvoiceBtn:"Confirm and create invoice",
+    yesDeleteOrder:"Yes, delete order",
+    orderDeletedToast:"Order deleted",
+    deleteOrderWarning:"This cannot be undone. All information for order #",
+    deleteOrderWarning2:"will be permanently deleted.",
+    deleteBtn:"Delete",
   },
   de: {
     tabHome:"Start", tabScan:"Scan", tabOrders:"Auftr\u00e4ge", tabClients:"Kunden", tabInvoice:"Rechnung",
@@ -147,6 +230,89 @@ const TRANS = {
     donePromptBtn:"Best\u00e4tigen \u2014 Auftrag abgeschlossen",
     noOrdersYet:"Noch keine Auftr\u00e4ge",
     noOrdersDesc:"Ihre Auftr\u00e4ge erscheinen hier.",
+    todaysOrders:"Heutige Auftr\u00e4ge",
+    noOrdersForDay:"Keine Auftr\u00e4ge f\u00fcr diesen Tag",
+    noPendingOrders:"Keine ausstehenden Auftr\u00e4ge",
+    viewAllOrders:"Alle Auftr\u00e4ge anzeigen \u2192",
+    noDate:"Kein Datum",
+    scanTitle:"Lieferschein scannen",
+    takePhoto:"Foto aufnehmen",
+    cameraDesc:"Kamera auf den Lieferschein im Karton richten. Die KI liest alles automatisch.",
+    openCamera:"Kamera \u00f6ffnen",
+    chooseGallery:"Aus Galerie w\u00e4hlen",
+    tipsTitle:"Tipps f\u00fcr beste Ergebnisse",
+    analyzeBtn:"Mit KI analysieren",
+    retakePhoto:"\u21a9 Foto wiederholen",
+    aiReadThis:"KI hat erkannt",
+    confirmDetailsTitle:"Details best\u00e4tigen",
+    createOrderBtn:"Auftrag erstellen",
+    orderCreatedTitle:"Auftrag erstellt!",
+    orderCreatedDesc:"Er ist jetzt in der Auftragsliste.",
+    goToOrders:"Zu Auftr\u00e4gen \u2192",
+    scanAnother:"Weiteren scannen",
+    subtotalLabel:"Zwischensumme",
+    savedStatus:"Gespeichert",
+    newBtn:"+ Neu",
+    noInvoicesMatch:"Keine Rechnungen f\u00fcr diesen Filter",
+    editClientTitle:"Kunde bearbeiten",
+    noClientsDesc:"F\u00fcgen Sie Kunden hinzu, um sie automatisch Auftr\u00e4gen und Rechnungen zuzuordnen.",
+    addClientBtn:"+ Kunde hinzuf\u00fcgen",
+    noOrdersForClient:"Noch keine Auftr\u00e4ge f\u00fcr diesen Kunden.",
+    newOrderForClient:"+ Neuer Auftrag f\u00fcr diesen Kunden",
+    addOrderForDay:"Auftrag f\u00fcr diesen Tag hinzuf\u00fcgen",
+    notesLabel:"Notizen",
+    activeAlert:"Aktiver Alarm",
+    notePlaceholder:"Notiz f\u00fcr diesen Tag schreiben\u2026",
+    alertInfo:"Beim \u00d6ffnen der App an diesem Tag wird ein Alarm angezeigt.",
+    noteForToday:"Notiz f\u00fcr heute",
+    gotItBtn:"Verstanden",
+    orderCompletedTitle:"Auftrag abgeschlossen!",
+    createInvoicePrompt:"M\u00f6chten Sie jetzt eine Rechnung f\u00fcr diesen Auftrag erstellen?",
+    notNowBtn:"Nicht jetzt",
+    yesCreateInvoice:"Ja, Rechnung erstellen",
+    markedAsDone:"Als erledigt markiert",
+    editOrderMenu:"Auftrag bearbeiten",
+    editOrderSub:"Details, Artikel oder Datum aktualisieren",
+    workCompletedSub:"Arbeit ist abgeschlossen",
+    createInvoiceForOrder:"Rechnung f\u00fcr diesen Auftrag erstellen",
+    cannotUndone:"Dies kann nicht r\u00fckg\u00e4ngig gemacht werden",
+    orderIdLabel:"Auftrags-ID",
+    dueDateLabel:"F\u00e4lligkeitsdatum",
+    descriptionLabel:"Beschreibung",
+    pieceLabel:"St\u00fcck",
+    unitsLabel:"Einheiten",
+    descPiecePlaceholder:"Zu erledigende Arbeit beschreiben\u2026",
+    itemsForInvoice:"Artikel f\u00fcr Rechnung",
+    addItemBtn:"+ Artikel hinzuf\u00fcgen",
+    saveChangesBtn:"\u00c4nderungen speichern",
+    itemsLabel:"Artikel",
+    editLabel:"Bearbeiten",
+    invoiceNotFound:"Rechnung nicht gefunden",
+    invoiceDeleted:"Rechnung gel\u00f6scht",
+    clientDeleted:"Kunde gel\u00f6scht",
+    clientFieldLabel:"Kunde *",
+    workDescLabel:"Arbeitsbeschreibung",
+    receivedDateLabel:"Eingangsdatum",
+    deliveryDateLabel:"Lieferdatum",
+    addNewClientLink:"+ Neuen Kunden hinzuf\u00fcgen",
+    selectClientOption:"\u2014 Kunden ausw\u00e4hlen \u2014",
+    createClientBtn:"Kunden erstellen \u2192",
+    addFromOrder:"+ Artikel aus einem anderen Auftrag hinzuf\u00fcgen\u2026",
+    deleteOrderBtn:"Auftrag l\u00f6schen",
+    saveOrderBtn:"Auftrag speichern",
+    ordersHeader:"Auftr\u00e4ge",
+    newClientHeader:"Neuer Kunde",
+    receivedLabel:"Erhalten",
+    completedLabel:"Abgeschlossen",
+    invoicedLabel:"Verrechnet",
+    ordersSection:"Auftr\u00e4ge",
+    invoiceSheetSubtitle:"Damit wird eine Rechnung mit diesen Details erstellt",
+    confirmCreateInvoiceBtn:"Best\u00e4tigen und Rechnung erstellen",
+    yesDeleteOrder:"Ja, Auftrag l\u00f6schen",
+    orderDeletedToast:"Auftrag gel\u00f6scht",
+    deleteOrderWarning:"Dies kann nicht r\u00fckg\u00e4ngig gemacht werden. Alle Informationen zu Auftrag #",
+    deleteOrderWarning2:"werden dauerhaft gel\u00f6scht.",
+    deleteBtn:"L\u00f6schen",
   }
 };
 
@@ -906,11 +1072,11 @@ export default function App() {
             </div>
           </div>
           {[
-            { key:"home",    icon:"orders",  label:"Home"    },
-            { key:"scan",    icon:"scan",    label:"Scan"    },
-            { key:"orders",  icon:"gem",     label:"Orders"  },
-            { key:"clients", icon:"person",  label:"Clients" },
-            { key:"invoice", icon:"invoice", label:"Invoice" },
+            { key:"home",    icon:"orders",  label:t("tabHome")    },
+            { key:"scan",    icon:"scan",    label:t("tabScan")    },
+            { key:"orders",  icon:"gem",     label:t("tabOrders")  },
+            { key:"clients", icon:"person",  label:t("tabClients") },
+            { key:"invoice", icon:"invoice", label:t("tabInvoice") },
           ].map(({ key, icon, label }) => (
             <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); if(key==="clients")setClientView("list"); }}
               style={{ width:"100%", background: tab===key ? "rgba(201,147,58,0.18)" : "none", borderLeft: tab===key ? `3px solid #C9933A` : "3px solid transparent", borderTop:"none", borderRight:"none", borderBottom:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:12, padding:"14px 20px", transition:"all 0.1s" }}>
@@ -938,14 +1104,8 @@ export default function App() {
                   {orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} active order{orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length!==1?"s":""}
                 </div>
               </div>
-              {/* Bell + Avatar */}
+              {/* Avatar */}
               <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:4, position:"relative" }}>
-                <button onClick={()=>{}} style={{ width:40, height:40, borderRadius:12, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
-                  <Icon name="bell" size={20} color="#1B3F45"/>
-                  {orders.filter(o=>o.deadline===TODAY&&o.status!=="done"&&o.status!=="invoiced").length > 0 && (
-                    <div style={{ position:"absolute", top:8, right:8, width:7, height:7, borderRadius:"50%", background:"#da1e28", border:"1.5px solid white" }}/>
-                  )}
-                </button>
                 <button onClick={()=>setProfileOpen(p=>!p)}
                   style={{ width:40, height:40, borderRadius:12, background:"#1B3F45", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   <span style={{ fontSize:14, fontWeight:700, color:"white", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.ownerName.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
@@ -977,13 +1137,13 @@ export default function App() {
                       <button onClick={()=>{ setProfileOpen(false); setChangePwOpen(true); }}
                         style={{ width:"100%", padding:"13px 16px", background:"none", border:"none", borderBottom:"0.5px solid #F0EDE8", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:10 }}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                        Change password
+                        {t("profileChangePw")}
                       </button>
                       {/* Sign out */}
                       <button onClick={signOut}
                         style={{ width:"100%", padding:"13px 16px", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:600, color:"#da1e28", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:10 }}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#da1e28" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                        Sign out
+                        {t("profileSignOut")}
                       </button>
                     </div>
                   </>
@@ -1000,8 +1160,8 @@ export default function App() {
                   <Icon name="gem" size={28} color="white"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:18, fontWeight:600, color:"#1B3F45", letterSpacing:"-0.01em" }}>New order</div>
-                  <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:3 }}>Create work order</div>
+                  <div style={{ fontSize:18, fontWeight:600, color:"#1B3F45", letterSpacing:"-0.01em" }}>{t("newOrderBtn")}</div>
+                  <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:3 }}>{t("createWorkOrderSub")}</div>
                 </div>
               </div>
               <div style={{ width:36, height:36, borderRadius:10, background:"rgba(27,63,69,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -1034,18 +1194,18 @@ export default function App() {
                 <div style={{ border:"2px solid #C9933A", borderRadius:12, overflow:"hidden" }}>
                   {/* Header dorado sólido */}
                   <div style={{ background:"#C9933A", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:14, fontWeight:500, color:"white" }}>Needs attention</span>
+                    <span style={{ fontSize:14, fontWeight:500, color:"white" }}>{t("needsAttention")}</span>
                     <div style={{ background:"rgba(255,255,255,0.2)", borderRadius:20, padding:"2px 10px" }}>
-                      <span style={{ fontSize:12, fontWeight:700, color:"white" }}>{urgentes.length} urgent</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:"white" }}>{urgentes.length} {lang==="de"?"dringend":"urgent"}</span>
                     </div>
                   </div>
                   {/* Filas */}
                   {urgentes.map((o, idx) => {
                     const isToday = o.deadline === todayStr;
                     const isOverdue = o.deadline < todayStr;
-                    const labelFecha = isOverdue ? "Overdue" : isToday ? "Today" : "Tomorrow";
+                    const labelFecha = isOverdue ? t("overdueLabel") : isToday ? t("todayLabel") : t("tomorrowLabel");
                     const desc = trunca4(o.description || [o.field1, o.field2].filter(Boolean).join(" · "));
-                    const tipo = o.status === "inprogress" ? "In Review" : "Delivery";
+                    const tipo = o.status === "inprogress" ? t("inReviewStatus") : t("dueLabel");
                     const piezas = o.pieces || "—";
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
@@ -1112,7 +1272,7 @@ export default function App() {
 
                   {/* Parte A: Header */}
                   <div style={{ padding:"16px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:17, fontWeight:800, color:"#1B3F45" }}>Today's Orders</span>
+                    <span style={{ fontSize:17, fontWeight:800, color:"#1B3F45" }}>{t("todaysOrders")}</span>
                     <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{headerDate}</span>
                   </div>
 
@@ -1149,8 +1309,8 @@ export default function App() {
                   <div style={{ padding:"10px 16px", background:"#F7F5F0" }}>
                     <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>
                       {ordersForDay.length > 0
-                        ? `${ordersForDay.length} ${ordersForDay.length===1?"order":"orders"} for this day`
-                        : "No orders for this day"}
+                        ? `${ordersForDay.length} ${lang==="de"?(ordersForDay.length===1?"Auftrag":"Aufträge")+" für diesen Tag":(ordersForDay.length===1?"order":"orders")+" for this day"}`
+                        : t("noOrdersForDay")}
                     </span>
                   </div>
 
@@ -1159,7 +1319,7 @@ export default function App() {
 
                   {/* Cards de órdenes */}
                   {sorted.length === 0 && (
-                    <div style={{ padding:"28px 16px", textAlign:"center", color:"#5A7A80", fontSize:14 }}>No pending orders</div>
+                    <div style={{ padding:"28px 16px", textAlign:"center", color:"#5A7A80", fontSize:14 }}>{t("noPendingOrders")}</div>
                   )}
                   {sorted.map((o, idx) => {
                     const urg = getUrgency(o.deadline);
@@ -1195,7 +1355,7 @@ export default function App() {
                                 </span>
                               </>
                             ) : (
-                              <span style={{ fontSize:12, color:"#5A7A80" }}>No date</span>
+                              <span style={{ fontSize:12, color:"#5A7A80" }}>{t("noDate")}</span>
                             )}
                           </div>
                           <StatusPill status={o.status}/>
@@ -1209,7 +1369,7 @@ export default function App() {
                     <>
                       <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
                       <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"15px 16px", background:"#F7F5F0", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
-                        View all orders →
+                        {t("viewAllOrders")}
                       </button>
                     </>
                   )}
@@ -1225,7 +1385,7 @@ export default function App() {
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white", display:"flex", alignItems:"center", gap:14 }}>
             <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
-            <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>Scan Delivery Note</div>
+            <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("scanTitle")}</div>
           </div>
 
           <div style={{ padding: isDesktop?"0 40px 60px":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
@@ -1237,15 +1397,15 @@ export default function App() {
                   <div style={{ width:80, height:80, background:"#F0F6F7", borderRadius:24, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
                     <Icon name="camera" size={36} color="#1B3F45"/>
                   </div>
-                  <div style={{ fontSize:20, fontWeight:700, color:"#1B3F45", marginBottom:8 }}>Take a photo</div>
-                  <div style={{ fontSize:14, color:"#5A7A80", lineHeight:1.6, marginBottom:28 }}>Point your camera at the printed sheet inside the box. The AI reads everything automatically.</div>
+                  <div style={{ fontSize:20, fontWeight:700, color:"#1B3F45", marginBottom:8 }}>{t("takePhoto")}</div>
+                  <div style={{ fontSize:14, color:"#5A7A80", lineHeight:1.6, marginBottom:28 }}>{t("cameraDesc")}</div>
                   <BtnPrimary onClick={()=>{ fileRef.current.setAttribute("capture","environment"); fileRef.current.click(); }}>
-                    <Icon name="camera" size={18} color="white"/> Open Camera
+                    <Icon name="camera" size={18} color="white"/> {t("openCamera")}
                   </BtnPrimary>
                   <div style={{ height:10 }}/>
-                  <BtnGhost onClick={()=>{ fileRef.current.removeAttribute("capture"); fileRef.current.click(); }}>Choose from Gallery</BtnGhost>
+                  <BtnGhost onClick={()=>{ fileRef.current.removeAttribute("capture"); fileRef.current.click(); }}>{t("chooseGallery")}</BtnGhost>
                 </div>
-                <SectionTitle>Tips for best results</SectionTitle>
+                <SectionTitle>{t("tipsTitle")}</SectionTitle>
                 {[["Good lighting","Natural light, no shadows on the document"],["Keep it flat","Place sheet on flat surface"],["Full document","Entire sheet visible in frame"]].map(([t,d])=>(
                   <div key={t} style={{ display:"flex", gap:12, marginBottom:10, alignItems:"flex-start" }}>
                     <div style={{ width:6, height:6, borderRadius:"50%", background:ACCENT, marginTop:6, flexShrink:0 }}/>
@@ -1267,9 +1427,9 @@ export default function App() {
                 ) : (
                   <>
                     {aiError && <div style={{ background:"#FF3B3015", border:"1px solid #FF3B3030", borderRadius:12, padding:"12px 14px", marginBottom:12, fontSize:13, color:"#da1e28", lineHeight:1.5 }}>{aiError}</div>}
-                    <BtnPrimary onClick={analyzePhoto}><Icon name="scan" size={18} color="white"/> Analyze with AI</BtnPrimary>
+                    <BtnPrimary onClick={analyzePhoto}><Icon name="scan" size={18} color="white"/> {t("analyzeBtn")}</BtnPrimary>
                     <div style={{ height:10 }}/>
-                    <BtnGhost onClick={resetPhoto}>↩ Retake photo</BtnGhost>
+                    <BtnGhost onClick={resetPhoto}>{t("retakePhoto")}</BtnGhost>
                   </>
                 )}
               </>
@@ -1278,41 +1438,41 @@ export default function App() {
             {photoStep==="review" && extracted && (
               <>
                 <Card style={{ marginBottom:16 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:ACCENT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:8 }}>AI read this</div>
+                  <div style={{ fontSize:11, fontWeight:700, color:ACCENT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:8 }}>{t("aiReadThis")}</div>
                   <div style={{ fontSize:14, color:"#5A7A80", lineHeight:1.6, fontStyle:"italic" }}>"{extracted.summary}"</div>
                 </Card>
-                <SectionTitle>Confirm details</SectionTitle>
+                <SectionTitle>{t("confirmDetailsTitle")}</SectionTitle>
                 <Card>
                   {/* Client picker */}
-                  <Field label="Client *">
+                  <Field label={t("clientFieldLabel")}>
                     {clients.length > 0
                       ? <Select value={extracted.clientId||""} onChange={e=>{
                           const c = clients.find(x=>x.id===e.target.value);
                           setExtracted({...extracted, clientId: e.target.value, client: c ? (c.company||c.name) : ""});
                         }}>
-                          <option value="">— Select client —</option>
+                          <option value="">{t("selectClientOption")}</option>
                           {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
                         </Select>
-                      : <Input placeholder="Client or company" value={extracted.client||""} onChange={e=>setExtracted({...extracted,client:e.target.value})}/>
+                      : <Input placeholder={t("clientFieldLabel")} value={extracted.client||""} onChange={e=>setExtracted({...extracted,client:e.target.value})}/>
                     }
-                    {clients.length > 0 && <div onClick={()=>{ setTab("clients"); setClientView("new"); setClientDraft(newClient()); }} style={{ fontSize:12, color:ACCENT, fontWeight:600, marginTop:6, cursor:"pointer" }}>+ Add new client</div>}
+                    {clients.length > 0 && <div onClick={()=>{ setTab("clients"); setClientView("new"); setClientDraft(newClient()); }} style={{ fontSize:12, color:ACCENT, fontWeight:600, marginTop:6, cursor:"pointer" }}>{t("addNewClientLink")}</div>}
                   </Field>
-                  <Field label="Work description">
-                    <Textarea value={extracted.description||extracted.notes||""} onChange={e=>setExtracted({...extracted,description:e.target.value})} placeholder="Work description…"/>
+                  <Field label={t("workDescLabel")}>
+                    <Textarea value={extracted.description||extracted.notes||""} onChange={e=>setExtracted({...extracted,description:e.target.value})} placeholder={t("workDescLabel")+"\u2026"}/>
                   </Field>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                    <Field label="Received date">
+                    <Field label={t("receivedDateLabel")}>
                       <Input type="date" value={extracted.received||new Date().toISOString().split("T")[0]} onChange={e=>setExtracted({...extracted,received:e.target.value})}/>
                     </Field>
-                    <Field label="Delivery date">
+                    <Field label={t("deliveryDateLabel")}>
                       <Input type="date" value={extracted.deadline||""} onChange={e=>setExtracted({...extracted,deadline:e.target.value})}/>
                     </Field>
                   </div>
                   <Field label={C.piecesLabel}><Input type="number" placeholder="0" value={extracted.pieces||""} onChange={e=>setExtracted({...extracted,pieces:e.target.value})}/></Field>
                 </Card>
-                <BtnPrimary disabled={!extracted.client} onClick={confirmOrder}><Icon name="check" size={18} color="white"/> Create Order</BtnPrimary>
+                <BtnPrimary disabled={!extracted.client} onClick={confirmOrder}><Icon name="check" size={18} color="white"/> {t("createOrderBtn")}</BtnPrimary>
                 <div style={{ height:10 }}/>
-                <BtnGhost onClick={resetPhoto}>↩ Retake photo</BtnGhost>
+                <BtnGhost onClick={resetPhoto}>{t("retakePhoto")}</BtnGhost>
               </>
             )}
 
@@ -1321,11 +1481,11 @@ export default function App() {
                 <div style={{ width:72, height:72, background:`${ACCENT}15`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
                   <Icon name="check" size={32} color={ACCENT}/>
                 </div>
-                <div style={{ fontSize:24, fontWeight:700, color:"#1B3F45", marginBottom:8 }}>Order created!</div>
-                <div style={{ fontSize:15, color:"#5A7A80", marginBottom:32 }}>It's now in your orders list.</div>
-                <BtnPrimary onClick={()=>{ setTab("orders"); setView("list"); resetPhoto(); }}>Go to Orders →</BtnPrimary>
+                <div style={{ fontSize:24, fontWeight:700, color:"#1B3F45", marginBottom:8 }}>{t("orderCreatedTitle")}</div>
+                <div style={{ fontSize:15, color:"#5A7A80", marginBottom:32 }}>{t("orderCreatedDesc")}</div>
+                <BtnPrimary onClick={()=>{ setTab("orders"); setView("list"); resetPhoto(); }}>{t("goToOrders")}</BtnPrimary>
                 <div style={{ height:10 }}/>
-                <BtnGhost onClick={resetPhoto}>Scan another</BtnGhost>
+                <BtnGhost onClick={resetPhoto}>{t("scanAnother")}</BtnGhost>
               </div>
             )}
           </div>
@@ -1356,7 +1516,7 @@ export default function App() {
                   <button onClick={()=>{ if(view==="edit") setView("detail"); else if(view==="new" && newOrderStep>1) setNewOrderStep(s=>s-1); else setView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                   <div>
                     <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
-                      {view==="new" ? "New order" : view==="edit" ? "Edit order" : view==="detail" ? selectedOrder?.client : "Orders"}
+                      {view==="new" ? t("newOrderTitle") : view==="edit" ? t("editOrderTitle") : view==="detail" ? selectedOrder?.client : t("ordersHeader")}
                     </div>
                     {view==="detail" && selectedOrder?.orderNumber && (
                       <div style={{ fontSize:11, fontWeight:600, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Order #{selectedOrder.orderNumber}</div>
@@ -1371,9 +1531,9 @@ export default function App() {
               {view==="list" && (
                 <div style={{ display:"flex", gap:8 }}>
                   {selectMode
-                    ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Cancel</button>
+                    ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("cancelBtn")}</button>
                     : <>
-                        <button onClick={()=>setSelectMode(true)} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Select</button>
+                        <button onClick={()=>setSelectMode(true)} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("selectBtn")}</button>
                         <button onClick={()=>{ setView("new"); setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); }} style={{ width:38, height:38, borderRadius:14, background:"#C9933A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           <Icon name="plus" size={18} color="white"/>
                         </button>
@@ -1384,7 +1544,7 @@ export default function App() {
               {view==="detail" && selectedOrder && (
                 <div style={{ display:"flex", gap:8 }}>
                   <button onClick={()=>setWorkOrderPreview(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                    <Icon name="print" size={15} color="#1B3F45"/> Print
+                    <Icon name="print" size={15} color="#1B3F45"/> {t("printBtn")}
                   </button>
                   <button onClick={()=>setOptionsMenu(selectedOrder)} style={{ width:38, height:38, background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                     <Icon name="dots" size={18} color="#1B3F45"/>
@@ -1421,7 +1581,7 @@ export default function App() {
                 {[...new Set(orders.map(o=>o.client).filter(Boolean))].length > 1 && (
                   <div style={{ marginBottom:10 }}>
                     <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ fontSize:13, padding:"10px 36px 10px 12px", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>
-                      <option value="all">All clients</option>
+                      <option value="all">{t("allClients")}</option>
                       {[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
                     </Select>
                   </div>
@@ -1543,13 +1703,13 @@ export default function App() {
                                 </div>
                                 <div style={{ width:"1px", height:40, background: urg.accent !== "transparent" ? `${urg.accent}30` : "#D8D4CC", flexShrink:0 }}/>
                                 <div>
-                                  <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:3 }}>Due</div>
+                                  <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:3 }}>{t("dueLabel")}</div>
                                   {urg.label && <div style={{ fontSize:14, fontWeight:800, color: urg.accent }}>{urg.label}</div>}
                                   {!urg.label && <div style={{ fontSize:13, fontWeight:600, color:"#5A7A80" }}>{deadlineDate.toLocaleDateString("en-US",{weekday:"long"})}</div>}
                                 </div>
                               </>
                             ) : (
-                              <div style={{ fontSize:13, color:"#9DB5B9", fontStyle:"italic" }}>No due date</div>
+                              <div style={{ fontSize:13, color:"#9DB5B9", fontStyle:"italic" }}>{t("noDueDateLabel")}</div>
                             )}
                           </div>
 
@@ -1563,20 +1723,20 @@ export default function App() {
                             <div style={{ display:"flex", gap:8, marginTop: o.description ? 0 : 10 }} onClick={e=>e.stopPropagation()}>
                               <button onClick={()=>setWorkOrderPreview(o)}
                                 style={{ flex:1, padding:"9px 6px", background:"#F0F6F7", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
-                                <Icon name="print" size={13} color="#1B3F45"/> Work order
+                                <Icon name="print" size={13} color="#1B3F45"/> {t("workOrderBtn")}
                               </button>
                               {o.status==="invoiced" ? (()=>{
                                 const linkedInv = invoices.find(inv=>inv.items&&inv.items.some(it=>it.orderRef===o.id));
                                 return (
-                                  <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast("Invoice not found","#da1e28"); }}
+                                  <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast(t("invoiceNotFound"),"#da1e28"); }}
                                     style={{ flex:1, padding:"9px 6px", background:"#1B3F45", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:700, color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
-                                    <Icon name="invoice" size={13} color="#C9933A"/> Print invoice
+                                    <Icon name="invoice" size={13} color="#C9933A"/> {t("printInvoiceBtn")}
                                   </button>
                                 );
                               })() : (
                                 <button onClick={()=>setConfirmSheet({ type:"invoice", order:o })}
                                   style={{ flex:1, padding:"9px 6px", background:"#C9933A", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:700, color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
-                                  <Icon name="invoice" size={13} color="white"/> Create invoice
+                                  <Icon name="invoice" size={13} color="white"/> {t("createInvoiceBtn")}
                                 </button>
                               )}
                             </div>
@@ -1696,12 +1856,12 @@ export default function App() {
 
                   {/* ── SECCIÓN 1: CLIENTE ── */}
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="1" text="Choose a client" subtitle="Who is this order for? Select an existing client or create a new one."/>
+                    <SectionLabel num="1" text={t("chooseClientSection")} subtitle={t("chooseClientSub")}/>
                     <div style={{ background:"white", borderRadius:16, border:"1px solid #E8E4DC", overflow:"hidden" }}>
                       {/* Buscador */}
                       <div style={{ display:"flex", alignItems:"center", gap:10, padding:"13px 14px" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                        <input value={clientSearch} onChange={e=>setClientSearch(e.target.value)} placeholder="Search client..." style={{ flex:1, border:"none", outline:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent" }}/>
+                        <input value={clientSearch} onChange={e=>setClientSearch(e.target.value)} placeholder={t("searchClientPlaceholder")} style={{ flex:1, border:"none", outline:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent" }}/>
                         {clientSearch && <button onClick={()=>setClientSearch("")} style={{ background:"none", border:"none", color:"#9DB5B9", cursor:"pointer", fontSize:18, padding:0, lineHeight:1 }}>×</button>}
                       </div>
                       <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
@@ -1721,7 +1881,7 @@ export default function App() {
                             </div>
                             <div style={{ flex:1, minWidth:0 }}>
                               <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>{name}</div>
-                              <div style={{ fontSize:12, color:"#9DB5B9", marginTop:2 }}>{orderCount} {orderCount===1?"previous order":"previous orders"}</div>
+                              <div style={{ fontSize:12, color:"#9DB5B9", marginTop:2 }}>{orderCount} {lang==="de"?(orderCount===1?"vorheriger Auftrag":"vorherige Aufträge"):(orderCount===1?"previous order":"previous orders")}</div>
                             </div>
                             {isSelected
                               ? <div style={{ width:22, height:22, borderRadius:"50%", background:"#198038", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon name="check" size={13} color="white"/></div>
@@ -1734,7 +1894,7 @@ export default function App() {
                       <button onClick={()=>{ setSheetClient({name:"",address:"",phone:"",email:""}); setNewClientSheet(true); }}
                         style={{ width:"100%", background:"none", border:"none", padding:"15px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:10, justifyContent:"center" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Create new client</span>
+                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("createNewClientBtn")}</span>
                       </button>
                     </div>
                   </div>
@@ -1744,7 +1904,7 @@ export default function App() {
 
                   {/* ── SECCIÓN 2: PIEZAS ── */}
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="2" text={`Add the pieces${items.length > 0 ? ` · ${items.reduce((s,li)=>s+(parseInt(li.qty)||1),0)} pcs` : ""}`} subtitle={'Start the description with a number to set the quantity (e.g. "3 rings"). Add as many as needed.'}/>
+                    <SectionLabel num="2" text={`${t("addPiecesSection")}${items.length > 0 ? ` · ${items.reduce((s,li)=>s+(parseInt(li.qty)||1),0)} pcs` : ""}`} subtitle={t("addPiecesSub")}/>
                     <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                       {items.map((li,idx)=>{
                         const isDragging = dragIdx===idx;
@@ -1761,7 +1921,7 @@ export default function App() {
                                 style={{ padding:"6px 12px", cursor:"grab", touchAction:"none", display:"flex", flexDirection:"column", gap:3, opacity:0.35, flexShrink:0 }}>
                                 {[0,1,2].map(r=><div key={r} style={{ width:16, height:1.5, background:"#1B3F45", borderRadius:1 }}/>)}
                               </div>
-                              <span style={{ fontSize:12, fontWeight:800, color:"#1B3F45", letterSpacing:"0.07em", textTransform:"uppercase", flex:1 }}>Piece {idx+1}</span>
+                              <span style={{ fontSize:12, fontWeight:800, color:"#1B3F45", letterSpacing:"0.07em", textTransform:"uppercase", flex:1 }}>{t("pieceLabel")} {idx+1}</span>
                               <div style={{ display:"flex", alignItems:"center" }}>
                                 <button onClick={()=>dupItem(li)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 8px", display:"flex", alignItems:"center" }}>
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -1775,12 +1935,12 @@ export default function App() {
                             </div>
                             {/* Cuerpo */}
                             <div style={{ padding:"12px 14px 14px" }}>
-                              <textarea placeholder="Describe the work to be done…" value={li.desc||""}
+                              <textarea placeholder={t("descPiecePlaceholder")} value={li.desc||""}
                                 onChange={e=>updItem(li.id,{desc:e.target.value})}
                                 style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
                               {/* Qty row */}
                               <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10, paddingTop:10, borderTop:"0.5px solid #F0F6F7" }}>
-                                <span style={{ fontSize:12, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", flexShrink:0 }}>Units</span>
+                                <span style={{ fontSize:12, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", flexShrink:0 }}>{t("unitsLabel")}</span>
                                 <div style={{ display:"flex", alignItems:"center", gap:0, background:"#F7F5F0", borderRadius:10, overflow:"hidden", flex:1 }}>
                                   <button onClick={()=>{ const cur=Math.max(1,(parseInt(li.qty)||1)-1); updItem(li.id,{qty:String(cur)}); }}
                                     style={{ background:"none", border:"none", cursor:"pointer", padding:"10px 14px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif", flexShrink:0 }}>−</button>
@@ -1808,7 +1968,7 @@ export default function App() {
                                   <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
                                     style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", background:"#FBF5E8", border:"1.5px dashed #C9933A", borderRadius:10, cursor:"pointer", width:"100%", justifyContent:"center" }}>
                                     <Icon name="camera" size={16} color="#C9933A"/>
-                                    <span style={{ fontSize:13, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Add photo of this piece</span>
+                                    <span style={{ fontSize:13, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("addPhotoBtn")}</span>
                                   </button>
                                 )}
                               </div>
@@ -1819,7 +1979,7 @@ export default function App() {
                       <button onClick={()=>setDraft(d=>({...d,lineItems:[...(d.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:"",photo:null}]}))}
                         style={{ width:"100%", border:"1.5px dashed #C9933A", borderRadius:14, background:"none", padding:"15px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:4 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>Add another piece</span>
+                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("addAnotherPieceBtn")}</span>
                       </button>
                     </div>
                   </div>
@@ -1829,7 +1989,7 @@ export default function App() {
 
                   {/* ── SECCIÓN 3: FECHA Y NOTAS ── */}
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="3" text="Set the delivery deadline" subtitle="When does this order need to be ready? You can also add special instructions."/>
+                    <SectionLabel num="3" text={t("setDeadlineSection")} subtitle={t("setDeadlineSub")}/>
                     {/* Fechas rápidas */}
                     <div style={{ display:"flex", gap:8, marginBottom:12 }}>
                       {quickDates.map(qd=>(
@@ -1847,7 +2007,7 @@ export default function App() {
                       style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:15, color: draft.deadline?"#1B3F45":"#9DB5B9",
                         fontFamily:"'IBM Plex Sans', sans-serif", background:"white", boxSizing:"border-box", outline:"none", marginBottom:14 }}/>
                     <textarea value={draft.description} onChange={e=>setDraft(d=>({...d,description:e.target.value}))}
-                      placeholder="Special instructions, client reference, desired finish…"
+                      placeholder={t("specialInstructionsPlaceholder")}
                       rows={3}
                       style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:15, color:"#1B3F45",
                         fontFamily:"'IBM Plex Sans', sans-serif", resize:"none", background:"white", boxSizing:"border-box", outline:"none", lineHeight:1.5 }}/>
@@ -1859,7 +2019,7 @@ export default function App() {
                       style={{ width:"100%", padding:"17px", background: draft.client?"#C9933A":"#E8E4DC", color: draft.client?"white":"#9DB5B9", border:"none", borderRadius:14,
                         fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor: draft.client?"pointer":"default",
                         boxShadow: draft.client?"0 4px 16px rgba(201,147,58,0.3)":"none", transition:"all 0.2s" }}>
-                      {draft.client ? `Save order · ${clientName}` : "Select a client first"}
+                      {draft.client ? `${t("saveOrderBtn")} · ${clientName}` : t("selectClientFirst")}
                     </button>
                   </div>
 
@@ -1871,7 +2031,7 @@ export default function App() {
                         <div style={{ width:36, height:4, borderRadius:2, background:"#E8E4DC" }}/>
                       </div>
                       <div style={{ padding:"16px 24px 4px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                        <span style={{ fontSize:18, fontWeight:800, color:"#1B3F45" }}>New client</span>
+                        <span style={{ fontSize:18, fontWeight:800, color:"#1B3F45" }}>{t("newClientHeader")}</span>
                         <button onClick={()=>setNewClientSheet(false)} style={{ background:"#F0F6F7", border:"none", borderRadius:"50%", width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                         </button>
@@ -1916,7 +2076,7 @@ export default function App() {
                           cursor:sheetClient.name.trim()?"pointer":"default",
                           boxShadow: sheetClient.name.trim()?"0 4px 14px rgba(201,147,58,0.3)":"none",
                           transition:"all 0.15s" }}>
-                          Create client →
+                          {t("createClientBtn")}
                         </button>
                       </div>
                     </div>
@@ -1928,23 +2088,23 @@ export default function App() {
             {/* ── EDIT ORDER ── */}
             {view==="edit" && (
               <Card>
-                <Field label="Client *">
+                <Field label={t("clientFieldLabel")}>
                   {clients.length > 0
                     ? <Select value={draft.clientId} onChange={e=>{ const c=clients.find(x=>x.id===e.target.value); setDraft({...draft,clientId:e.target.value,client:c?(c.company||c.name):""}); }}>
-                        <option value="">— Select client —</option>
+                        <option value="">{t("selectClientOption")}</option>
                         {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
                       </Select>
                     : <Input placeholder="Client or company" value={draft.client} onChange={e=>setDraft({...draft,client:e.target.value})}/>
                   }
                 </Field>
-                <Field label="Work description">
-                  <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder="Work description…"/>
+                <Field label={t("workDescLabel")}>
+                  <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder={t("workDescLabel")+"\u2026"}/>
                 </Field>
-                <Field label="Delivery date">
+                <Field label={t("deliveryDateLabel")}>
                   <Input type="date" value={draft.deadline} onChange={e=>setDraft({...draft,deadline:e.target.value})}/>
                 </Field>
                 <div style={{ marginTop:8, marginBottom:4 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Items for invoice</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>{t("itemsForInvoice")}</div>
                   {(draft.lineItems||[]).map((li,idx)=>{ const mv=(a,f,t)=>{const b=[...a];const[x]=b.splice(f,1);b.splice(t,0,x);return b;}; return (
                     <div key={li.id} style={{ background:"#F0F6F7", borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
@@ -1966,14 +2126,14 @@ export default function App() {
                       {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#5A7A80", marginTop:6 }}>Total: <strong style={{color:"#1B3F45"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
                     </div>
                   );})}
-                  <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E8E4DC", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>+ Add item</button>
+                  <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E8E4DC", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("addItemBtn")}</button>
                 </div>
-                <BtnPrimary disabled={!draft.client} onClick={()=>{ setOrders(orders.map(o=>o.id===draft.id?{...draft}:o)); setView("detail"); showToast("Order updated"); }}>
-                  Save changes
+                <BtnPrimary disabled={!draft.client} onClick={()=>{ setOrders(orders.map(o=>o.id===draft.id?{...draft}:o)); setView("detail"); showToast(t("orderUpdated")); }}>
+                  {t("saveChangesBtn")}
                 </BtnPrimary>
                 <div style={{ height:10 }}/>
-                <button onClick={()=>showConfirm("This order and all its items will be permanently deleted.",()=>{ setOrders(orders.filter(o=>o.id!==draft.id)); setView("list"); showToast("Order deleted","#da1e28"); })} style={{ width:"100%", background:"none", border:"none", color:"#da1e28", fontSize:13, fontWeight:600, cursor:"pointer", padding:"8px 0" }}>
-                  Delete order
+                <button onClick={()=>showConfirm(t("cannotUndone"),()=>{ setOrders(orders.filter(o=>o.id!==draft.id)); setView("list"); showToast(t("deleteOrderConfirm"),"#da1e28"); })} style={{ width:"100%", background:"none", border:"none", color:"#da1e28", fontSize:13, fontWeight:600, cursor:"pointer", padding:"8px 0" }}>
+                  {t("deleteOrderBtn")}
                 </button>
               </Card>
             )}
@@ -1989,7 +2149,7 @@ export default function App() {
                 : parseFloat(selectedOrder.amount)||0;
 
               /* ── Progress bar helpers ── */
-              const STEPS = ["Received","In Progress","Completed","Invoiced"];
+              const STEPS = [t("receivedStep"),t("inProgressStep"),t("completedStep"),t("invoicedStep")];
               const activeIdx = { received:1, inprogress:2, done:3, invoiced:-1 }[st] ?? 1;
               const isCompleted = idx => st==="invoiced" || idx < activeIdx;
               const isActive    = idx => st!=="invoiced" && idx===activeIdx;
@@ -2008,9 +2168,9 @@ export default function App() {
                         <Icon name="alert" size={18} color="#8A6220"/>
                       </div>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>Pending</div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("pendingStatus")}</div>
                         <div style={{ fontSize:10, color:"#BA9B55", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                          Received {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · Due ${fmtDate(selectedOrder.deadline)}` : ""}
+                          {t("receivedLabel")} {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · ${t("dueLabel")} ${fmtDate(selectedOrder.deadline)}` : ""}
                         </div>
                       </div>
                     </div>
@@ -2021,9 +2181,9 @@ export default function App() {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
                       </div>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>In Review</div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("inReviewStatus")}</div>
                         <div style={{ fontSize:10, color:"#5A7A80", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                          Received {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · Due ${fmtDate(selectedOrder.deadline)}` : ""}
+                          {t("receivedLabel")} {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · ${t("dueLabel")} ${fmtDate(selectedOrder.deadline)}` : ""}
                         </div>
                       </div>
                     </div>
@@ -2034,8 +2194,8 @@ export default function App() {
                         <Icon name="checkCircle" size={18} color="#1B6048"/>
                       </div>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B6048", fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?"Invoiced":"Completed"}</div>
-                        <div style={{ fontSize:10, color:"#3B8060", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?"Invoice created":"Ready to invoice"}</div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#1B6048", fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?t("invoicedLabel"):t("completedLabel")}</div>
+                        <div style={{ fontSize:10, color:"#3B8060", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?t("invoiceCreatedLabel"):t("readyToInvoice")}</div>
                       </div>
                     </div>
                   )}
@@ -2073,12 +2233,12 @@ export default function App() {
                     {/* Fila A — Order ID + Entrega */}
                     <div style={{ padding:"13px 16px", borderBottom:"0.5px solid #F5F3EF", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                       <div>
-                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Order ID</div>
+                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("orderIdLabel")}</div>
                         <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>#{selectedOrder.id}</div>
                       </div>
                       {selectedOrder.deadline && (
                         <div style={{ textAlign:"right" }}>
-                          <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Due date</div>
+                          <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("dueDateLabel")}</div>
                           <div style={{ fontSize:14, fontWeight:600, color: dlPast?"#E24B4A":"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{fmtDate(selectedOrder.deadline)}</div>
                         </div>
                       )}
@@ -2087,7 +2247,7 @@ export default function App() {
                     {/* Fila B — Descripción */}
                     {selectedOrder.description && (
                       <div style={{ padding:"13px 16px", borderBottom:"0.5px solid #F5F3EF" }}>
-                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5, fontFamily:"'IBM Plex Sans', sans-serif" }}>Description</div>
+                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("descriptionLabel")}</div>
                         <div style={{ fontSize:13, color:"#1B3F45", lineHeight:1.6, fontFamily:"'IBM Plex Sans', sans-serif" }}>{selectedOrder.description}</div>
                       </div>
                     )}
@@ -2111,7 +2271,7 @@ export default function App() {
                     {/* Fila D — Total */}
                     {orderTotal > 0 && (
                       <div style={{ padding:"13px 16px", background:"#F7F5F0", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <span style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Total</span>
+                        <span style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("totalLabel")}</span>
                         <span style={{ fontSize:18, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.currency} {fmt(orderTotal)}</span>
                       </div>
                     )}
@@ -2122,13 +2282,13 @@ export default function App() {
                     {(st==="received"||st==="inprogress") && (
                       <button onClick={()=>setConfirmSheet({ type:"done", order:selectedOrder })}
                         style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                        <Icon name="check" size={18} color="#C9933A"/> Mark as completed
+                        <Icon name="check" size={18} color="#C9933A"/> {t("markCompletedBtn")}
                       </button>
                     )}
                     {st==="done" && (
                       <button onClick={()=>setConfirmSheet({ type:"invoice", order:selectedOrder })}
                         style={{ width:"100%", padding:"16px", background:"#C9933A", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                        <Icon name="invoice" size={18} color="white"/> Create invoice
+                        <Icon name="invoice" size={18} color="white"/> {t("createInvoiceBtn")}
                       </button>
                     )}
                     {st==="invoiced" && (()=>{
@@ -2137,11 +2297,11 @@ export default function App() {
                         <div style={{ display:"flex", gap:10 }}>
                           <button onClick={()=>setWorkOrderPreview(selectedOrder)}
                             style={{ flex:1, padding:"15px 8px", background:"#E0EDEF", color:"#1B3F45", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                            <Icon name="print" size={16} color="#1B3F45"/> Work order
+                            <Icon name="print" size={16} color="#1B3F45"/> {t("workOrderBtn")}
                           </button>
-                          <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast("Invoice not found","#da1e28"); }}
+                          <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast(t("invoiceNotFound"),"#da1e28"); }}
                             style={{ flex:1, padding:"15px 8px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                            <Icon name="invoice" size={16} color="#C9933A"/> Print invoice
+                            <Icon name="invoice" size={16} color="#C9933A"/> {t("printInvoiceBtn")}
                           </button>
                         </div>
                       );
@@ -2174,12 +2334,12 @@ export default function App() {
                 <div style={{ padding: isDesktop?"32px 40px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
-                      <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>Invoices</div>
+                      <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
                       {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
                     </div>
                     <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
                       style={{ background:"#C9933A", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", letterSpacing:"-0.01em" }}>
-                      + New
+                      {t("newBtn")}
                     </button>
                   </div>
                 </div>
@@ -2192,9 +2352,9 @@ export default function App() {
                       {/* Status pills */}
                       <div className="pills-row" style={{ marginBottom:10 }}>
                         {[
-                          { key:"all",       label:"All",       count: invoices.length },
-                          { key:"unprinted", label:"Unprinted", count: invoices.filter(i=>!i.printed).length },
-                          { key:"printed",   label:"Printed",   count: invoices.filter(i=>i.printed).length  },
+                          { key:"all",       label:t("allFilter"),           count: invoices.length },
+                          { key:"unprinted", label:t("unprintedFilter"),   count: invoices.filter(i=>!i.printed).length },
+                          { key:"printed",   label:t("printedFilter"),     count: invoices.filter(i=>i.printed).length  },
                         ].map(({key, label, count}) => (
                           <button key={key} onClick={()=>setFilterInvStatus(key)}
                             style={{ padding:"8px 16px", borderRadius:100, border:"none", background: filterInvStatus===key?"#1B3F45":"white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterInvStatus===key?"white":"#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
@@ -2208,7 +2368,7 @@ export default function App() {
                         <div style={{ marginBottom:14 }}>
                           <select value={filterInvClient} onChange={e=>setFilterInvClient(e.target.value)}
                             style={{ ...selectBase, fontSize:13, padding:"10px 36px 10px 12px", color: filterInvClient!=="all"?"#1B3F45":"#5A7A80" }}>
-                            <option value="all">All clients</option>
+                            <option value="all">{t("allClients")}</option>
                             {invClients.map(c=><option key={c} value={c}>{c}</option>)}
                           </select>
                         </div>
@@ -2227,13 +2387,13 @@ export default function App() {
                   {invoices.length === 0 && (
                     <div style={{ textAlign:"center", padding:"48px 24px" }}>
                       <div style={{ width:72, height:72, borderRadius:22, background:PASTELS.invoice, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}><Icon name="receipt" size={32} color="#5A7A80"/></div>
-                      <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", marginBottom:6, letterSpacing:"-0.01em" }}>No invoices yet</div>
-                      <div style={{ fontSize:13, color:"#5A7A80", lineHeight:1.6 }}>Invoices created from orders appear here.<br/>You can also create one manually.</div>
+                      <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", marginBottom:6, letterSpacing:"-0.01em" }}>{t("noInvoicesYet")}</div>
+                      <div style={{ fontSize:13, color:"#5A7A80", lineHeight:1.6 }}>{t("noInvoicesDesc").split("\n").map((l,i)=><span key={i}>{l}{i===0&&<br/>}</span>)}</div>
                     </div>
                   )}
 
                   {invoices.length > 0 && filtered.length === 0 && (
-                    <div style={{ textAlign:"center", padding:"40px 24px", color:"#9DB5B9", fontSize:14 }}>No invoices match this filter</div>
+                    <div style={{ textAlign:"center", padding:"40px 24px", color:"#9DB5B9", fontSize:14 }}>{t("noInvoicesMatch")}</div>
                   )}
 
                   {filtered.map((inv) => {
@@ -2250,7 +2410,7 @@ export default function App() {
                         </div>
                         <div style={{ textAlign:"right", flexShrink:0 }}>
                           <div style={{ fontSize:16, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.01em" }}>{C.currency} {fmt(invTotal)}</div>
-                          <span style={{ fontSize:11, fontWeight:700, color: inv.printed?"#198038":"#C9933A", marginTop:3, display:"block" }}>{inv.printed?"Printed":"Saved"}</span>
+                          <span style={{ fontSize:11, fontWeight:700, color: inv.printed?"#198038":"#C9933A", marginTop:3, display:"block" }}>{inv.printed?t("printedFilter"):t("savedStatus")}</span>
                         </div>
                       </button>
                     );
@@ -2396,7 +2556,7 @@ export default function App() {
 
 
                   {/* Items — all, whether from order or manual */}
-                  <SectionTitle>Items</SectionTitle>
+                  <SectionTitle>{t("itemsLabel")}</SectionTitle>
                   {items.map((it,idx)=>{ const mv=(a,f,t)=>{const b=[...a];const[x]=b.splice(f,1);b.splice(t,0,x);return b;}; return (
                     <Card key={it.id}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
@@ -2419,7 +2579,7 @@ export default function App() {
                     </Card>
                   );})}
 
-                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E8E4DC", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:600, color:"#5A7A80", cursor:"pointer", marginBottom:10 }}>+ Add item</button>
+                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E8E4DC", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:600, color:"#5A7A80", cursor:"pointer", marginBottom:10 }}>{t("addItemBtn")}</button>
 
                   {/* Add items from another order of the same client */}
                   {(() => {
@@ -2439,7 +2599,7 @@ export default function App() {
                           const newItems = (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }));
                           setItems([...items, ...newItems]);
                         }}>
-                          <option value="">+ Add items from another order…</option>
+                          <option value="">{t("addFromOrder")}</option>
                           {otherOrders.map(o=>(
                             <option key={o.id} value={o.id}>
                               #{o.id}{o.description ? ` · ${o.description}` : ""}{o.deadline ? ` · ${o.deadline}` : ""}
@@ -2453,11 +2613,11 @@ export default function App() {
                   {/* Live total */}
                   {(draftSub>0||draftPorto>0) && (
                     <Card style={{ background:"#1B3F45" }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Subtotal</span><span>{C.currency} {fmt(draftSub)}</span></div>
-                      {draftPorto>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>Postage</span><span>{C.currency} {fmt(draftPorto)}</span></div>}
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>{t("subtotalLabel")}</span><span>{C.currency} {fmt(draftSub)}</span></div>
+                      {draftPorto>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:6 }}><span>{t("postageLabel")}</span><span>{C.currency} {fmt(draftPorto)}</span></div>}
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(draftTax)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid rgba(255,255,255,0.15)", paddingTop:12 }}>
-                        <span style={{ fontSize:16, fontWeight:700, color:"white" }}>Total</span>
+                        <span style={{ fontSize:16, fontWeight:700, color:"white" }}>{t("totalLabel")}</span>
                         <span style={{ fontSize:22, fontWeight:800, color:"white" }}>{C.currency} {fmt(draftTotal)}</span>
                       </div>
                     </Card>
@@ -2468,15 +2628,15 @@ export default function App() {
                     <div style={{ background:"#FBF5E8", border:"1px solid #E8C97A", borderRadius:12, padding:"12px 14px", marginBottom:14, display:"flex", alignItems:"flex-start", gap:10 }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A6220" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginTop:1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:700, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>Postage not added</div>
-                        <div style={{ fontSize:12, color:"#BA9B55", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>Scroll up to add shipping cost before saving.</div>
+                        <div style={{ fontSize:13, fontWeight:700, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("postageNotAdded")}</div>
+                        <div style={{ fontSize:12, color:"#BA9B55", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("postageScrollUp")}</div>
                       </div>
                     </div>
                   )}
                   <button disabled={!invClient||items.every(it=>!it.desc&&!it.price)}
                     onClick={()=>saveInvoice(true)}
                     style={{ width:"100%", padding:"16px", background: (!invClient||items.every(it=>!it.desc&&!it.price))?"#C6C6C6":"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor: (!invClient||items.every(it=>!it.desc&&!it.price))?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                    <Icon name="invoice" size={18} color={(!invClient||items.every(it=>!it.desc&&!it.price)) ? "white" : "#C9933A"}/> Save invoice
+                    <Icon name="invoice" size={18} color={(!invClient||items.every(it=>!it.desc&&!it.price)) ? "white" : "#C9933A"}/> {t("saveInvoiceBtn")}
                   </button>
                 </div>
               </>
@@ -2499,7 +2659,7 @@ export default function App() {
                       <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{inv.number}</div>
                       {inv.client && <div style={{ fontSize:13, color:"#5A7A80", marginTop:2, fontWeight:500 }}>{inv.client}</div>}
                     </div>
-                    <button onClick={()=>showConfirm(`Delete invoice ${inv.number}? This cannot be undone.`,()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); showToast("Invoice deleted","#da1e28"); })} style={{ width:36, height:36, borderRadius:11, background:"#fff1f1", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#da1e28"/></button>
+                    <button onClick={()=>showConfirm(`${t("deleteOrderConfirm")} ${inv.number}? ${t("cannotUndone")}.`,()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); showToast(t("invoiceDeleted"),"#da1e28"); })} style={{ width:36, height:36, borderRadius:11, background:"#fff1f1", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#da1e28"/></button>
                   </div>
                 </div>
                 <div style={{ padding: isDesktop?"20px 40px 100px":"20px 16px max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
@@ -2513,7 +2673,7 @@ export default function App() {
                         <div style={{ fontSize:10, color:"#E8E4DC", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700 }}>Rechnung</div>
                         <div style={{ fontSize:13, fontFamily:"monospace", fontWeight:700, color:"#1B3F45", marginTop:2 }}>{inv.number}</div>
                         <div style={{ fontSize:11, color:"#5A7A80" }}>{new Date(inv.date+"T12:00:00").toLocaleDateString("de-CH")}</div>
-                        <div style={{ fontSize:11, marginTop:6, padding:"2px 8px", borderRadius:6, display:"inline-block", background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#198038":"#C9933A", fontWeight:700 }}>{inv.printed?"Printed":"Saved"}</div>
+                        <div style={{ fontSize:11, marginTop:6, padding:"2px 8px", borderRadius:6, display:"inline-block", background: inv.printed?"#34C75920":"#FF950020", color: inv.printed?"#198038":"#C9933A", fontWeight:700 }}>{inv.printed?t("printedFilter"):t("savedStatus")}</div>
                       </div>
                     </div>
 
@@ -2561,11 +2721,11 @@ export default function App() {
 
                     {/* Totals */}
                     <div style={{ borderTop:"1px solid #E8E4DC", paddingTop:10 }}>
-                      {invPortoVal>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:4 }}><span>Postage</span><span>{C.currency} {fmt(invPortoVal)}</span></div>}
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:4 }}><span>Subtotal</span><span>{C.currency} {fmt(invSub)}</span></div>
+                      {invPortoVal>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:4 }}><span>{t("postageLabel")}</span><span>{C.currency} {fmt(invPortoVal)}</span></div>}
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:4 }}><span>{t("subtotalLabel")}</span><span>{C.currency} {fmt(invSub)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(invMwst)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", borderTop:"2px solid #1C1C1E", paddingTop:10 }}>
-                        <span style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>Total</span>
+                        <span style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>{t("totalLabel")}</span>
                         <span style={{ fontSize:18, fontWeight:800, color:ACCENT }}>{C.currency} {fmt(invTotal)}</span>
                       </div>
                     </div>
@@ -2580,7 +2740,7 @@ export default function App() {
                   <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#F2EDE4", padding:"12px 16px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
                     <button onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}
                       style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                      <Icon name="print" size={18} color="#C9933A"/> Print invoice
+                      <Icon name="print" size={18} color="#C9933A"/> {t("printInvoiceBtn")}
                     </button>
                   </div>
                 </div>
@@ -2603,7 +2763,7 @@ export default function App() {
                 )}
                 <div>
                   <div style={{ fontSize: clientView==="list"?28:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
-                    {clientView==="list" ? "Clients" : clientView==="new" ? "New Client" : clientView==="edit" ? "Edit Client" : (clients.find(c=>c.id===selectedClientId)?.company || clients.find(c=>c.id===selectedClientId)?.name || "Client")}
+                    {clientView==="list" ? t("clientsTitle") : clientView==="new" ? t("newClientTitle") : clientView==="edit" ? t("editClientTitle") : (clients.find(c=>c.id===selectedClientId)?.company || clients.find(c=>c.id===selectedClientId)?.name || t("clientsTitle"))}
                   </div>
                   {clientView==="list" && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{clients.length} client{clients.length!==1?"s":""}</div>}
                 </div>
@@ -2614,7 +2774,7 @@ export default function App() {
                 </button>
               )}
               {clientView==="detail" && (
-                <button onClick={()=>{ setClientDraft({...clients.find(c=>c.id===selectedClientId)}); setClientView("edit"); }} style={{ background:"#F0F6F7", border:"none", cursor:"pointer", padding:"8px 14px", borderRadius:10, fontSize:13, fontWeight:700, color:"#1B3F45" }}>Edit</button>
+                <button onClick={()=>{ setClientDraft({...clients.find(c=>c.id===selectedClientId)}); setClientView("edit"); }} style={{ background:"#F0F6F7", border:"none", cursor:"pointer", padding:"8px 14px", borderRadius:10, fontSize:13, fontWeight:700, color:"#1B3F45" }}>{t("editLabel")}</button>
               )}
             </div>
           </div>
@@ -2627,9 +2787,9 @@ export default function App() {
                 {clients.length === 0 && (
                   <div style={{ textAlign:"center", padding:"48px 24px" }}>
                     <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}><Icon name="users" size={48} color="#E8E4DC"/></div>
-                    <div style={{ fontSize:15, fontWeight:600, color:"#1B3F45", marginBottom:6 }}>No clients yet</div>
-                    <div style={{ fontSize:13, color:"#5A7A80", lineHeight:1.6, marginBottom:24 }}>Add your clients to assign them to orders and invoices automatically.</div>
-                    <BtnPrimary onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ maxWidth:220, margin:"0 auto" }}>+ Add client</BtnPrimary>
+                    <div style={{ fontSize:15, fontWeight:600, color:"#1B3F45", marginBottom:6 }}>{t("noClientsYet")}</div>
+                    <div style={{ fontSize:13, color:"#5A7A80", lineHeight:1.6, marginBottom:24 }}>{t("noClientsDesc")}</div>
+                    <BtnPrimary onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ maxWidth:220, margin:"0 auto" }}>{t("addClientBtn")}</BtnPrimary>
                   </div>
                 )}
                 {clients.length > 0 && (
@@ -2647,7 +2807,7 @@ export default function App() {
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{name}</div>
                             <div style={{ fontSize:12, color:"#9DB5B9", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                              {orderCount > 0 ? `${orderCount} ${orderCount===1?"order":"orders"}` : c.address?.split("\n")[0] || "No orders"}
+                              {orderCount > 0 ? `${orderCount} ${lang==="de"?(orderCount===1?"Auftrag":"Aufträge"):(orderCount===1?"order":"orders")}` : c.address?.split("\n")[0] || t("noOrdersYet")}
                             </div>
                           </div>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C8C4BC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
@@ -2729,7 +2889,7 @@ export default function App() {
                     cursor:(clientDraft.company||clientDraft.name)?"pointer":"default",
                     boxShadow:(clientDraft.company||clientDraft.name)?"0 4px 14px rgba(201,147,58,0.3)":"none",
                     transition:"all 0.15s" }}>
-                  {clientView==="edit" ? "Save changes" : "Save client"}
+                  {clientView==="edit" ? t("saveChangesBtn") : t("saveClientBtn")}
                 </button>
               </div>
             )}
@@ -2753,19 +2913,19 @@ export default function App() {
                     </div>
                     {c.address && (
                       <div style={{ marginBottom:12 }}>
-                        <div style={{ fontSize:11, color:"#5A7A80", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Address</div>
+                        <div style={{ fontSize:11, color:"#5A7A80", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>{t("addressLabel")}</div>
                         <div style={{ fontSize:13, color:"#1B3F45", lineHeight:1.6, whiteSpace:"pre-line" }}>{c.address}</div>
                       </div>
                     )}
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                      {c.phone && <div><div style={{ fontSize:11, color:"#5A7A80", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Phone</div><div style={{ fontSize:13, color:"#1B3F45" }}>{c.phone}</div></div>}
-                      {c.email && <div><div style={{ fontSize:11, color:"#5A7A80", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>Email</div><div style={{ fontSize:13, color:"#1B3F45", wordBreak:"break-all" }}>{c.email}</div></div>}
+                      {c.phone && <div><div style={{ fontSize:11, color:"#5A7A80", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>{t("phoneLabel")}</div><div style={{ fontSize:13, color:"#1B3F45" }}>{c.phone}</div></div>}
+                      {c.email && <div><div style={{ fontSize:11, color:"#5A7A80", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>{t("emailLabel")}</div><div style={{ fontSize:13, color:"#1B3F45", wordBreak:"break-all" }}>{c.email}</div></div>}
                     </div>
                   </Card>
 
                   <SectionTitle>Orders ({clientOrders.length})</SectionTitle>
                   {clientOrders.length === 0 && (
-                    <div style={{ textAlign:"center", padding:"24px", color:"#5A7A80", fontSize:13 }}>No orders for this client yet.</div>
+                    <div style={{ textAlign:"center", padding:"24px", color:"#5A7A80", fontSize:13 }}>{t("noOrdersForClient")}</div>
                   )}
                   {clientOrders.map(o=>(
                     <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
@@ -2782,7 +2942,7 @@ export default function App() {
                     </button>
                   ))}
                   <BtnPrimary onClick={()=>{ setView("new"); setDraft({...newOrder(), clientId:c.id, client: c.company||c.name}); setTab("orders"); }} style={{ marginTop:8 }}>
-                    + New order for this client
+                    {t("newOrderForClient")}
                   </BtnPrimary>
                 </>
               );
@@ -2796,11 +2956,11 @@ export default function App() {
       {!isDesktop && !(tab==="orders" && view==="new") && (
         <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:500, background:"#ffffff", borderTop:"none", boxShadow:"0 -4px 20px rgba(27,63,69,0.07)", display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
           {[
-            { key:"home",    icon:"orders",  label:"Home"    },
-            { key:"scan",    icon:"scan",    label:"Scan"    },
-            { key:"orders",  icon:"gem",     label:"Orders"  },
-            { key:"clients", icon:"person",  label:"Clients" },
-            { key:"invoice", icon:"invoice", label:"Invoice" },
+            { key:"home",    icon:"orders",  label:t("tabHome")    },
+            { key:"scan",    icon:"scan",    label:t("tabScan")    },
+            { key:"orders",  icon:"gem",     label:t("tabOrders")  },
+            { key:"clients", icon:"person",  label:t("tabClients") },
+            { key:"invoice", icon:"invoice", label:t("tabInvoice") },
           ].map(({ key, icon, label }) => (
             <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice"){ setInvView("list"); setSelectedInvoice(null); } if(key==="clients"){ setClientView("list"); } }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"4px 0" }}>
               <div style={{ width:44, height:32, background:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -2940,9 +3100,11 @@ export default function App() {
                     <Icon name="bell" size={20} color="white"/>
                     <div>
                       <div style={{ fontSize:14, fontWeight:700, color:"white" }}>
-                        {isPast&&!isToday ? `${dayOrders.length} overdue deliver${dayOrders.length>1?"ies":"y"}` : `${dayOrders.length} deliver${dayOrders.length>1?"ies":"y"} today`}
+                        {isPast&&!isToday
+                          ? (lang==="de" ? `${dayOrders.length} überfällige Lieferung${dayOrders.length>1?"en":""}` : `${dayOrders.length} overdue deliver${dayOrders.length>1?"ies":"y"}`)
+                          : (lang==="de" ? `${dayOrders.length} Lieferung${dayOrders.length>1?"en":""} heute` : `${dayOrders.length} deliver${dayOrders.length>1?"ies":"y"} today`)}
                       </div>
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)" }}>These orders are still pending</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)" }}>{lang==="de"?"Diese Aufträge sind noch ausstehend":"These orders are still pending"}</div>
                     </div>
                   </div>
                 )}
@@ -2950,7 +3112,7 @@ export default function App() {
                 {/* Pending orders */}
                 {dayOrders.length > 0 && (
                   <>
-                    <div style={{ fontSize:11, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'IBM Plex Sans', sans-serif" }}>Pending · {dayOrders.length}</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("pendingStatus")} · {dayOrders.length}</div>
                     {dayOrders.map(o=>(
                       <button key={o.id} onClick={()=>{ setDayModal(null); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:PASTELS.inprogress, border:"none", borderRadius:14, padding:"13px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left" }}>
@@ -2971,7 +3133,7 @@ export default function App() {
                 {/* Done orders for this day */}
                 {doneOrders.length > 0 && (
                   <>
-                    <div style={{ fontSize:11, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, marginTop:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Completed · {doneOrders.length}</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, marginTop:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("completedLabel")} · {doneOrders.length}</div>
                     {doneOrders.map(o=>(
                       <button key={o.id} onClick={()=>{ setDayModal(null); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:PASTELS.done, border:"none", borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", opacity:0.8 }}>
@@ -2986,28 +3148,28 @@ export default function App() {
                 )}
 
                 {dayOrders.length===0 && doneOrders.length===0 && (
-                  <div style={{ textAlign:"center", padding:"20px 0 8px", color:"#E8E4DC", fontSize:13 }}>No orders for this day</div>
+                  <div style={{ textAlign:"center", padding:"20px 0 8px", color:"#E8E4DC", fontSize:13 }}>{t("noOrdersForDay")}</div>
                 )}
 
                 {/* Add order for this day */}
                 <button onClick={()=>{ setDayModal(null); setDraft({...newOrder(), deadline:d}); setView("new"); setTab("orders"); }}
                   style={{ width:"100%", padding:"13px", background:"#F0F6F7", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, color:"#1B3F45", cursor:"pointer", marginTop:4, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                  <Icon name="plus" size={16} color="#1B3F45"/> Add order for this day
+                  <Icon name="plus" size={16} color="#1B3F45"/> {t("addOrderForDay")}
                 </button>
 
                 {/* Notes */}
                 <div style={{ marginTop:16 }}>
                   <div style={{ fontSize:11, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:6 }}>
-                    Notes
-                    {alertOn && <span style={{ fontSize:10, color:ACCENT, background:`${ACCENT}15`, padding:"2px 7px", borderRadius:6, fontWeight:700 }}>Active alert</span>}
+                    {t("notesLabel")}
+                    {alertOn && <span style={{ fontSize:10, color:ACCENT, background:`${ACCENT}15`, padding:"2px 7px", borderRadius:6, fontWeight:700 }}>{t("activeAlert")}</span>}
                   </div>
                   <Textarea
-                    placeholder="Write a note for this day…"
+                    placeholder={t("notePlaceholder")}
                     value={noteText}
                     onChange={e=>setDayNotes(n=>({...n,[d]:{...(n[d]||{}),text:e.target.value}}))}
                     rows={3}
                   />
-                  {alertOn && <div style={{ fontSize:11, color:"#5A7A80", marginTop:6 }}>An alert will be shown when the app is opened on this day.</div>}
+                  {alertOn && <div style={{ fontSize:11, color:"#5A7A80", marginTop:6 }}>{t("alertInfo")}</div>}
                 </div>
               </div>
             </div>
@@ -3025,12 +3187,12 @@ export default function App() {
                 <Icon name="bell" size={20} color="white"/>
               </div>
               <div>
-                <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em" }}>Note for today</div>
+                <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em" }}>{t("noteForToday")}</div>
                 <div style={{ fontSize:12, color:"#5A7A80", fontWeight:500 }}>{new Date(noteAlert.date+"T12:00:00").toLocaleDateString("en-GB",{ weekday:"long", day:"numeric", month:"long" })}</div>
               </div>
             </div>
             <div style={{ background:PASTELS.scan, borderRadius:14, padding:"14px 16px", fontSize:14, color:"#1B3F45", lineHeight:1.6, marginBottom:20, whiteSpace:"pre-wrap", fontWeight:500 }}>{noteAlert.text}</div>
-            <button onClick={()=>setNoteAlert(null)} style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>Got it</button>
+            <button onClick={()=>setNoteAlert(null)} style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>{t("gotItBtn")}</button>
           </div>
         </div>
       )}
@@ -3045,12 +3207,12 @@ export default function App() {
                 <Icon name="checkCircle" size={32} color="#198038"/>
               </div>
             </div>
-            <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", textAlign:"center", marginBottom:8, letterSpacing:"-0.02em" }}>Order completed!</div>
-            <div style={{ fontSize:14, color:"#5A7A80", textAlign:"center", marginBottom:28, lineHeight:1.6, fontWeight:500 }}>Would you like to create an invoice for this order now?</div>
+            <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", textAlign:"center", marginBottom:8, letterSpacing:"-0.02em" }}>{t("orderCompletedTitle")}</div>
+            <div style={{ fontSize:14, color:"#5A7A80", textAlign:"center", marginBottom:28, lineHeight:1.6, fontWeight:500 }}>{t("createInvoicePrompt")}</div>
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              <button onClick={()=>{ setDoneModal(null); setView("detail"); showToast("Marked as Done","#198038"); }}
+              <button onClick={()=>{ setDoneModal(null); setView("detail"); showToast(t("markedAsDone"),"#198038"); }}
                 style={{ width:"100%", padding:"16px", background:"#F0F6F7", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, color:"#1B3F45", cursor:"pointer" }}>
-                Not now
+                {t("notNowBtn")}
               </button>
               <button onClick={()=>{
                 const o = orders.find(x=>x.id===doneModal);
@@ -3058,7 +3220,7 @@ export default function App() {
                 if(o) loadOrderIntoInvoice(o);
               }}
                 style={{ width:"100%", padding:"16px", background:"#1B3F45", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, color:"white", cursor:"pointer" }}>
-                Yes, create invoice
+                {t("yesCreateInvoice")}
               </button>
             </div>
           </div>
@@ -3086,8 +3248,8 @@ export default function App() {
                 <Icon name="pencil" size={18} color="#1B3F45"/>
               </div>
               <div>
-                <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Edit order</div>
-                <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Update details, items or date</div>
+                <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("editOrderMenu")}</div>
+                <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("editOrderSub")}</div>
               </div>
             </button>
 
@@ -3099,8 +3261,8 @@ export default function App() {
                   <Icon name="check" size={18} color="#1B6048"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Mark as completed</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Work is completed</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("markCompletedBtn")}</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("workCompletedSub")}</div>
                 </div>
               </button>
             )}
@@ -3113,8 +3275,8 @@ export default function App() {
                   <Icon name="invoice" size={18} color="#8A6220"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Create invoice</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Create invoice for this order</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("createInvoiceBtn")}</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("createInvoiceForOrder")}</div>
                 </div>
               </button>
             )}
@@ -3132,8 +3294,8 @@ export default function App() {
                   <Icon name="trash" size={18} color="#A32D2D"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#A32D2D", fontFamily:"'IBM Plex Sans', sans-serif" }}>Delete order</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>This cannot be undone</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#A32D2D", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("deleteOrderBtn")}</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("cannotUndone")}</div>
                 </div>
               </button>
             )}
@@ -3152,7 +3314,7 @@ export default function App() {
         const OrderSummary = () => (
           <div style={{ background:"#F7F5F0", borderRadius:9, padding:"12px 14px", marginBottom:16 }}>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-              <span style={{ fontSize:11, color:"#9DB5B9", fontWeight:500, fontFamily:"'IBM Plex Sans', sans-serif" }}>Cliente</span>
+              <span style={{ fontSize:11, color:"#9DB5B9", fontWeight:500, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("clientFieldLabel")}</span>
               <span style={{ fontSize:11, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{order.client||"—"}</span>
             </div>
             {(order.lineItems||[]).filter(li=>li.desc).map(li=>(
@@ -3166,7 +3328,7 @@ export default function App() {
             )}
             {total > 0 && (
               <div style={{ display:"flex", justifyContent:"space-between", paddingTop:8, borderTop:"0.5px solid #E8E4DC", marginTop:4 }}>
-                <span style={{ fontSize:12, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>Total</span>
+                <span style={{ fontSize:12, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("totalLabel")}</span>
                 <span style={{ fontSize:12, fontWeight:800, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.currency} {fmt(total)}</span>
               </div>
             )}
@@ -3180,18 +3342,18 @@ export default function App() {
             <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
-              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Mark as completed</div>
-              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>Confirm that the work is completed</div>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("markCompletedBtn")}</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("workCompletedSub")}</div>
               <OrderSummary/>
               <button onClick={()=>{
                 close();
                 setOrders(orders.map(o=>o.id===order.id?{...o,status:"done"}:o));
-                showToast("Order marked as completed","#198038");
+                showToast(t("markedAsDone"),"#198038");
                 setDoneModal(order.id);
               }} style={{ width:"100%", padding:"15px", background:"#1B3F45", color:"white", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
-                <Icon name="check" size={16} color="#C9933A"/> Confirm — order completed
+                <Icon name="check" size={16} color="#C9933A"/> {t("donePromptBtn")}
               </button>
-              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancel</button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("cancelBtn")}</button>
             </div>
           </div>
         );
@@ -3203,16 +3365,16 @@ export default function App() {
             <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
-              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Create invoice</div>
-              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>This will create an invoice with these details</div>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("createInvoiceForOrder")}</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("invoiceSheetSubtitle")}</div>
               <OrderSummary/>
               <button onClick={()=>{
                 close();
                 loadOrderIntoInvoice(order);
               }} style={{ width:"100%", padding:"15px", background:"#C9933A", color:"white", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
-                <Icon name="invoice" size={16} color="white"/> Confirm and create invoice
+                <Icon name="invoice" size={16} color="white"/> {t("confirmCreateInvoiceBtn")}
               </button>
-              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancel</button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("cancelBtn")}</button>
             </div>
           </div>
         );
@@ -3224,13 +3386,13 @@ export default function App() {
             <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:500, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
-              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>Delete order</div>
-              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:14, fontFamily:"'IBM Plex Sans', sans-serif" }}>Are you sure?</div>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("deleteOrderBtn")}</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:14, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("areYouSure")}</div>
               {/* Advertencia */}
               <div style={{ display:"flex", alignItems:"flex-start", gap:10, background:"#FCEBEB", borderRadius:8, padding:"8px 10px", marginBottom:14 }}>
                 <Icon name="alert" size={16} color="#A32D2D"/>
                 <span style={{ fontSize:10, color:"#A32D2D", lineHeight:1.4, fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                  This cannot be undone. All information for order #{order.id} will be permanently deleted.
+                  {t("deleteOrderWarning")}{order.id} — {t("deleteOrderWarning2")}
                 </span>
               </div>
               <OrderSummary/>
@@ -3238,11 +3400,11 @@ export default function App() {
                 close();
                 setOrders(orders.filter(o=>o.id!==order.id));
                 if(selectedId===order.id) setView("list");
-                showToast("Order deleted","#da1e28");
+                showToast(t("orderDeletedToast"),"#da1e28");
               }} style={{ width:"100%", padding:"15px", background:"#FCEBEB", color:"#A32D2D", border:"1px solid #F7C1C1", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", marginBottom:10 }}>
-                Yes, delete order
+                {t("yesDeleteOrder")}
               </button>
-              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancel</button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("cancelBtn")}</button>
             </div>
           </div>
         );
@@ -3266,26 +3428,26 @@ export default function App() {
               <div style={{ width:36, height:4, borderRadius:2, background:"#E8E4DC" }}/>
             </div>
             <div style={{ padding:"16px 24px 4px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              <span style={{ fontSize:18, fontWeight:800, color:"#1B3F45" }}>Change password</span>
+              <span style={{ fontSize:18, fontWeight:800, color:"#1B3F45" }}>{t("changePwTitle")}</span>
               <button onClick={()=>{ setChangePwOpen(false); setNewPw(""); setNewPwConfirm(""); setPwError(""); }} style={{ background:"#F0F6F7", border:"none", borderRadius:"50%", width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
               </button>
             </div>
             <div style={{ padding:"12px 24px 0" }}>
               <div style={{ marginBottom:12 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>New password</div>
-                <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Minimum 6 characters"
+                <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>{t("newPasswordLabel")}</div>
+                <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder={t("pwMinChars")}
                   style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
               </div>
               <div style={{ marginBottom:16 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>Confirm password</div>
-                <input type="password" value={newPwConfirm} onChange={e=>setNewPwConfirm(e.target.value)} placeholder="Repeat new password"
+                <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>{t("confirmPwLabel")}</div>
+                <input type="password" value={newPwConfirm} onChange={e=>setNewPwConfirm(e.target.value)} placeholder={t("repeatPw")}
                   style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
               </div>
               {pwError && <div style={{ fontSize:13, color:"#da1e28", background:"#FFF0F0", border:"1px solid #F7C1C1", borderRadius:10, padding:"10px 12px", marginBottom:14 }}>{pwError}</div>}
               <button onClick={changePassword} disabled={pwLoading}
                 style={{ width:"100%", padding:"15px", background: pwLoading?"#E8E4DC":"#1B3F45", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor: pwLoading?"default":"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                {pwLoading ? <><div style={{ width:16, height:16, border:"2px solid white", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/> Saving…</> : "Update password"}
+                {pwLoading ? <><div style={{ width:16, height:16, border:"2px solid white", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/> {t("savingLabel")}</> : t("updatePwBtn")}
               </button>
             </div>
           </div>
@@ -3296,13 +3458,13 @@ export default function App() {
       {confirmModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:3000, display:"flex", alignItems:"flex-end", justifyContent:"center", padding:"0 16px 32px" }}>
           <div style={{ background:"white", borderRadius:24, padding:"24px 24px 20px", width:"100%", maxWidth:468, animation:"fadeUp 0.2s ease", textAlign:"left" }}>
-            <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", marginBottom:8, textAlign:"center", letterSpacing:"-0.01em" }}>Are you sure?</div>
+            <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", marginBottom:8, textAlign:"center", letterSpacing:"-0.01em" }}>{t("areYouSure")}</div>
             <div style={{ fontSize:14, color:"#5A7A80", textAlign:"center", lineHeight:1.5, marginBottom:24 }}>{confirmModal.message}</div>
             <button onClick={()=>{ confirmModal.onConfirm(); setConfirmModal(null); }} style={{ width:"100%", padding:"16px", background:"#da1e28", color:"white", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:10 }}>
-              Delete
+              {t("deleteBtn")}
             </button>
             <button onClick={()=>setConfirmModal(null)} style={{ width:"100%", padding:"15px", background:"#F0F6F7", color:"#1B3F45", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:600, cursor:"pointer" }}>
-              Cancel
+              {t("cancelBtn")}
             </button>
           </div>
         </div>
