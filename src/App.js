@@ -327,7 +327,7 @@ const newOrder     = () => ({ id: String(Date.now()).slice(-4), client:"", clien
 const newClient    = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
 const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", qty:"1", unitPrice:"", price:"" });
 const lineTotal    = it => (parseFloat(it.qty)||1) * (parseFloat(it.unitPrice)||parseFloat(it.price)||0);
-const cleanDesc    = s => (s||"").replace(/^\d+\s+/, "").trim();
+const cleanDesc    = s => (s||"").trim();
 const genOrderNumber = (orders, clientName) => {
   const clientOrders = (orders||[]).filter(o => o.client === clientName);
   const nums = clientOrders.map(o=>parseInt(o.orderNumber)||0).filter(n=>n>0);
