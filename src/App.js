@@ -1025,7 +1025,7 @@ export default function App() {
             if(urgentes.length === 0) return null;
             const trunca4 = (txt) => {
               if(!txt) return "—";
-              if(/handwritten|scanned|extract/i.test(txt)) return "Orden escaneada";
+              if(/handwritten|scanned|extract/i.test(txt)) return "Scanned order";
               const words = txt.trim().split(/\s+/);
               return words.length <= 4 ? txt : words.slice(0,4).join(" ") + "…";
             };
@@ -1167,7 +1167,7 @@ export default function App() {
                     const rawDesc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || null;
                     const descLabel = (() => {
                       if(!rawDesc) return null;
-                      if(/handwritten|scanned|extract/i.test(rawDesc)) return "Orden escaneada";
+                      if(/handwritten|scanned|extract/i.test(rawDesc)) return "Scanned order";
                       return rawDesc.length > 25 ? rawDesc.slice(0,25) + "…" : rawDesc;
                     })();
                     const fmtDl = o.deadline ? new Date(o.deadline+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : null;
@@ -2666,7 +2666,7 @@ export default function App() {
                 <div style={{ marginBottom:12 }}>
                   <input
                     autoFocus={clientView==="new"}
-                    placeholder="Nombre de la empresa *"
+                    placeholder="Company name *"
                     value={clientDraft.company||clientDraft.name||""}
                     onChange={e=>setClientDraft(d=>({...d,company:e.target.value,name:e.target.value}))}
                     style={{ width:"100%", padding:"18px 16px", fontSize:17, fontWeight:600, color:"#1B3F45",
@@ -2678,9 +2678,9 @@ export default function App() {
                 {/* Campos opcionales */}
                 <div style={{ background:"white", borderRadius:16, border:"0.5px solid #E8E4DC", overflow:"hidden", marginBottom:12 }}>
                   {[
-                    { key:"address", placeholder:"Dirección", type:"text",
+                    { key:"address", placeholder:"Address", type:"text",
                       icon:<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg> },
-                    { key:"phone",   placeholder:"Teléfono",  type:"tel",
+                    { key:"phone",   placeholder:"Phone",     type:"tel",
                       icon:<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.59A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg> },
                     { key:"email",   placeholder:"Email",     type:"email",
                       icon:<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg> },
@@ -2699,7 +2699,7 @@ export default function App() {
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:24 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
-                  <span style={{ fontSize:11, color:"#9DB5B9" }}>Dirección, teléfono y email son opcionales</span>
+                  <span style={{ fontSize:11, color:"#9DB5B9" }}>Address, phone and email are optional</span>
                 </div>
                 {clientView==="edit" && (
                   <button onClick={()=>showConfirm("Delete this client? Their orders will be kept.",()=>{ setClients(clients.filter(c=>c.id!==clientDraft.id)); setClientView("list"); showToast("Client deleted","#da1e28"); })}
@@ -2714,12 +2714,12 @@ export default function App() {
                     if(clientView==="edit"){
                       setClients(clients.map(c=>c.id===clientDraft.id ? clientDraft : c));
                       setClientView("detail");
-                      showToast("Cliente guardado");
+                      showToast("Client updated");
                     } else {
                       const c = { ...clientDraft, id: String(Date.now()) };
                       setClients([...clients, c]);
                       setClientView("list");
-                      showToast("Cliente añadido");
+                      showToast("Client saved");
                     }
                   }}
                   style={{ width:"100%", padding:"18px", border:"none", borderRadius:16,
@@ -3186,10 +3186,10 @@ export default function App() {
               <button onClick={()=>{
                 close();
                 setOrders(orders.map(o=>o.id===order.id?{...o,status:"done"}:o));
-                showToast("Orden marcada como terminada","#198038");
+                showToast("Order marked as completed","#198038");
                 setDoneModal(order.id);
               }} style={{ width:"100%", padding:"15px", background:"#1B3F45", color:"white", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
-                <Icon name="check" size={16} color="#C9933A"/> Confirmar — está terminada
+                <Icon name="check" size={16} color="#C9933A"/> Confirm — order completed
               </button>
               <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>Cancel</button>
             </div>
@@ -3238,7 +3238,7 @@ export default function App() {
                 close();
                 setOrders(orders.filter(o=>o.id!==order.id));
                 if(selectedId===order.id) setView("list");
-                showToast("Orden eliminada","#da1e28");
+                showToast("Order deleted","#da1e28");
               }} style={{ width:"100%", padding:"15px", background:"#FCEBEB", color:"#A32D2D", border:"1px solid #F7C1C1", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", marginBottom:10 }}>
                 Yes, delete order
               </button>
