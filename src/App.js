@@ -140,6 +140,9 @@ const TRANS = {
     markedAsDone:"Marked as Done",
     editOrderMenu:"Edit order",
     editOrderSub:"Update details, items or date",
+    duplicateOrderMenu:"Duplicate order",
+    duplicateOrderSub:"Create a copy with a new ID",
+    orderDuplicated:"Order duplicated",
     workCompletedSub:"Work is completed",
     createInvoiceForOrder:"Create invoice for this order",
     cannotUndone:"This cannot be undone",
@@ -273,6 +276,9 @@ const TRANS = {
     markedAsDone:"Als erledigt markiert",
     editOrderMenu:"Auftrag bearbeiten",
     editOrderSub:"Details, Artikel oder Datum aktualisieren",
+    duplicateOrderMenu:"Auftrag duplizieren",
+    duplicateOrderSub:"Kopie mit neuer ID erstellen",
+    orderDuplicated:"Auftrag dupliziert",
     workCompletedSub:"Arbeit ist abgeschlossen",
     createInvoiceForOrder:"Rechnung f\u00fcr diesen Auftrag erstellen",
     cannotUndone:"Dies kann nicht r\u00fckg\u00e4ngig gemacht werden",
@@ -381,6 +387,7 @@ const Icon = ({ name, size=22, color="#1B3F45" }) => {
     arrowDown:   <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>,
     dots:        <svg style={s} viewBox="0 0 24 24" fill={color} stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>,
     pencil:      <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+    copy:        <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>,
     alert:       <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   };
   return icons[name] || null;
@@ -3262,7 +3269,30 @@ export default function App() {
               </div>
             </button>
 
-            {/* Opción 2 — Marcar como terminada (solo si no está done/invoiced) */}
+            {/* Opción 2 — Duplicar */}
+            <button onClick={()=>{
+              const copy = {
+                ...optionsMenu,
+                id: String(Date.now()).slice(-4),
+                received: new Date().toISOString().split("T")[0],
+                status: "received",
+                amount: 0,
+                lineItems: (optionsMenu.lineItems||[]).map(li=>({...li, id: Date.now()+Math.random()})),
+              };
+              setOrders(prev=>[copy, ...prev]);
+              setOptionsMenu(null);
+              showToast(t("orderDuplicated"), "#1B3F45");
+            }} style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
+              <div style={{ width:38, height:38, borderRadius:10, background:"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <Icon name="copy" size={18} color="#1B3F45"/>
+              </div>
+              <div>
+                <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("duplicateOrderMenu")}</div>
+                <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("duplicateOrderSub")}</div>
+              </div>
+            </button>
+
+            {/* Opción 3 — Marcar como terminada (solo si no está done/invoiced) */}
             {optionsMenu.status !== "done" && optionsMenu.status !== "invoiced" && (
               <button onClick={()=>{ setOptionsMenu(null); setConfirmSheet({ type:"done", order:optionsMenu }); }}
                 style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
