@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { dbGet, dbSet, supabase } from './supabase';
 import { Button, TextInput, TextArea } from '@carbon/react';
+import { connectDrive, disconnectDrive, isDriveConnected, wasDriveConnected, saveInvoiceToDrive } from './googleDrive';
 
 // ─── CLIENT CONFIG — only this changes per client ───────
 const CONFIG = {
@@ -505,6 +506,8 @@ export default function App() {
   const [invDate, setInvDate]   = useState(new Date().toISOString().split("T")[0]);
   const [invView, setInvView]   = useState("list");
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
+  const [driveConnected, setDriveConnected] = useState(isDriveConnected);
+  const [driveLoading, setDriveLoading] = useState(false);
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
@@ -738,8 +741,8 @@ export default function App() {
     setInvView("new");
   };
 
-  // ── PRINT INVOICE (shared by order-level and invoice tab) ──
-  const printInvoiceDoc = (inv, autoprint = true) => {
+  // ── BUILD INVOICE HTML (reused by print and Drive upload) ──
+  const buildInvoiceHtml = (inv, withPrintScript = false) => {
     const fmtCHF = n => `CHF ${Number(n).toFixed(2).replace(".", ",")}`;
     const sub    = inv.items.reduce((s,it) => s + lineTotal(it), 0);
     const porto  = parseFloat(inv.porto) || 0;
@@ -840,11 +843,31 @@ export default function App() {
     ${C.ownerName}
   </div>
 </div>
-  ${autoprint ? ["<script>window.onload=()=>{ window.print(); }</","script>"].join("") : ""}
+  ${withPrintScript ? ["<script>window.onload=()=>{ window.print(); }</","script>"].join("") : ""}
 </body></html>`;
+    return html;
+  };
+
+  const printInvoiceDoc = (inv, autoprint = true) => {
+    const html = buildInvoiceHtml(inv, autoprint);
     const w = window.open("", "_blank");
     w.document.write(html);
     w.document.close();
+  };
+
+  const uploadInvoiceToDrive = async (inv) => {
+    try {
+      const html = buildInvoiceHtml(inv, false);
+      await saveInvoiceToDrive(inv, html);
+      showToast("Saved to Google Drive ✓", "#198038");
+    } catch (err) {
+      if (err.message === "TOKEN_EXPIRED") {
+        setDriveConnected(false);
+        showToast("Drive session expired — reconnect in settings", "#C9933A");
+      } else {
+        console.error("[Drive]", err);
+      }
+    }
   };
 
   // ── RECHNUNG from order detail (single order, global amount) ──
@@ -1147,6 +1170,41 @@ export default function App() {
                               {l.label}
                             </button>
                           ))}
+                        </div>
+                      </div>
+                      {/* Google Drive */}
+                      <div style={{ padding:"10px 16px", borderBottom:"0.5px solid #F0EDE8" }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>Google Drive</div>
+                        {driveConnected ? (
+                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <div style={{ width:8, height:8, borderRadius:"50%", background:"#24a148" }}/>
+                              <span style={{ fontSize:13, color:"#1B3F45", fontWeight:600 }}>{lang==="de"?"Verbunden":"Connected"}</span>
+                            </div>
+                            <button onClick={()=>{ disconnectDrive(); setDriveConnected(false); showToast(lang==="de"?"Drive getrennt":"Drive disconnected","#5A7A80"); }}
+                              style={{ background:"none", border:"1px solid #E8E4DC", borderRadius:8, padding:"4px 10px", fontSize:12, fontWeight:600, color:"#5A7A80", cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                              {lang==="de"?"Trennen":"Disconnect"}
+                            </button>
+                          </div>
+                        ) : (
+                          <button disabled={driveLoading}
+                            onClick={async ()=>{
+                              setDriveLoading(true);
+                              try {
+                                await connectDrive();
+                                setDriveConnected(true);
+                                showToast(lang==="de"?"Drive verbunden ✓":"Drive connected ✓","#198038");
+                              } catch(e) {
+                                showToast(lang==="de"?"Verbindung fehlgeschlagen":"Connection failed","#da1e28");
+                              } finally { setDriveLoading(false); }
+                            }}
+                            style={{ width:"100%", padding:"10px", background: driveLoading?"#F0F6F7":"#1B3F45", border:"none", borderRadius:10, fontSize:13, fontWeight:700, color: driveLoading?"#5A7A80":"white", cursor: driveLoading?"default":"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill={driveLoading?"#9DB5B9":"#4285F4"}/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill={driveLoading?"#9DB5B9":"#34A853"}/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill={driveLoading?"#9DB5B9":"#FBBC05"}/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill={driveLoading?"#9DB5B9":"#EA4335"}/></svg>
+                            {driveLoading ? (lang==="de"?"Verbinde…":"Connecting…") : (lang==="de"?"Mit Google Drive verbinden":"Connect Google Drive")}
+                          </button>
+                        )}
+                        <div style={{ fontSize:11, color:"#9DB5B9", marginTop:6, lineHeight:1.4 }}>
+                          {lang==="de"?"Rechnungen werden beim Erstellen automatisch in Drive gespeichert.":"Invoices are automatically saved to Drive when created."}
                         </div>
                       </div>
                       {/* Change password */}
@@ -2495,6 +2553,7 @@ export default function App() {
               setInvoices([...invoices, inv]);
               syncInvoiceToSheets(inv);
               if(print) printInvoiceDoc(inv);
+              if(isDriveConnected()) uploadInvoiceToDrive(inv);
               setInvView("list");
               showToast("Invoice saved","#198038");
             };
