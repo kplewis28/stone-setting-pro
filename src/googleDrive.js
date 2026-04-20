@@ -1,3 +1,5 @@
+import html2pdf from 'html2pdf.js';
+
 const CLIENT_ID = "174694147516-h718sh5hh31q3bvrlqt35o58vq4rp4dh.apps.googleusercontent.com";
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
 const ROOT_NAME = "Stone Setting Pro";
@@ -39,7 +41,37 @@ export const disconnectDrive = () => {
 };
 
 export const isDriveConnected = () => !!_token;
-export const wasDriveConnected = () => !!localStorage.getItem("ssp_drive_connected");
+
+const generatePdfBlob = (htmlString) => {
+  return new Promise((resolve, reject) => {
+    const container = document.createElement("div");
+    container.innerHTML = htmlString;
+    container.style.position = "fixed";
+    container.style.top = "-9999px";
+    container.style.left = "-9999px";
+    container.style.width = "176mm";
+    container.style.background = "white";
+    document.body.appendChild(container);
+
+    html2pdf()
+      .set({
+        margin: [14, 18, 14, 18],
+        filename: "invoice.pdf",
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      })
+      .from(container)
+      .outputPdf("blob")
+      .then((blob) => {
+        document.body.removeChild(container);
+        resolve(blob);
+      })
+      .catch((err) => {
+        document.body.removeChild(container);
+        reject(err);
+      });
+  });
+};
 
 const api = async (method, path, body, params) => {
   const url = new URL(`https://www.googleapis.com/drive/v3/${path}`);
@@ -71,12 +103,11 @@ const findOrCreateFolder = async (name, parentId = null) => {
   return created.id;
 };
 
-const uploadFile = async (name, content, mimeType, folderId) => {
-  const blob = new Blob([content], { type: mimeType });
+const uploadBlob = async (name, blob, mimeType, folderId) => {
   const meta = { name, parents: [folderId] };
   const form = new FormData();
   form.append("metadata", new Blob([JSON.stringify(meta)], { type: "application/json" }));
-  form.append("file", blob);
+  form.append("file", new Blob([blob], { type: mimeType }));
   const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink", {
     method: "POST",
     headers: { Authorization: `Bearer ${_token}` },
@@ -90,6 +121,7 @@ export const saveInvoiceToDrive = async (inv, htmlContent) => {
   const rootId = await findOrCreateFolder(ROOT_NAME);
   const clientFolderId = await findOrCreateFolder(inv.client || "Sin cliente", rootId);
   const invFolderId = await findOrCreateFolder("Facturas", clientFolderId);
-  const filename = `Factura_${inv.number || inv.id}_${(inv.date || "").replace(/-/g, "")}.html`;
-  return uploadFile(filename, htmlContent, "text/html", invFolderId);
+  const filename = `Factura_${inv.number || inv.id}_${(inv.date || "").replace(/-/g, "")}.pdf`;
+  const pdfBlob = await generatePdfBlob(htmlContent);
+  return uploadBlob(filename, pdfBlob, "application/pdf", invFolderId);
 };
