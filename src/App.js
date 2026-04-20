@@ -870,6 +870,37 @@ export default function App() {
     }
   };
 
+  const [driveSyncing, setDriveSyncing] = useState(false);
+
+  const syncAllToDrive = async () => {
+    if (!isDriveConnected() || driveSyncing) return;
+    setDriveSyncing(true);
+    setProfileOpen(false);
+    let done = 0;
+    let failed = 0;
+    for (const inv of invoices) {
+      try {
+        const html = buildInvoiceHtml(inv, false);
+        await saveInvoiceToDrive(inv, html);
+        done++;
+      } catch (err) {
+        if (err.message === "TOKEN_EXPIRED") {
+          setDriveConnected(false);
+          showToast("Drive session expired — reconnect in settings", "#C9933A");
+          setDriveSyncing(false);
+          return;
+        }
+        failed++;
+      }
+    }
+    setDriveSyncing(false);
+    if (failed === 0) {
+      showToast(`${done} invoice${done !== 1 ? "s" : ""} synced to Drive ✓`, "#198038");
+    } else {
+      showToast(`${done} synced, ${failed} failed`, "#C9933A");
+    }
+  };
+
   // ── RECHNUNG from order detail (single order, global amount) ──
   const printRechnung = (order, unitPrice, porto = 0) => {
     const price = parseFloat(unitPrice) || 0;
@@ -1176,14 +1207,21 @@ export default function App() {
                       <div style={{ padding:"10px 16px", borderBottom:"0.5px solid #F0EDE8" }}>
                         <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>Google Drive</div>
                         {driveConnected ? (
-                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <div style={{ width:8, height:8, borderRadius:"50%", background:"#24a148" }}/>
-                              <span style={{ fontSize:13, color:"#1B3F45", fontWeight:600 }}>{lang==="de"?"Verbunden":"Connected"}</span>
+                          <div>
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                <div style={{ width:8, height:8, borderRadius:"50%", background:"#24a148" }}/>
+                                <span style={{ fontSize:13, color:"#1B3F45", fontWeight:600 }}>{lang==="de"?"Verbunden":"Connected"}</span>
+                              </div>
+                              <button onClick={()=>{ disconnectDrive(); setDriveConnected(false); showToast(lang==="de"?"Drive getrennt":"Drive disconnected","#5A7A80"); }}
+                                style={{ background:"none", border:"1px solid #E8E4DC", borderRadius:8, padding:"4px 10px", fontSize:12, fontWeight:600, color:"#5A7A80", cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                                {lang==="de"?"Trennen":"Disconnect"}
+                              </button>
                             </div>
-                            <button onClick={()=>{ disconnectDrive(); setDriveConnected(false); showToast(lang==="de"?"Drive getrennt":"Drive disconnected","#5A7A80"); }}
-                              style={{ background:"none", border:"1px solid #E8E4DC", borderRadius:8, padding:"4px 10px", fontSize:12, fontWeight:600, color:"#5A7A80", cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                              {lang==="de"?"Trennen":"Disconnect"}
+                            <button onClick={syncAllToDrive} disabled={driveSyncing}
+                              style={{ width:"100%", padding:"10px", background: driveSyncing?"#F0F6F7":"#1B3F45", border:"none", borderRadius:10, fontSize:13, fontWeight:700, color: driveSyncing?"#9DB5B9":"white", cursor: driveSyncing?"default":"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={driveSyncing?"#9DB5B9":"white"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                              {driveSyncing ? (lang==="de"?"Synchronisiere…":"Syncing…") : (lang==="de"?`Alle ${invoices.length} Rechnungen hochladen`:`Upload all ${invoices.length} invoices`)}
                             </button>
                           </div>
                         ) : (
