@@ -2914,16 +2914,21 @@ export default function App() {
             {clientView==="detail" && (() => {
               const c = clients.find(x=>x.id===selectedClientId);
               if(!c) return null;
-              const clientOrders = orders.filter(o=>o.clientId===c.id||o.client===(c.company||c.name));
+              const clientName = c.company || c.name;
+              const clientOrders = orders.filter(o=>o.clientId===c.id||o.client===clientName);
+              const clientInvoices = invoices.filter(inv=>inv.client===clientName).sort((a,b)=>b.date?.localeCompare(a.date||"")||0);
+              const totalInvoiced = clientInvoices.reduce((s,inv)=>s+roundCHF(inv.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(inv.porto)||0)),0);
+              const openOrders = clientOrders.filter(o=>o.status!=="invoiced").length;
               return (
                 <>
+                  {/* Info card */}
                   <Card style={{ background:PASTELS.orders, border:"none" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:16 }}>
                       <div style={{ width:52, height:52, borderRadius:16, background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                         <Icon name="person" size={26} color="white"/>
                       </div>
                       <div>
-                        <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em" }}>{c.company || c.name}</div>
+                        <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em" }}>{clientName}</div>
                         {c.company && c.name && <div style={{ fontSize:13, color:"#5A7A80" }}>{c.name}</div>}
                       </div>
                     </div>
@@ -2939,6 +2944,31 @@ export default function App() {
                     </div>
                   </Card>
 
+                  {/* Stats row */}
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:8 }}>
+                    <div style={{ background:"white", borderRadius:14, padding:"14px 12px", border:"1px solid #E8E4DC", textAlign:"center" }}>
+                      <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", lineHeight:1 }}>{clientOrders.length}</div>
+                      <div style={{ fontSize:11, color:"#5A7A80", marginTop:4, fontWeight:500 }}>{lang==="de"?"Aufträge":"Orders"}</div>
+                    </div>
+                    <div style={{ background:"white", borderRadius:14, padding:"14px 12px", border:"1px solid #E8E4DC", textAlign:"center" }}>
+                      <div style={{ fontSize:22, fontWeight:900, color: openOrders>0?"#C9933A":"#1B3F45", lineHeight:1 }}>{openOrders}</div>
+                      <div style={{ fontSize:11, color:"#5A7A80", marginTop:4, fontWeight:500 }}>{lang==="de"?"Offen":"Open"}</div>
+                    </div>
+                    <div style={{ background:"white", borderRadius:14, padding:"14px 12px", border:"1px solid #E8E4DC", textAlign:"center" }}>
+                      <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", lineHeight:1 }}>{clientInvoices.length}</div>
+                      <div style={{ fontSize:11, color:"#5A7A80", marginTop:4, fontWeight:500 }}>{lang==="de"?"Rechnungen":"Invoices"}</div>
+                    </div>
+                  </div>
+
+                  {/* Total invoiced */}
+                  {totalInvoiced > 0 && (
+                    <div style={{ background:"#1B3F45", borderRadius:14, padding:"16px 18px", marginBottom:8, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.7)" }}>{lang==="de"?"Gesamtbetrag fakturiert":"Total invoiced"}</div>
+                      <div style={{ fontSize:20, fontWeight:900, color:"#C9933A" }}>{C.currency} {fmt(totalInvoiced)}</div>
+                    </div>
+                  )}
+
+                  {/* Orders section */}
                   <SectionTitle>Orders ({clientOrders.length})</SectionTitle>
                   {clientOrders.length === 0 && (
                     <div style={{ textAlign:"center", padding:"24px", color:"#5A7A80", fontSize:13 }}>{t("noOrdersForClient")}</div>
@@ -2957,9 +2987,37 @@ export default function App() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8E4DC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                     </button>
                   ))}
-                  <BtnPrimary onClick={()=>{ setView("new"); setDraft({...newOrder(), clientId:c.id, client: c.company||c.name}); setTab("orders"); }} style={{ marginTop:8 }}>
+                  <BtnPrimary onClick={()=>{ setView("new"); setDraft({...newOrder(), clientId:c.id, client: clientName}); setTab("orders"); }} style={{ marginTop:8 }}>
                     {t("newOrderForClient")}
                   </BtnPrimary>
+
+                  {/* Invoices section */}
+                  <SectionTitle style={{ marginTop:24 }}>{lang==="de"?"Rechnungen":"Invoices"} ({clientInvoices.length})</SectionTitle>
+                  {clientInvoices.length === 0 && (
+                    <div style={{ textAlign:"center", padding:"24px", color:"#5A7A80", fontSize:13 }}>{lang==="de"?"Noch keine Rechnungen für diesen Kunden.":"No invoices for this client yet."}</div>
+                  )}
+                  {clientInvoices.map(inv=>{
+                    const invTotal = roundCHF(inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(inv.porto)||0));
+                    return (
+                      <button key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); setTab("invoice"); }}
+                        style={{ width:"100%", background:"white", border:"1.5px solid #F0EDE8", borderRadius:16, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
+                        <div style={{ width:40, height:40, borderRadius:12, background:inv.printed?"#E8F3EF":"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <Icon name="receipt" size={20} color={inv.printed?"#1B6048":"#5A7A80"}/>
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", marginBottom:2 }}>{inv.number || inv.id}</div>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <span style={{ fontSize:12, color:"#5A7A80" }}>{inv.date ? new Date(inv.date+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB") : ""}</span>
+                            {inv.printed
+                              ? <span style={{ fontSize:11, fontWeight:700, color:"#1B6048", background:"#E8F3EF", borderRadius:6, padding:"1px 7px" }}>{lang==="de"?"Gedruckt":"Printed"}</span>
+                              : <span style={{ fontSize:11, fontWeight:700, color:"#5A7A80", background:"#F0F6F7", borderRadius:6, padding:"1px 7px" }}>{lang==="de"?"Ausstehend":"Pending"}</span>
+                            }
+                          </div>
+                        </div>
+                        <div style={{ fontSize:15, fontWeight:800, color:ACCENT, flexShrink:0 }}>{C.currency} {fmt(invTotal)}</div>
+                      </button>
+                    );
+                  })}
                 </>
               );
             })()}
