@@ -44,32 +44,33 @@ export const isDriveConnected = () => !!_token;
 
 const generatePdfBlob = (htmlString) => {
   return new Promise((resolve, reject) => {
-    const container = document.createElement("div");
-    container.innerHTML = htmlString;
-    container.style.position = "fixed";
-    container.style.top = "-9999px";
-    container.style.left = "-9999px";
-    container.style.width = "176mm";
-    container.style.background = "white";
-    document.body.appendChild(container);
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:none;visibility:hidden;";
+    document.body.appendChild(iframe);
 
-    html2pdf()
-      .set({
-        margin: [14, 18, 14, 18],
-        filename: "invoice.pdf",
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(container)
-      .outputPdf("blob")
-      .then((blob) => {
-        document.body.removeChild(container);
-        resolve(blob);
-      })
-      .catch((err) => {
-        document.body.removeChild(container);
-        reject(err);
-      });
+    const cleanup = () => { try { document.body.removeChild(iframe); } catch(_) {} };
+
+    iframe.onload = () => {
+      setTimeout(() => {
+        const body = iframe.contentDocument?.body;
+        if (!body) { cleanup(); reject(new Error("iframe body not found")); return; }
+        html2pdf()
+          .set({
+            margin: [14, 18, 14, 18],
+            filename: "invoice.pdf",
+            html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: "#ffffff" },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          })
+          .from(body)
+          .outputPdf("blob")
+          .then((blob) => { cleanup(); resolve(blob); })
+          .catch((err) => { cleanup(); reject(err); });
+      }, 600);
+    };
+
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(htmlString);
+    iframe.contentDocument.close();
   });
 };
 
