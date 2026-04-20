@@ -18,20 +18,45 @@ const loadGIS = () => new Promise((resolve) => {
   document.head.appendChild(s);
 });
 
+const initTokenClient = (callback, errorCallback) => {
+  return window.google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPE,
+    callback,
+    error_callback: errorCallback,
+  });
+};
+
 export const connectDrive = async () => {
   await loadGIS();
   return new Promise((resolve, reject) => {
-    _tokenClient = window.google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPE,
-      callback: (resp) => {
+    _tokenClient = initTokenClient(
+      (resp) => {
         if (resp.error) { reject(new Error(resp.error)); return; }
         _token = resp.access_token;
         localStorage.setItem("ssp_drive_connected", "1");
         resolve();
       },
-    });
-    _tokenClient.requestAccessToken({ prompt: _token ? "" : "consent" });
+      (err) => reject(new Error(err?.type || "connection_failed"))
+    );
+    _tokenClient.requestAccessToken({ prompt: "consent" });
+  });
+};
+
+// Silently refreshes the token on app load — no popup if Google session is active
+export const silentReconnect = async () => {
+  await loadGIS();
+  return new Promise((resolve, reject) => {
+    const client = initTokenClient(
+      (resp) => {
+        if (resp.error) { reject(new Error(resp.error)); return; }
+        _token = resp.access_token;
+        localStorage.setItem("ssp_drive_connected", "1");
+        resolve();
+      },
+      (err) => reject(new Error(err?.type || "silent_failed"))
+    );
+    client.requestAccessToken({ prompt: "" }); // empty = silent, no popup
   });
 };
 

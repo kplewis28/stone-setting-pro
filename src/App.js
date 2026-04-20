@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { dbGet, dbSet, supabase } from './supabase';
 import { Button, TextInput, TextArea } from '@carbon/react';
-import { connectDrive, disconnectDrive, isDriveConnected, saveInvoiceToDrive } from './googleDrive';
+import { connectDrive, disconnectDrive, isDriveConnected, silentReconnect, saveInvoiceToDrive } from './googleDrive';
 
 // ─── CLIENT CONFIG — only this changes per client ───────
 const CONFIG = {
@@ -610,6 +610,16 @@ export default function App() {
       setDbLoaded(true);
     };
     load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── AUTO-RECONNECT GOOGLE DRIVE on app load (silent, no popup) ──
+  useEffect(() => {
+    if (localStorage.getItem("ssp_drive_connected")) {
+      silentReconnect()
+        .then(() => setDriveConnected(true))
+        .catch(() => {}); // fails silently — user reconnects manually if needed
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
