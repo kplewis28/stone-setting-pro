@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { dbGet, dbSet, supabase } from './supabase';
 import { Button, TextInput, TextArea } from '@carbon/react';
-import { connectDrive, disconnectDrive, isDriveConnected, wasDriveConnected, saveInvoiceToDrive } from './googleDrive';
+import { connectDrive, disconnectDrive, isDriveConnected, saveInvoiceToDrive } from './googleDrive';
 
 // ─── CLIENT CONFIG — only this changes per client ───────
 const CONFIG = {
