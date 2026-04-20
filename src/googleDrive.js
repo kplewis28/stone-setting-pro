@@ -42,35 +42,55 @@ export const disconnectDrive = () => {
 
 export const isDriveConnected = () => !!_token;
 
-const generatePdfBlob = (htmlString) => {
+const toBase64 = (url) =>
+  fetch(url)
+    .then((r) => r.blob())
+    .then((blob) => new Promise((res) => {
+      const reader = new FileReader();
+      reader.onloadend = () => res(reader.result);
+      reader.readAsDataURL(blob);
+    }))
+    .catch(() => null);
+
+const generatePdfBlob = async (htmlString) => {
+  // Embed images as base64 so html2canvas can render them reliably
+  const origin = window.location.origin;
+  const [logoB64, qrB64] = await Promise.all([
+    toBase64(`${origin}/logo.png`),
+    toBase64(`${origin}/qr.png`),
+  ]);
+  let html = htmlString;
+  if (logoB64) html = html.replace(`${origin}/logo.png`, logoB64);
+  if (qrB64)   html = html.replace(`${origin}/qr.png`, qrB64);
+
   return new Promise((resolve, reject) => {
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:none;visibility:hidden;";
-    document.body.appendChild(iframe);
+    const container = document.createElement("div");
+    container.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:710px;background:white;padding:0;";
+    document.body.appendChild(container);
 
-    const cleanup = () => { try { document.body.removeChild(iframe); } catch(_) {} };
+    // Extract <style> and <body> content from the full HTML string
+    const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/);
+    const bodyMatch  = html.match(/<body>([\s\S]*?)<\/body>/);
+    const styleTag   = styleMatch ? `<style>${styleMatch[1]}</style>` : "";
+    const bodyContent = bodyMatch ? bodyMatch[1] : html;
 
-    iframe.onload = () => {
-      setTimeout(() => {
-        const body = iframe.contentDocument?.body;
-        if (!body) { cleanup(); reject(new Error("iframe body not found")); return; }
-        html2pdf()
-          .set({
-            margin: [14, 18, 14, 18],
-            filename: "invoice.pdf",
-            html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: "#ffffff" },
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          })
-          .from(body)
-          .outputPdf("blob")
-          .then((blob) => { cleanup(); resolve(blob); })
-          .catch((err) => { cleanup(); reject(err); });
-      }, 600);
-    };
+    container.innerHTML = styleTag + bodyContent;
 
-    iframe.contentDocument.open();
-    iframe.contentDocument.write(htmlString);
-    iframe.contentDocument.close();
+    const cleanup = () => { try { document.body.removeChild(container); } catch(_) {} };
+
+    setTimeout(() => {
+      html2pdf()
+        .set({
+          margin: [14, 18, 14, 18],
+          filename: "invoice.pdf",
+          html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: "#ffffff" },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(container)
+        .outputPdf("blob")
+        .then((blob) => { cleanup(); resolve(blob); })
+        .catch((err) => { cleanup(); reject(err); });
+    }, 300);
   });
 };
 
