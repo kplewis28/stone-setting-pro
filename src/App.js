@@ -1154,7 +1154,7 @@ export default function App() {
                 {profileOpen && (
                   <>
                     <div onClick={()=>setProfileOpen(false)} style={{ position:"fixed", inset:0, zIndex:400 }}/>
-                    <div style={{ position:"absolute", top:48, right:0, width:220, background:"white", borderRadius:16, boxShadow:"0 8px 32px rgba(0,0,0,0.16)", border:"1px solid #E8E4DC", zIndex:401, overflow:"hidden" }}>
+                    <div style={{ position:"absolute", top:48, right:0, width:260, background:"white", borderRadius:16, boxShadow:"0 8px 32px rgba(0,0,0,0.16)", border:"1px solid #E8E4DC", zIndex:401, overflow:"auto", maxHeight:"calc(100vh - 80px)" }}>
                       {/* User info */}
                       <div style={{ padding:"14px 16px 12px", borderBottom:"0.5px solid #F0EDE8" }}>
                         <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45" }}>{C.ownerName}</div>
