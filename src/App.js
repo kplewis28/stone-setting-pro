@@ -843,7 +843,7 @@ export default function App() {
   </table>
   <table class="totals" style="margin-top:0;">
     <tbody>
-      <tr><td class="right" style="color:#555;">Total ohne ${C.taxLabel}</td><td class="right" style="width:22%;">${fmtCHF(sub)}</td></tr>
+      <tr class="total-row" style="border-bottom:1px solid #E8E4DC;"><td class="right"><strong>Subtotal</strong></td><td class="right big">CHF ${Number(sub).toFixed(2).replace(".",",")}</td></tr>
       ${porto > 0 ? `<tr><td class="right" style="color:#555;">Porto</td><td class="right">${fmtCHF(porto)}</td></tr>` : ""}
       <tr><td class="right" style="color:#555;">${(C.taxRate*100).toFixed(1).replace(".",",")}% ${C.taxLabel}</td><td class="right">${fmtCHF(mwst)}</td></tr>
       <tr class="total-row"><td class="right"><strong>RECHNUNGSBETRAG</strong></td><td class="right big">CHF ${Number(total).toFixed(2).replace(".",",")}</td></tr>
@@ -2993,8 +2993,11 @@ export default function App() {
 
                     {/* Totals */}
                     <div style={{ borderTop:"1px solid #E8E4DC", paddingTop:10 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", borderBottom:"1px solid #E8E4DC", paddingBottom:10, marginBottom:8 }}>
+                        <span style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>{t("subtotalLabel")}</span>
+                        <span style={{ fontSize:18, fontWeight:800, color:"#1B3F45" }}>{C.currency} {fmt(invSub)}</span>
+                      </div>
                       {invPortoVal>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:4 }}><span>{t("postageLabel")}</span><span>{C.currency} {fmt(invPortoVal)}</span></div>}
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:4 }}><span>{t("subtotalLabel")}</span><span>{C.currency} {fmt(invSub)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(invMwst)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", borderTop:"2px solid #1C1C1E", paddingTop:10 }}>
                         <span style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>{t("totalLabel")}</span>
@@ -3891,7 +3894,10 @@ export default function App() {
                       <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", textAlign:"right" }}>{fC(sub)}</td>
                     </tr>
                     {/* totals rows */}
-                    <tr><td colSpan={3} style={{ padding:"6px 10px", textAlign:"right", fontSize:11, color:"#333" }}>Total ohne {C.taxLabel}</td><td style={{ padding:"6px 10px", textAlign:"right", fontSize:11 }}>{fC(sub)}</td></tr>
+                    <tr style={{ borderTop:"2px solid #1a1a1a" }}>
+                      <td colSpan={3} style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, fontSize:12, letterSpacing:"0.06em" }}>Subtotal</td>
+                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, fontSize:13, borderLeft:"1px solid #1a1a1a" }}>{fC(sub)}</td>
+                    </tr>
                     <tr><td colSpan={3} style={{ padding:"4px 10px", textAlign:"right", fontSize:11, color:"#333" }}>Porto</td><td style={{ padding:"4px 10px", textAlign:"right", fontSize:11 }}>{fC(porto)}</td></tr>
                     <tr><td colSpan={3} style={{ padding:"4px 10px", textAlign:"right", fontSize:11, color:"#333" }}>{(C.taxRate*100).toFixed(1).replace(".",",")}% {C.taxLabel}</td>
                       <td style={{ padding:"4px 10px", textAlign:"right", fontSize:11 }}>CHF &nbsp;{Number(mwst).toFixed(2).replace(".",",")}</td></tr>
