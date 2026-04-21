@@ -843,7 +843,7 @@ export default function App() {
   </table>
   <table class="totals" style="margin-top:0;">
     <tbody>
-      <tr class="total-row" style="border-bottom:1px solid #E8E4DC;"><td class="right"><strong>Subtotal</strong></td><td class="right big">CHF ${Number(sub).toFixed(2).replace(".",",")}</td></tr>
+      <tr><td class="right" style="color:#555;">Total ohne ${C.taxLabel}</td><td class="right" style="width:22%;">${fmtCHF(sub)}</td></tr>
       ${porto > 0 ? `<tr><td class="right" style="color:#555;">Porto</td><td class="right">${fmtCHF(porto)}</td></tr>` : ""}
       <tr><td class="right" style="color:#555;">${(C.taxRate*100).toFixed(1).replace(".",",")}% ${C.taxLabel}</td><td class="right">${fmtCHF(mwst)}</td></tr>
       <tr class="total-row"><td class="right"><strong>RECHNUNGSBETRAG</strong></td><td class="right big">CHF ${Number(total).toFixed(2).replace(".",",")}</td></tr>
@@ -1548,6 +1548,7 @@ export default function App() {
         const mOrders     = filterOrders(mAllOrders);
         const mInvoices   = filterInvoicesForClient(invoices.filter(i => (i.date||"").startsWith(statsMonth)));
         const mRevenue    = mInvoices.reduce((s,i) => s + roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)), 0);
+        const mNet        = mInvoices.reduce((s,i) => s + roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)), 0);
         const mUnits      = mInvoices.reduce((s,i) => s + i.items.reduce((ss,it) => ss + (parseFloat(it.qty)||0), 0), 0);
         const mClients    = new Set(mOrders.map(o => o.clientId||o.client).filter(Boolean)).size;
         const mOpen       = mOrders.filter(o => o.status!=="done" && o.status!=="invoiced").length;
@@ -1565,6 +1566,7 @@ export default function App() {
             label: new Date(ym+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"short"}),
             orders: os.length,
             revenue: ivs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0),
+            net: ivs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)),0),
             units: ivs.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0),
             clients: new Set(os.map(o=>o.clientId||o.client).filter(Boolean)).size,
           };
@@ -1573,6 +1575,7 @@ export default function App() {
         const metricCfg = {
           orders:  { label:t("statsOrders"),  color:"#1B3F45", format: v => String(v) },
           revenue: { label:t("statsRevenue"), color:"#C9933A", format: v => `${C.currency} ${fmt(v)}` },
+          net:     { label:lang==="de"?"Netto":"Net", color:"#198038", format: v => `${C.currency} ${fmt(v)}` },
           units:   { label:t("statsUnits"),   color:"#5A7A80", format: v => String(v) },
           clients: { label:t("statsClients"), color:"#8B5CF6", format: v => String(v) },
         };
@@ -1628,7 +1631,8 @@ export default function App() {
           const cOrders = mAllOrders.filter(o => o.clientId===c.id || o.client===cName);
           const cInvs   = invoices.filter(i => i.client===cName && (i.date||"").startsWith(statsMonth));
           const cRev    = cInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0);
-          return { id:c.id, name:cName, orders:cOrders.length, revenue:cRev, units:cInvs.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0) };
+          const cNet    = cInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)),0);
+          return { id:c.id, name:cName, orders:cOrders.length, revenue:cRev, net:cNet, units:cInvs.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0) };
         }).filter(c => c.orders > 0 || c.revenue > 0).sort((a,b) => b.revenue - a.revenue);
 
         const pad = isDesktop?"0 40px 60px":isTablet?"0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))";
@@ -1677,16 +1681,28 @@ export default function App() {
 
               {/* KPI cards */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14, marginTop:16 }}>
+                {/* Revenue + Net row */}
                 {[
-                  { key:"orders",  val:mOrders.length,  display: String(mOrders.length), sub:`${mOpen} ${lang==="de"?"offen":"open"}` },
-                  { key:"revenue", val:mRevenue, display: mRevenue>0?`${C.currency} ${fmt(mRevenue)}`:"—", accent:"#C9933A" },
-                  { key:"units",   val:mUnits,  display: mUnits>0?String(mUnits):"—", sub:lang==="de"?"Steine/Stücke":"stones / pieces" },
-                  { key:"clients", val:mClients,display: mClients>0?String(mClients):"—" },
-                ].map(({ key, display, sub, accent }) => (
+                  { key:"revenue", val:mRevenue, display: mRevenue>0?`${C.currency} ${fmt(mRevenue)}`:"—", sub:lang==="de"?"inkl. Porto & MWST":"incl. shipping & tax" },
+                  { key:"net",     val:mNet,     display: mNet>0?`${C.currency} ${fmt(mNet)}`:"—",         sub:lang==="de"?"ohne Porto & MWST":"excl. shipping & tax" },
+                ].map(({ key, display, sub }) => (
                   <button key={key} onClick={()=>setStatsMetric(key)}
                     style={{ background: statsMetric===key?metricCfg[key].color:"white", borderRadius:18, padding:"16px 14px", border: statsMetric===key?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: statsMetric===key?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
                     <div style={{ fontSize:10, fontWeight:700, color: statsMetric===key?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{metricCfg[key].label}</div>
-                    <div style={{ fontSize:28, fontWeight:900, color: statsMetric===key?"white":(accent||"#1B3F45"), letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
+                    <div style={{ fontSize:22, fontWeight:900, color: statsMetric===key?"white":metricCfg[key].color, letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
+                    <div style={{ fontSize:10, color: statsMetric===key?"rgba(255,255,255,0.6)":"#9DB5B9", marginTop:5 }}>{sub}</div>
+                  </button>
+                ))}
+                {/* Orders + Units + Clients row */}
+                {[
+                  { key:"orders",  val:mOrders.length,  display: String(mOrders.length), sub:`${mOpen} ${lang==="de"?"offen":"open"}` },
+                  { key:"units",   val:mUnits,  display: mUnits>0?String(mUnits):"—", sub:lang==="de"?"Steine/Stücke":"stones / pieces" },
+                  { key:"clients", val:mClients,display: mClients>0?String(mClients):"—" },
+                ].map(({ key, display, sub }) => (
+                  <button key={key} onClick={()=>setStatsMetric(key)}
+                    style={{ background: statsMetric===key?metricCfg[key].color:"white", borderRadius:18, padding:"16px 14px", border: statsMetric===key?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: statsMetric===key?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
+                    <div style={{ fontSize:10, fontWeight:700, color: statsMetric===key?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{metricCfg[key].label}</div>
+                    <div style={{ fontSize:28, fontWeight:900, color: statsMetric===key?"white":"#1B3F45", letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
                     {sub && <div style={{ fontSize:11, color: statsMetric===key?"rgba(255,255,255,0.6)":"#9DB5B9", marginTop:5 }}>{sub}</div>}
                   </button>
                 ))}
@@ -2993,11 +3009,8 @@ export default function App() {
 
                     {/* Totals */}
                     <div style={{ borderTop:"1px solid #E8E4DC", paddingTop:10 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", borderBottom:"1px solid #E8E4DC", paddingBottom:10, marginBottom:8 }}>
-                        <span style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>{t("subtotalLabel")}</span>
-                        <span style={{ fontSize:18, fontWeight:800, color:"#1B3F45" }}>{C.currency} {fmt(invSub)}</span>
-                      </div>
                       {invPortoVal>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:4 }}><span>{t("postageLabel")}</span><span>{C.currency} {fmt(invPortoVal)}</span></div>}
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:4 }}><span>{t("subtotalLabel")}</span><span>{C.currency} {fmt(invSub)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5A7A80", marginBottom:10 }}><span>{C.taxLabel} {(C.taxRate*100).toFixed(1)}%</span><span>{C.currency} {fmt(invMwst)}</span></div>
                       <div style={{ display:"flex", justifyContent:"space-between", borderTop:"2px solid #1C1C1E", paddingTop:10 }}>
                         <span style={{ fontSize:15, fontWeight:700, color:"#1B3F45" }}>{t("totalLabel")}</span>
@@ -3894,10 +3907,7 @@ export default function App() {
                       <td style={{ padding:"8px 10px", borderBottom:"1px solid #e0e0e0", textAlign:"right" }}>{fC(sub)}</td>
                     </tr>
                     {/* totals rows */}
-                    <tr style={{ borderTop:"2px solid #1a1a1a" }}>
-                      <td colSpan={3} style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, fontSize:12, letterSpacing:"0.06em" }}>Subtotal</td>
-                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, fontSize:13, borderLeft:"1px solid #1a1a1a" }}>{fC(sub)}</td>
-                    </tr>
+                    <tr><td colSpan={3} style={{ padding:"6px 10px", textAlign:"right", fontSize:11, color:"#333" }}>Total ohne {C.taxLabel}</td><td style={{ padding:"6px 10px", textAlign:"right", fontSize:11 }}>{fC(sub)}</td></tr>
                     <tr><td colSpan={3} style={{ padding:"4px 10px", textAlign:"right", fontSize:11, color:"#333" }}>Porto</td><td style={{ padding:"4px 10px", textAlign:"right", fontSize:11 }}>{fC(porto)}</td></tr>
                     <tr><td colSpan={3} style={{ padding:"4px 10px", textAlign:"right", fontSize:11, color:"#333" }}>{(C.taxRate*100).toFixed(1).replace(".",",")}% {C.taxLabel}</td>
                       <td style={{ padding:"4px 10px", textAlign:"right", fontSize:11 }}>CHF &nbsp;{Number(mwst).toFixed(2).replace(".",",")}</td></tr>
