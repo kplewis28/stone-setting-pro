@@ -1548,7 +1548,7 @@ export default function App() {
         const mOrders     = filterOrders(mAllOrders);
         const mInvoices   = filterInvoicesForClient(invoices.filter(i => (i.date||"").startsWith(statsMonth)));
         const mRevenue    = mInvoices.reduce((s,i) => s + roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)), 0);
-        const mUnits      = mOrders.reduce((s,o) => s + (parseFloat(o.pieces)||0), 0);
+        const mUnits      = mInvoices.reduce((s,i) => s + i.items.reduce((ss,it) => ss + (parseFloat(it.qty)||0), 0), 0);
         const mClients    = new Set(mOrders.map(o => o.clientId||o.client).filter(Boolean)).size;
         const mOpen       = mOrders.filter(o => o.status!=="done" && o.status!=="invoiced").length;
 
@@ -1565,7 +1565,7 @@ export default function App() {
             label: new Date(ym+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"short"}),
             orders: os.length,
             revenue: ivs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0),
-            units: os.reduce((s,o)=>s+(parseFloat(o.pieces)||0),0),
+            units: ivs.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0),
             clients: new Set(os.map(o=>o.clientId||o.client).filter(Boolean)).size,
           };
         });
@@ -1582,29 +1582,37 @@ export default function App() {
         const BarChart = ({ data, metricKey, color, formatVal }) => {
           const vals = data.map(d => d[metricKey]);
           const max  = Math.max(...vals, 1);
-          const W = 300; const H = 120; const barW = W / data.length;
-          const gridLines = [0.25, 0.5, 0.75, 1];
+          const W = 300; const H = 120; const padL = 4; const padR = 4;
+          const plotW = W - padL - padR;
+          const xOf = i => padL + (i / (data.length - 1)) * plotW;
+          const yOf = v => H - (v / max) * H;
+          const points = data.map((d, i) => `${xOf(i)},${yOf(vals[i])}`).join(" ");
           return (
             <svg viewBox={`0 0 ${W} ${H + 28}`} style={{ width:"100%", display:"block" }} preserveAspectRatio="none">
               {/* Grid lines */}
-              {gridLines.map(pct => (
+              {[0.25, 0.5, 0.75, 1].map(pct => (
                 <g key={pct}>
                   <line x1={0} y1={H - pct*H} x2={W} y2={H - pct*H} stroke="#F0EDE8" strokeWidth="0.8"/>
                   <text x={W - 2} y={H - pct*H - 2} fontSize="6" fill="#C8C4BC" textAnchor="end">{formatVal(Math.round(max*pct))}</text>
                 </g>
               ))}
-              {/* Bars */}
+              {/* Area fill under line */}
+              <polyline points={[`${xOf(0)},${H}`, ...data.map((_,i)=>`${xOf(i)},${yOf(vals[i])}`), `${xOf(data.length-1)},${H}`].join(" ")}
+                fill={`${color}18`} stroke="none"/>
+              {/* Line */}
+              <polyline points={points} fill="none" stroke={`${color}80`} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
+              {/* Dots + labels */}
               {data.map((d, i) => {
-                const barH = vals[i] > 0 ? Math.max((vals[i]/max)*H, 3) : 0;
-                const x = i * barW;
+                const cx = xOf(i); const cy = yOf(vals[i]);
                 const isSelected = d.ym === statsMonth;
                 return (
                   <g key={d.ym} onClick={() => setStatsMonth(d.ym)} style={{ cursor:"pointer" }}>
-                    <rect x={x + barW*0.15} y={H - barH} width={barW*0.7} height={barH} fill={isSelected ? color : `${color}50`} rx="2"/>
+                    <circle cx={cx} cy={cy} r={isSelected ? 5 : 3.5}
+                      fill={isSelected ? color : "white"} stroke={color} strokeWidth={isSelected ? 0 : 1.8}/>
                     {isSelected && vals[i] > 0 && (
-                      <text x={x + barW/2} y={H - barH - 4} fontSize="7" fill={color} textAnchor="middle" fontWeight="bold">{formatVal(vals[i])}</text>
+                      <text x={cx} y={cy - 9} fontSize="7" fill={color} textAnchor="middle" fontWeight="bold">{formatVal(vals[i])}</text>
                     )}
-                    <text x={x + barW/2} y={H + 16} fontSize="7.5" fill={isSelected?"#1B3F45":"#9DB5B9"} textAnchor="middle" fontWeight={isSelected?"bold":"normal"}>{d.label}</text>
+                    <text x={cx} y={H + 16} fontSize="7.5" fill={isSelected?"#1B3F45":"#9DB5B9"} textAnchor="middle" fontWeight={isSelected?"bold":"normal"}>{d.label}</text>
                   </g>
                 );
               })}
@@ -1620,7 +1628,7 @@ export default function App() {
           const cOrders = mAllOrders.filter(o => o.clientId===c.id || o.client===cName);
           const cInvs   = invoices.filter(i => i.client===cName && (i.date||"").startsWith(statsMonth));
           const cRev    = cInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0);
-          return { id:c.id, name:cName, orders:cOrders.length, revenue:cRev, units:cOrders.reduce((s,o)=>s+(parseFloat(o.pieces)||0),0) };
+          return { id:c.id, name:cName, orders:cOrders.length, revenue:cRev, units:cInvs.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0) };
         }).filter(c => c.orders > 0 || c.revenue > 0).sort((a,b) => b.revenue - a.revenue);
 
         const pad = isDesktop?"0 40px 60px":isTablet?"0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))";
@@ -1691,7 +1699,7 @@ export default function App() {
                   <div style={{ fontSize:11, color:"#9DB5B9" }}>12 {lang==="de"?"Monate":"months"}</div>
                 </div>
                 <BarChart data={trend} metricKey={statsMetric} color={mc.color} formatVal={mc.format}/>
-                <div style={{ fontSize:10, color:"#9DB5B9", marginTop:8, textAlign:"center" }}>{lang==="de"?"Tippe auf einen Balken um den Monat zu wählen":"Tap a bar to select that month"}</div>
+                <div style={{ fontSize:10, color:"#9DB5B9", marginTop:8, textAlign:"center" }}>{lang==="de"?"Tippe auf einen Punkt um den Monat zu wählen":"Tap a dot to select that month"}</div>
               </div>
 
               {/* Client breakdown table (only when "All clients") */}
