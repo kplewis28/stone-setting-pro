@@ -50,7 +50,8 @@ const PASTELS = {
 
 const TRANS = {
   en: {
-    tabHome:"Home", tabScan:"Scan", tabOrders:"Orders", tabClients:"Clients", tabInvoice:"Invoice",
+    tabHome:"Home", tabScan:"Stats", tabOrders:"Orders", tabClients:"Clients", tabInvoice:"Invoice",
+    statsTitle:"Statistics", statsOrders:"Orders", statsRevenue:"Revenue", statsUnits:"Units", statsClients:"Active clients", statsTrend:"Monthly trend",
     signInTo:"Sign in to continue", emailLabel:"Email", passwordLabel:"Password", signingIn:"Signing in\u2026", signInBtn:"Sign in",
     profileLanguage:"Language", profileChangePw:"Change password", profileSignOut:"Sign out",
     changePwTitle:"Change password", newPasswordLabel:"New password", confirmPwLabel:"Confirm password",
@@ -186,7 +187,8 @@ const TRANS = {
     deleteBtn:"Delete",
   },
   de: {
-    tabHome:"Start", tabScan:"Scan", tabOrders:"Auftr\u00e4ge", tabClients:"Kunden", tabInvoice:"Rechnung",
+    tabHome:"Start", tabScan:"Statistik", tabOrders:"Auftr\u00e4ge", tabClients:"Kunden", tabInvoice:"Rechnung",
+    statsTitle:"Statistiken", statsOrders:"Auftr\u00e4ge", statsRevenue:"Einnahmen", statsUnits:"Einheiten", statsClients:"Aktive Kunden", statsTrend:"Monatliche Entwicklung",
     signInTo:"Bitte anmelden", emailLabel:"E-Mail", passwordLabel:"Passwort", signingIn:"Anmelden\u2026", signInBtn:"Anmelden",
     profileLanguage:"Sprache", profileChangePw:"Passwort \u00e4ndern", profileSignOut:"Abmelden",
     changePwTitle:"Passwort \u00e4ndern", newPasswordLabel:"Neues Passwort", confirmPwLabel:"Passwort best\u00e4tigen",
@@ -369,6 +371,7 @@ const Icon = ({ name, size=22, color="#1B3F45" }) => {
   const s = { width:size, height:size, display:"block", flexShrink:0 };
   const icons = {
     scan: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 12h10M12 7v10"/><rect x="7" y="7" width="4" height="4" rx="1"/><rect x="13" y="13" width="4" height="4" rx="1"/></svg>,
+    chart: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
     orders: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>,
     invoice: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>,
     back: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>,
@@ -468,6 +471,7 @@ const BtnPrimary = ({ children, onClick, disabled, style={} }) => (
   </Button>
 );
 
+// eslint-disable-next-line no-unused-vars
 const BtnGhost = ({ children, onClick, disabled, style={} }) => (
   <Button
     kind="ghost"
@@ -508,6 +512,10 @@ export default function App() {
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [driveConnected, setDriveConnected] = useState(isDriveConnected);
   const [driveLoading, setDriveLoading] = useState(false);
+  const [statsMonth, setStatsMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [statsClientFilter, setStatsClientFilter] = useState("all");
+  const [statsStatusFilter, setStatsStatusFilter] = useState("all");
+  const [statsMetric, setStatsMetric] = useState("revenue"); // "orders"|"revenue"|"units"|"clients"
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
@@ -528,11 +536,11 @@ export default function App() {
   const [workOrderPreview, setWorkOrderPreview] = useState(null);
   const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
-  const [photoStep, setPhotoStep] = useState("capture");
-  const [imgData, setImgData]   = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiMsg, setAiMsg]       = useState("");
-  const [aiError, setAiError]   = useState("");
+  const [photoStep, setPhotoStep] = useState("capture"); // eslint-disable-line no-unused-vars
+  const [imgData, setImgData]   = useState(null); // eslint-disable-line no-unused-vars
+  const [aiLoading, setAiLoading] = useState(false); // eslint-disable-line no-unused-vars
+  const [aiMsg, setAiMsg]       = useState(""); // eslint-disable-line no-unused-vars
+  const [aiError, setAiError]   = useState(""); // eslint-disable-line no-unused-vars
   const [newOrderStep, setNewOrderStep]   = useState(1);
   const [newClientSheet, setNewClientSheet] = useState(false);
   const [sheetClient, setSheetClient]     = useState({ name:"", address:"", phone:"", email:"" });
@@ -546,7 +554,7 @@ export default function App() {
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const dragTouchStartY = useRef(null);
   const [extracted, setExtracted] = useState(null);
-  const fileRef = useRef();
+  const fileRef = useRef(); // eslint-disable-line no-unused-vars
   const draftPhotoRef = useRef();
   const calStripRef = useRef();
   const piecePhotoRef = useRef();
@@ -674,6 +682,7 @@ export default function App() {
   };
 
   // ── PHOTO AI ──
+  // eslint-disable-next-line no-unused-vars
   const analyzePhoto = async () => {
     setAiLoading(true);
     setAiError("");
@@ -704,6 +713,7 @@ export default function App() {
     setAiLoading(false);
   };
 
+  // eslint-disable-next-line no-unused-vars
   const confirmOrder = () => {
     const order = { ...newOrder(), client:extracted.client||"", field1:extracted.field1||"", field2:extracted.field2||"", pieces:extracted.pieces||"", description:extracted.notes||"", notes:extracted.notes||"", photo: imgData||null };
     setOrders([order, ...orders]);
@@ -713,6 +723,7 @@ export default function App() {
 
   const resetPhoto = () => { setPhotoStep("capture"); setImgData(null); setExtracted(null); setAiError(""); };
 
+  // eslint-disable-next-line no-unused-vars
   const goHome = () => { setTab("home"); setView("list"); setPhotoStep("capture"); setInvView("list"); setClientView("list"); };
 
   // ── EXCEL EXPORT ──
@@ -1153,7 +1164,7 @@ export default function App() {
           </div>
           {[
             { key:"home",    icon:"orders",  label:t("tabHome")    },
-            { key:"scan",    icon:"scan",    label:t("tabScan")    },
+            { key:"scan",    icon:"chart",   label:t("tabScan")    },
             { key:"orders",  icon:"gem",     label:t("tabOrders")  },
             { key:"clients", icon:"person",  label:t("tabClients") },
             { key:"invoice", icon:"invoice", label:t("tabInvoice") },
@@ -1502,117 +1513,268 @@ export default function App() {
         </div>
       )}
 
-      {/* ── SCAN TAB ── */}
-      {tab==="scan" && (
-        <div style={{ animation:"fadeUp 0.3s ease" }}>
-          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white", display:"flex", alignItems:"center", gap:14 }}>
-            <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
-            <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("scanTitle")}</div>
-          </div>
+      {/* ── STATS TAB ── */}
+      {tab==="scan" && (() => {
+        // eslint-disable-next-line no-unused-vars
+        const prevMonth = () => {
+          const [y, m] = statsMonth.split("-").map(Number);
+          const d = new Date(y, m - 2, 1);
+          setStatsMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);
+        };
+        // eslint-disable-next-line no-unused-vars
+        const nextMonth = () => {
+          const [y, m] = statsMonth.split("-").map(Number);
+          const d = new Date(y, m, 1);
+          const now = new Date();
+          const maxYM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+          const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+          if (next <= maxYM) setStatsMonth(next);
+        };
+        // eslint-disable-next-line no-unused-vars
+        const isCurrentMonth = statsMonth === new Date().toISOString().slice(0,7);
+        const monthLabel = new Date(statsMonth+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"long",year:"numeric"});
 
-          <div style={{ padding: isDesktop?"0 40px 60px":isTablet?"0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
-            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ setImgData(c); setPhotoStep("preview"); }); }; r.readAsDataURL(f); }}/>
+        // ── Apply filters
+        const filterOrders = (os) => os.filter(o => {
+          const clientMatch = statsClientFilter === "all" || o.clientId === statsClientFilter || o.client === statsClientFilter;
+          const statusMatch = statsStatusFilter === "all" || o.status === statsStatusFilter;
+          return clientMatch && statusMatch;
+        });
+        const filterInvoicesForClient = (ivs) => ivs.filter(i =>
+          statsClientFilter === "all" || i.client === (clients.find(c=>c.id===statsClientFilter)?.company || clients.find(c=>c.id===statsClientFilter)?.name || statsClientFilter)
+        );
 
-            {photoStep==="capture" && (
-              <>
-                <div style={{ background:"white", borderRadius:24, padding:"40px 24px", textAlign:"center", marginBottom:16, border:"1.5px solid #E8E4DC" }}>
-                  <div style={{ width:80, height:80, background:"#F0F6F7", borderRadius:24, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
-                    <Icon name="camera" size={36} color="#1B3F45"/>
-                  </div>
-                  <div style={{ fontSize:20, fontWeight:700, color:"#1B3F45", marginBottom:8 }}>{t("takePhoto")}</div>
-                  <div style={{ fontSize:14, color:"#5A7A80", lineHeight:1.6, marginBottom:28 }}>{t("cameraDesc")}</div>
-                  <BtnPrimary onClick={()=>{ fileRef.current.setAttribute("capture","environment"); fileRef.current.click(); }}>
-                    <Icon name="camera" size={18} color="white"/> {t("openCamera")}
-                  </BtnPrimary>
-                  <div style={{ height:10 }}/>
-                  <BtnGhost onClick={()=>{ fileRef.current.removeAttribute("capture"); fileRef.current.click(); }}>{t("chooseGallery")}</BtnGhost>
+        const mAllOrders  = orders.filter(o => (o.received||"").startsWith(statsMonth));
+        const mOrders     = filterOrders(mAllOrders);
+        const mInvoices   = filterInvoicesForClient(invoices.filter(i => (i.date||"").startsWith(statsMonth)));
+        const mRevenue    = mInvoices.reduce((s,i) => s + roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)), 0);
+        const mNet        = mInvoices.reduce((s,i) => s + roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)), 0);
+        const mUnits      = mInvoices.reduce((s,i) => s + i.items.reduce((ss,it) => ss + (parseFloat(it.qty)||0), 0), 0);
+        const mClients    = new Set(mOrders.map(o => o.clientId||o.client).filter(Boolean)).size;
+        const mOpen       = mOrders.filter(o => o.status!=="done" && o.status!=="invoiced").length;
+
+        // ── 12-month trend
+        const months12 = Array.from({length:12}, (_,i) => {
+          const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - (11-i));
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+        });
+        const trend = months12.map(ym => {
+          const os = filterOrders(orders.filter(o=>(o.received||"").startsWith(ym)));
+          const ivs = filterInvoicesForClient(invoices.filter(i=>(i.date||"").startsWith(ym)));
+          return {
+            ym,
+            label: new Date(ym+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"short"}),
+            orders: os.length,
+            revenue: ivs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0),
+            net: ivs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)),0),
+            units: ivs.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0),
+            clients: new Set(os.map(o=>o.clientId||o.client).filter(Boolean)).size,
+          };
+        });
+
+        const metricCfg = {
+          orders:  { label:t("statsOrders"),  color:"#1B3F45", format: v => String(v) },
+          revenue: { label:t("statsRevenue"), color:"#C9933A", format: v => `${C.currency} ${fmt(v)}` },
+          net:     { label:lang==="de"?"Netto":"Net", color:"#198038", format: v => `${C.currency} ${fmt(v)}` },
+          units:   { label:t("statsUnits"),   color:"#5A7A80", format: v => String(v) },
+          clients: { label:t("statsClients"), color:"#8B5CF6", format: v => String(v) },
+        };
+        const mc = metricCfg[statsMetric];
+
+        // ── SVG bar chart (full-width, tall)
+        const BarChart = ({ data, metricKey, color, formatVal }) => {
+          const vals = data.map(d => d[metricKey]);
+          const max  = Math.max(...vals, 1);
+          const W = 300; const H = 120; const padL = 4; const padR = 4;
+          const plotW = W - padL - padR;
+          const xOf = i => padL + (i / (data.length - 1)) * plotW;
+          const yOf = v => H - (v / max) * H;
+          const points = data.map((d, i) => `${xOf(i)},${yOf(vals[i])}`).join(" ");
+          return (
+            <svg viewBox={`0 0 ${W} ${H + 28}`} style={{ width:"100%", display:"block" }} preserveAspectRatio="none">
+              {/* Grid lines */}
+              {[0.25, 0.5, 0.75, 1].map(pct => (
+                <g key={pct}>
+                  <line x1={0} y1={H - pct*H} x2={W} y2={H - pct*H} stroke="#F0EDE8" strokeWidth="0.8"/>
+                  <text x={W - 2} y={H - pct*H - 2} fontSize="6" fill="#C8C4BC" textAnchor="end">{formatVal(Math.round(max*pct))}</text>
+                </g>
+              ))}
+              {/* Area fill under line */}
+              <polyline points={[`${xOf(0)},${H}`, ...data.map((_,i)=>`${xOf(i)},${yOf(vals[i])}`), `${xOf(data.length-1)},${H}`].join(" ")}
+                fill={`${color}18`} stroke="none"/>
+              {/* Line */}
+              <polyline points={points} fill="none" stroke={`${color}80`} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
+              {/* Dots + labels */}
+              {data.map((d, i) => {
+                const cx = xOf(i); const cy = yOf(vals[i]);
+                const isSelected = d.ym === statsMonth;
+                return (
+                  <g key={d.ym} onClick={() => setStatsMonth(d.ym)} style={{ cursor:"pointer" }}>
+                    <circle cx={cx} cy={cy} r={isSelected ? 5 : 3.5}
+                      fill={isSelected ? color : "white"} stroke={color} strokeWidth={isSelected ? 0 : 1.8}/>
+                    {isSelected && vals[i] > 0 && (
+                      <text x={cx} y={cy - 9} fontSize="7" fill={color} textAnchor="middle" fontWeight="bold">{formatVal(vals[i])}</text>
+                    )}
+                    <text x={cx} y={H + 16} fontSize="7.5" fill={isSelected?"#1B3F45":"#9DB5B9"} textAnchor="middle" fontWeight={isSelected?"bold":"normal"}>{d.label}</text>
+                  </g>
+                );
+              })}
+              {/* Baseline */}
+              <line x1={0} y1={H} x2={W} y2={H} stroke="#E8E4DC" strokeWidth="1"/>
+            </svg>
+          );
+        };
+
+        // Status by client breakdown
+        const clientBreakdown = clients.map(c => {
+          const cName = c.company || c.name;
+          const cOrders = mAllOrders.filter(o => o.clientId===c.id || o.client===cName);
+          const cInvs   = invoices.filter(i => i.client===cName && (i.date||"").startsWith(statsMonth));
+          const cRev    = cInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0);
+          const cNet    = cInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)),0);
+          return { id:c.id, name:cName, orders:cOrders.length, revenue:cRev, net:cNet, units:cInvs.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0) };
+        }).filter(c => c.orders > 0 || c.revenue > 0).sort((a,b) => b.revenue - a.revenue);
+
+        const pad = isDesktop?"0 40px 60px":isTablet?"0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))";
+
+        return (
+          <div style={{ animation:"fadeUp 0.3s ease" }}>
+            {/* Header — same structure as Orders/Invoice */}
+            <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                <div>
+                  <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
+                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{monthLabel}</div>
                 </div>
-                <SectionTitle>{t("tipsTitle")}</SectionTitle>
-                {[["Good lighting","Natural light, no shadows on the document"],["Keep it flat","Place sheet on flat surface"],["Full document","Entire sheet visible in frame"]].map(([t,d])=>(
-                  <div key={t} style={{ display:"flex", gap:12, marginBottom:10, alignItems:"flex-start" }}>
-                    <div style={{ width:6, height:6, borderRadius:"50%", background:ACCENT, marginTop:6, flexShrink:0 }}/>
-                    <div><div style={{ fontSize:14, fontWeight:600, color:"#1B3F45" }}>{t}</div><div style={{ fontSize:13, color:"#5A7A80" }}>{d}</div></div>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {photoStep==="preview" && (
-              <>
-                <img src={imgData} alt="doc" style={{ width:"100%", maxHeight:220, objectFit:"cover", borderRadius:16, border:"1.5px solid #E8E4DC", marginBottom:16, display:"block" }}/>
-                {aiLoading ? (
-                  <Card style={{ textAlign:"center", padding:"32px" }}>
-                    <div style={{ width:36, height:36, border:`3px solid #E8E4DC`, borderTopColor:ACCENT, borderRadius:"50%", animation:"spin 0.7s linear infinite", margin:"0 auto 16px" }}/>
-                    <div style={{ fontSize:15, fontWeight:600, color:"#1B3F45", marginBottom:4 }}>{aiMsg}</div>
-                    <div style={{ fontSize:13, color:"#5A7A80" }}>AI is reading the document</div>
-                  </Card>
-                ) : (
-                  <>
-                    {aiError && <div style={{ background:"#FF3B3015", border:"1px solid #FF3B3030", borderRadius:12, padding:"12px 14px", marginBottom:12, fontSize:13, color:"#da1e28", lineHeight:1.5 }}>{aiError}</div>}
-                    <BtnPrimary onClick={analyzePhoto}><Icon name="scan" size={18} color="white"/> {t("analyzeBtn")}</BtnPrimary>
-                    <div style={{ height:10 }}/>
-                    <BtnGhost onClick={resetPhoto}>{t("retakePhoto")}</BtnGhost>
-                  </>
-                )}
-              </>
-            )}
-
-            {photoStep==="review" && extracted && (
-              <>
-                <Card style={{ marginBottom:16 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:ACCENT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:8 }}>{t("aiReadThis")}</div>
-                  <div style={{ fontSize:14, color:"#5A7A80", lineHeight:1.6, fontStyle:"italic" }}>"{extracted.summary}"</div>
-                </Card>
-                <SectionTitle>{t("confirmDetailsTitle")}</SectionTitle>
-                <Card>
-                  {/* Client picker */}
-                  <Field label={t("clientFieldLabel")}>
-                    {clients.length > 0
-                      ? <Select value={extracted.clientId||""} onChange={e=>{
-                          const c = clients.find(x=>x.id===e.target.value);
-                          setExtracted({...extracted, clientId: e.target.value, client: c ? (c.company||c.name) : ""});
-                        }}>
-                          <option value="">{t("selectClientOption")}</option>
-                          {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
-                        </Select>
-                      : <Input placeholder={t("clientFieldLabel")} value={extracted.client||""} onChange={e=>setExtracted({...extracted,client:e.target.value})}/>
-                    }
-                    {clients.length > 0 && <div onClick={()=>{ setTab("clients"); setClientView("new"); setClientDraft(newClient()); }} style={{ fontSize:12, color:ACCENT, fontWeight:600, marginTop:6, cursor:"pointer" }}>{t("addNewClientLink")}</div>}
-                  </Field>
-                  <Field label={t("workDescLabel")}>
-                    <Textarea value={extracted.description||extracted.notes||""} onChange={e=>setExtracted({...extracted,description:e.target.value})} placeholder={t("workDescLabel")+"\u2026"}/>
-                  </Field>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                    <Field label={t("receivedDateLabel")}>
-                      <Input type="date" value={extracted.received||new Date().toISOString().split("T")[0]} onChange={e=>setExtracted({...extracted,received:e.target.value})}/>
-                    </Field>
-                    <Field label={t("deliveryDateLabel")}>
-                      <Input type="date" value={extracted.deadline||""} onChange={e=>setExtracted({...extracted,deadline:e.target.value})}/>
-                    </Field>
-                  </div>
-                  <Field label={C.piecesLabel}><Input type="number" placeholder="0" value={extracted.pieces||""} onChange={e=>setExtracted({...extracted,pieces:e.target.value})}/></Field>
-                </Card>
-                <BtnPrimary disabled={!extracted.client} onClick={confirmOrder}><Icon name="check" size={18} color="white"/> {t("createOrderBtn")}</BtnPrimary>
-                <div style={{ height:10 }}/>
-                <BtnGhost onClick={resetPhoto}>{t("retakePhoto")}</BtnGhost>
-              </>
-            )}
-
-            {photoStep==="done" && (
-              <div style={{ textAlign:"center", padding:"40px 20px" }}>
-                <div style={{ width:72, height:72, background:`${ACCENT}15`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
-                  <Icon name="check" size={32} color={ACCENT}/>
-                </div>
-                <div style={{ fontSize:24, fontWeight:700, color:"#1B3F45", marginBottom:8 }}>{t("orderCreatedTitle")}</div>
-                <div style={{ fontSize:15, color:"#5A7A80", marginBottom:32 }}>{t("orderCreatedDesc")}</div>
-                <BtnPrimary onClick={()=>{ setTab("orders"); setView("list"); resetPhoto(); }}>{t("goToOrders")}</BtnPrimary>
-                <div style={{ height:10 }}/>
-                <BtnGhost onClick={resetPhoto}>{t("scanAnother")}</BtnGhost>
               </div>
-            )}
+
+              {/* Status pills — same pills-row as Orders */}
+              <div className="pills-row" style={{ marginBottom:10 }}>
+                {[["all", lang==="de"?"Alle":"All", mAllOrders.length], ...Object.entries(C.statuses).map(([k,v])=>[k,v.label,mAllOrders.filter(o=>o.status===k).length])].map(([key,label,cnt]) => (
+                  <button key={key} onClick={()=>setStatsStatusFilter(key)}
+                    style={{ padding:"8px 16px", borderRadius:100, border:"none", background:statsStatusFilter===key?"#1B3F45":"white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color:statsStatusFilter===key?"white":"#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                    {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Client filter — same Select as Orders/Invoice */}
+              <div style={{ marginBottom:10 }}>
+                <Select value={statsClientFilter} onChange={e=>setStatsClientFilter(e.target.value)} style={{ fontSize:13, padding:"10px 36px 10px 12px", color:statsClientFilter!=="all"?"#1B3F45":"#5A7A80" }}>
+                  <option value="all">{lang==="de"?"Alle Kunden":"All clients"}</option>
+                  {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}</option>)}
+                </Select>
+              </div>
+
+              {/* Month picker with calendar icon */}
+              <div style={{ position:"relative", display:"flex", alignItems:"center" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute", left:12, pointerEvents:"none", zIndex:1 }}>
+                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <input type="month" value={statsMonth} max={new Date().toISOString().slice(0,7)}
+                  onChange={e=>{ if(e.target.value) setStatsMonth(e.target.value); }}
+                  style={{ ...selectBase, paddingLeft:36, fontSize:13, color:"#1B3F45" }}/>
+              </div>
+            </div>
+
+            <div style={{ padding: pad }}>
+
+              {/* KPI cards */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14, marginTop:16 }}>
+                {/* Revenue + Net row */}
+                {[
+                  { key:"revenue", val:mRevenue, display: mRevenue>0?`${C.currency} ${fmt(mRevenue)}`:"—", sub:lang==="de"?"inkl. Porto & MWST":"incl. shipping & tax" },
+                  { key:"net",     val:mNet,     display: mNet>0?`${C.currency} ${fmt(mNet)}`:"—",         sub:lang==="de"?"ohne Porto & MWST":"excl. shipping & tax" },
+                ].map(({ key, display, sub }) => (
+                  <button key={key} onClick={()=>setStatsMetric(key)}
+                    style={{ background: statsMetric===key?metricCfg[key].color:"white", borderRadius:18, padding:"16px 14px", border: statsMetric===key?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: statsMetric===key?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
+                    <div style={{ fontSize:10, fontWeight:700, color: statsMetric===key?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{metricCfg[key].label}</div>
+                    <div style={{ fontSize:22, fontWeight:900, color: statsMetric===key?"white":metricCfg[key].color, letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
+                    <div style={{ fontSize:10, color: statsMetric===key?"rgba(255,255,255,0.6)":"#9DB5B9", marginTop:5 }}>{sub}</div>
+                  </button>
+                ))}
+                {/* Orders + Units + Clients row */}
+                {[
+                  { key:"orders",  val:mOrders.length,  display: String(mOrders.length), sub:`${mOpen} ${lang==="de"?"offen":"open"}` },
+                  { key:"units",   val:mUnits,  display: mUnits>0?String(mUnits):"—", sub:lang==="de"?"Steine/Stücke":"stones / pieces" },
+                  { key:"clients", val:mClients,display: mClients>0?String(mClients):"—" },
+                ].map(({ key, display, sub }) => (
+                  <button key={key} onClick={()=>setStatsMetric(key)}
+                    style={{ background: statsMetric===key?metricCfg[key].color:"white", borderRadius:18, padding:"16px 14px", border: statsMetric===key?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: statsMetric===key?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
+                    <div style={{ fontSize:10, fontWeight:700, color: statsMetric===key?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{metricCfg[key].label}</div>
+                    <div style={{ fontSize:28, fontWeight:900, color: statsMetric===key?"white":"#1B3F45", letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
+                    {sub && <div style={{ fontSize:11, color: statsMetric===key?"rgba(255,255,255,0.6)":"#9DB5B9", marginTop:5 }}>{sub}</div>}
+                  </button>
+                ))}
+              </div>
+
+              {/* Main chart — selected metric, 12 months, tappable bars */}
+              <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"18px 16px", marginBottom:14 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#1B3F45" }}>{mc.label} — {t("statsTrend")}</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9" }}>12 {lang==="de"?"Monate":"months"}</div>
+                </div>
+                <BarChart data={trend} metricKey={statsMetric} color={mc.color} formatVal={mc.format}/>
+                <div style={{ fontSize:10, color:"#9DB5B9", marginTop:8, textAlign:"center" }}>{lang==="de"?"Tippe auf einen Punkt um den Monat zu wählen":"Tap a dot to select that month"}</div>
+              </div>
+
+              {/* Client breakdown table (only when "All clients") */}
+              {statsClientFilter === "all" && clientBreakdown.length > 0 && (
+                <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", overflow:"hidden", marginBottom:14 }}>
+                  <div style={{ padding:"14px 16px 10px", borderBottom:"1px solid #F0EDE8" }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:"#1B3F45" }}>{lang==="de"?"Nach Kunde":"By client"}</div>
+                  </div>
+                  {clientBreakdown.map((c, i) => {
+                    const maxRev = Math.max(...clientBreakdown.map(x=>x.revenue), 1);
+                    return (
+                      <div key={c.id} style={{ padding:"12px 16px", borderTop: i>0?"1px solid #F8F6F3":"none" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                          <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45" }}>{c.name}</div>
+                          <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+                            <span style={{ fontSize:11, color:"#9DB5B9" }}>{c.orders} {lang==="de"?"Auftr.":"ord."} · {c.units} {lang==="de"?"Einh.":"units"}</span>
+                            <span style={{ fontSize:13, fontWeight:800, color:"#C9933A" }}>{c.revenue>0?`${C.currency} ${fmt(c.revenue)}`:"—"}</span>
+                          </div>
+                        </div>
+                        {c.revenue > 0 && (
+                          <div style={{ height:4, background:"#F0EDE8", borderRadius:2, overflow:"hidden" }}>
+                            <div style={{ height:"100%", background:"#C9933A", borderRadius:2, width:`${(c.revenue/maxRev)*100}%`, transition:"width 0.4s ease" }}/>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Status breakdown donut-style pills */}
+              {statsStatusFilter === "all" && mAllOrders.length > 0 && (
+                <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"14px 16px" }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#1B3F45", marginBottom:12 }}>{lang==="de"?"Nach Status":"By status"}</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {Object.entries(C.statuses).map(([key, st]) => {
+                      const count = mAllOrders.filter(o=>o.status===key).length;
+                      if (count === 0) return null;
+                      const pct = Math.round((count / mAllOrders.length) * 100);
+                      return (
+                        <div key={key}>
+                          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                            <span style={{ fontSize:12, color:"#5A7A80", fontWeight:600 }}>{st.label}</span>
+                            <span style={{ fontSize:12, fontWeight:700, color:"#1B3F45" }}>{count} <span style={{ color:"#9DB5B9", fontWeight:400 }}>({pct}%)</span></span>
+                          </div>
+                          <div style={{ height:6, background:"#F0EDE8", borderRadius:3, overflow:"hidden" }}>
+                            <div style={{ height:"100%", background:st.color, borderRadius:3, width:`${pct}%`, transition:"width 0.4s ease" }}/>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── ORDERS TAB ── */}
       {tab==="orders" && (
@@ -1711,7 +1873,10 @@ export default function App() {
                 {/* Date + Excel */}
                 <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
                   <div style={{ flex:1, position:"relative" }}>
-                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ width:"100%", fontSize:13, padding:"10px 12px", color: filterDate?"#1B3F45":"#9DB5B9" }}/>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", zIndex:1 }}>
+                      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ width:"100%", fontSize:13, padding:"10px 12px 10px 36px", color: filterDate?"#1B3F45":"#9DB5B9" }}/>
                   </div>
                   {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#5A7A80", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>✕</button>}
                   <button onClick={exportToExcel} style={{ padding:"10px 14px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>↓ Excel</button>
@@ -3138,7 +3303,7 @@ export default function App() {
         <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:WRAP_MAX, background:"#ffffff", borderTop:"none", boxShadow:"0 -4px 20px rgba(27,63,69,0.07)", display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
           {[
             { key:"home",    icon:"orders",  label:t("tabHome")    },
-            { key:"scan",    icon:"scan",    label:t("tabScan")    },
+            { key:"scan",    icon:"chart",   label:t("tabScan")    },
             { key:"orders",  icon:"gem",     label:t("tabOrders")  },
             { key:"clients", icon:"person",  label:t("tabClients") },
             { key:"invoice", icon:"invoice", label:t("tabInvoice") },
