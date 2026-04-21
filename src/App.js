@@ -50,7 +50,8 @@ const PASTELS = {
 
 const TRANS = {
   en: {
-    tabHome:"Home", tabScan:"Scan", tabOrders:"Orders", tabClients:"Clients", tabInvoice:"Invoice",
+    tabHome:"Home", tabScan:"Stats", tabOrders:"Orders", tabClients:"Clients", tabInvoice:"Invoice",
+    statsTitle:"Statistics", statsOrders:"Orders", statsRevenue:"Revenue", statsUnits:"Units", statsClients:"Active clients", statsTrend:"Monthly trend",
     signInTo:"Sign in to continue", emailLabel:"Email", passwordLabel:"Password", signingIn:"Signing in\u2026", signInBtn:"Sign in",
     profileLanguage:"Language", profileChangePw:"Change password", profileSignOut:"Sign out",
     changePwTitle:"Change password", newPasswordLabel:"New password", confirmPwLabel:"Confirm password",
@@ -186,7 +187,8 @@ const TRANS = {
     deleteBtn:"Delete",
   },
   de: {
-    tabHome:"Start", tabScan:"Scan", tabOrders:"Auftr\u00e4ge", tabClients:"Kunden", tabInvoice:"Rechnung",
+    tabHome:"Start", tabScan:"Statistik", tabOrders:"Auftr\u00e4ge", tabClients:"Kunden", tabInvoice:"Rechnung",
+    statsTitle:"Statistiken", statsOrders:"Auftr\u00e4ge", statsRevenue:"Einnahmen", statsUnits:"Einheiten", statsClients:"Aktive Kunden", statsTrend:"Monatliche Entwicklung",
     signInTo:"Bitte anmelden", emailLabel:"E-Mail", passwordLabel:"Passwort", signingIn:"Anmelden\u2026", signInBtn:"Anmelden",
     profileLanguage:"Sprache", profileChangePw:"Passwort \u00e4ndern", profileSignOut:"Abmelden",
     changePwTitle:"Passwort \u00e4ndern", newPasswordLabel:"Neues Passwort", confirmPwLabel:"Passwort best\u00e4tigen",
@@ -369,6 +371,7 @@ const Icon = ({ name, size=22, color="#1B3F45" }) => {
   const s = { width:size, height:size, display:"block", flexShrink:0 };
   const icons = {
     scan: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 12h10M12 7v10"/><rect x="7" y="7" width="4" height="4" rx="1"/><rect x="13" y="13" width="4" height="4" rx="1"/></svg>,
+    chart: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
     orders: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>,
     invoice: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>,
     back: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>,
@@ -508,6 +511,7 @@ export default function App() {
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [driveConnected, setDriveConnected] = useState(isDriveConnected);
   const [driveLoading, setDriveLoading] = useState(false);
+  const [statsMonth, setStatsMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
@@ -1153,7 +1157,7 @@ export default function App() {
           </div>
           {[
             { key:"home",    icon:"orders",  label:t("tabHome")    },
-            { key:"scan",    icon:"scan",    label:t("tabScan")    },
+            { key:"scan",    icon:"chart",   label:t("tabScan")    },
             { key:"orders",  icon:"gem",     label:t("tabOrders")  },
             { key:"clients", icon:"person",  label:t("tabClients") },
             { key:"invoice", icon:"invoice", label:t("tabInvoice") },
@@ -1502,117 +1506,131 @@ export default function App() {
         </div>
       )}
 
-      {/* ── SCAN TAB ── */}
-      {tab==="scan" && (
-        <div style={{ animation:"fadeUp 0.3s ease" }}>
-          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white", display:"flex", alignItems:"center", gap:14 }}>
-            <button onClick={goHome} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
-            <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("scanTitle")}</div>
+      {/* ── STATS TAB ── */}
+      {tab==="scan" && (() => {
+        // Month navigation helpers
+        const prevMonth = () => {
+          const [y, m] = statsMonth.split("-").map(Number);
+          const d = new Date(y, m - 2, 1);
+          setStatsMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);
+        };
+        const nextMonth = () => {
+          const [y, m] = statsMonth.split("-").map(Number);
+          const d = new Date(y, m, 1);
+          const now = new Date();
+          const maxYM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+          const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+          if (next <= maxYM) setStatsMonth(next);
+        };
+        const isCurrentMonth = statsMonth === new Date().toISOString().slice(0,7);
+
+        const monthLabel = new Date(statsMonth + "-15").toLocaleDateString(lang==="de"?"de-CH":"en-US", { month:"long", year:"numeric" });
+
+        // Stats for selected month
+        const mOrders   = orders.filter(o => (o.received||"").startsWith(statsMonth));
+        const mInvoices = invoices.filter(i => (i.date||"").startsWith(statsMonth));
+        const mRevenue  = mInvoices.reduce((s,i) => s + roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)), 0);
+        const mUnits    = mOrders.reduce((s,o) => s + (parseFloat(o.pieces)||0), 0);
+        const mClients  = new Set(mOrders.map(o => o.clientId||o.client).filter(Boolean)).size;
+
+        // Last 6 months trend data
+        const months6 = Array.from({length:6}, (_,i) => {
+          const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - (5-i));
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+        });
+        const trend = months6.map(ym => {
+          const os = orders.filter(o=>(o.received||"").startsWith(ym));
+          const ivs = invoices.filter(i=>(i.date||"").startsWith(ym));
+          return {
+            ym,
+            label: new Date(ym+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"short"}),
+            orders: os.length,
+            revenue: ivs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0),
+            units: os.reduce((s,o)=>s+(parseFloat(o.pieces)||0),0),
+            clients: new Set(os.map(o=>o.clientId||o.client).filter(Boolean)).size,
+          };
+        });
+
+        const StatCard = ({ label, value, sub, accent }) => (
+          <div style={{ background:"white", borderRadius:18, padding:"18px 16px", border:"1px solid #E8E4DC", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>{label}</div>
+            <div style={{ fontSize:32, fontWeight:900, color: accent||"#1B3F45", letterSpacing:"-0.03em", lineHeight:1 }}>{value}</div>
+            {sub && <div style={{ fontSize:12, color:"#9DB5B9", marginTop:6, fontWeight:500 }}>{sub}</div>}
           </div>
+        );
 
-          <div style={{ padding: isDesktop?"0 40px 60px":isTablet?"0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
-            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ setImgData(c); setPhotoStep("preview"); }); }; r.readAsDataURL(f); }}/>
-
-            {photoStep==="capture" && (
-              <>
-                <div style={{ background:"white", borderRadius:24, padding:"40px 24px", textAlign:"center", marginBottom:16, border:"1.5px solid #E8E4DC" }}>
-                  <div style={{ width:80, height:80, background:"#F0F6F7", borderRadius:24, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
-                    <Icon name="camera" size={36} color="#1B3F45"/>
+        const MiniChart = ({ data, key2, color, format }) => {
+          const max = Math.max(...data.map(d=>d[key2]), 1);
+          return (
+            <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:56 }}>
+              {data.map(d => (
+                <div key={d.ym} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                  <div style={{ fontSize:9, color:"#9DB5B9", fontWeight:600, whiteSpace:"nowrap" }}>
+                    {d[key2] > 0 ? format(d[key2]) : ""}
                   </div>
-                  <div style={{ fontSize:20, fontWeight:700, color:"#1B3F45", marginBottom:8 }}>{t("takePhoto")}</div>
-                  <div style={{ fontSize:14, color:"#5A7A80", lineHeight:1.6, marginBottom:28 }}>{t("cameraDesc")}</div>
-                  <BtnPrimary onClick={()=>{ fileRef.current.setAttribute("capture","environment"); fileRef.current.click(); }}>
-                    <Icon name="camera" size={18} color="white"/> {t("openCamera")}
-                  </BtnPrimary>
-                  <div style={{ height:10 }}/>
-                  <BtnGhost onClick={()=>{ fileRef.current.removeAttribute("capture"); fileRef.current.click(); }}>{t("chooseGallery")}</BtnGhost>
+                  <div style={{ width:"100%", background: d.ym===statsMonth ? color : `${color}40`, borderRadius:"4px 4px 0 0", height: `${Math.max((d[key2]/max)*40, d[key2]>0?4:0)}px`, transition:"height 0.3s ease", minHeight: d[key2]>0?4:0 }}/>
+                  <div style={{ fontSize:9, color: d.ym===statsMonth?"#1B3F45":"#9DB5B9", fontWeight: d.ym===statsMonth?700:400 }}>{d.label}</div>
                 </div>
-                <SectionTitle>{t("tipsTitle")}</SectionTitle>
-                {[["Good lighting","Natural light, no shadows on the document"],["Keep it flat","Place sheet on flat surface"],["Full document","Entire sheet visible in frame"]].map(([t,d])=>(
-                  <div key={t} style={{ display:"flex", gap:12, marginBottom:10, alignItems:"flex-start" }}>
-                    <div style={{ width:6, height:6, borderRadius:"50%", background:ACCENT, marginTop:6, flexShrink:0 }}/>
-                    <div><div style={{ fontSize:14, fontWeight:600, color:"#1B3F45" }}>{t}</div><div style={{ fontSize:13, color:"#5A7A80" }}>{d}</div></div>
-                  </div>
-                ))}
-              </>
-            )}
+              ))}
+            </div>
+          );
+        };
 
-            {photoStep==="preview" && (
-              <>
-                <img src={imgData} alt="doc" style={{ width:"100%", maxHeight:220, objectFit:"cover", borderRadius:16, border:"1.5px solid #E8E4DC", marginBottom:16, display:"block" }}/>
-                {aiLoading ? (
-                  <Card style={{ textAlign:"center", padding:"32px" }}>
-                    <div style={{ width:36, height:36, border:`3px solid #E8E4DC`, borderTopColor:ACCENT, borderRadius:"50%", animation:"spin 0.7s linear infinite", margin:"0 auto 16px" }}/>
-                    <div style={{ fontSize:15, fontWeight:600, color:"#1B3F45", marginBottom:4 }}>{aiMsg}</div>
-                    <div style={{ fontSize:13, color:"#5A7A80" }}>AI is reading the document</div>
-                  </Card>
-                ) : (
-                  <>
-                    {aiError && <div style={{ background:"#FF3B3015", border:"1px solid #FF3B3030", borderRadius:12, padding:"12px 14px", marginBottom:12, fontSize:13, color:"#da1e28", lineHeight:1.5 }}>{aiError}</div>}
-                    <BtnPrimary onClick={analyzePhoto}><Icon name="scan" size={18} color="white"/> {t("analyzeBtn")}</BtnPrimary>
-                    <div style={{ height:10 }}/>
-                    <BtnGhost onClick={resetPhoto}>{t("retakePhoto")}</BtnGhost>
-                  </>
-                )}
-              </>
-            )}
-
-            {photoStep==="review" && extracted && (
-              <>
-                <Card style={{ marginBottom:16 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:ACCENT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:8 }}>{t("aiReadThis")}</div>
-                  <div style={{ fontSize:14, color:"#5A7A80", lineHeight:1.6, fontStyle:"italic" }}>"{extracted.summary}"</div>
-                </Card>
-                <SectionTitle>{t("confirmDetailsTitle")}</SectionTitle>
-                <Card>
-                  {/* Client picker */}
-                  <Field label={t("clientFieldLabel")}>
-                    {clients.length > 0
-                      ? <Select value={extracted.clientId||""} onChange={e=>{
-                          const c = clients.find(x=>x.id===e.target.value);
-                          setExtracted({...extracted, clientId: e.target.value, client: c ? (c.company||c.name) : ""});
-                        }}>
-                          <option value="">{t("selectClientOption")}</option>
-                          {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}{c.company&&c.name?" ("+c.name+")":""}</option>)}
-                        </Select>
-                      : <Input placeholder={t("clientFieldLabel")} value={extracted.client||""} onChange={e=>setExtracted({...extracted,client:e.target.value})}/>
-                    }
-                    {clients.length > 0 && <div onClick={()=>{ setTab("clients"); setClientView("new"); setClientDraft(newClient()); }} style={{ fontSize:12, color:ACCENT, fontWeight:600, marginTop:6, cursor:"pointer" }}>{t("addNewClientLink")}</div>}
-                  </Field>
-                  <Field label={t("workDescLabel")}>
-                    <Textarea value={extracted.description||extracted.notes||""} onChange={e=>setExtracted({...extracted,description:e.target.value})} placeholder={t("workDescLabel")+"\u2026"}/>
-                  </Field>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                    <Field label={t("receivedDateLabel")}>
-                      <Input type="date" value={extracted.received||new Date().toISOString().split("T")[0]} onChange={e=>setExtracted({...extracted,received:e.target.value})}/>
-                    </Field>
-                    <Field label={t("deliveryDateLabel")}>
-                      <Input type="date" value={extracted.deadline||""} onChange={e=>setExtracted({...extracted,deadline:e.target.value})}/>
-                    </Field>
-                  </div>
-                  <Field label={C.piecesLabel}><Input type="number" placeholder="0" value={extracted.pieces||""} onChange={e=>setExtracted({...extracted,pieces:e.target.value})}/></Field>
-                </Card>
-                <BtnPrimary disabled={!extracted.client} onClick={confirmOrder}><Icon name="check" size={18} color="white"/> {t("createOrderBtn")}</BtnPrimary>
-                <div style={{ height:10 }}/>
-                <BtnGhost onClick={resetPhoto}>{t("retakePhoto")}</BtnGhost>
-              </>
-            )}
-
-            {photoStep==="done" && (
-              <div style={{ textAlign:"center", padding:"40px 20px" }}>
-                <div style={{ width:72, height:72, background:`${ACCENT}15`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
-                  <Icon name="check" size={32} color={ACCENT}/>
+        return (
+          <div style={{ animation:"fadeUp 0.3s ease" }}>
+            {/* Header */}
+            <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div style={{ fontSize:28, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
+                {/* Month selector */}
+                <div style={{ display:"flex", alignItems:"center", gap:6, background:"#F0F6F7", borderRadius:12, padding:"6px 10px" }}>
+                  <button onClick={prevMonth} style={{ background:"none", border:"none", cursor:"pointer", padding:"2px 4px", display:"flex", alignItems:"center" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
+                  <span style={{ fontSize:13, fontWeight:700, color:"#1B3F45", minWidth:110, textAlign:"center" }}>{monthLabel}</span>
+                  <button onClick={nextMonth} disabled={isCurrentMonth} style={{ background:"none", border:"none", cursor: isCurrentMonth?"default":"pointer", padding:"2px 4px", display:"flex", alignItems:"center", opacity: isCurrentMonth?0.3:1 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
                 </div>
-                <div style={{ fontSize:24, fontWeight:700, color:"#1B3F45", marginBottom:8 }}>{t("orderCreatedTitle")}</div>
-                <div style={{ fontSize:15, color:"#5A7A80", marginBottom:32 }}>{t("orderCreatedDesc")}</div>
-                <BtnPrimary onClick={()=>{ setTab("orders"); setView("list"); resetPhoto(); }}>{t("goToOrders")}</BtnPrimary>
-                <div style={{ height:10 }}/>
-                <BtnGhost onClick={resetPhoto}>{t("scanAnother")}</BtnGhost>
               </div>
-            )}
+            </div>
+
+            <div style={{ padding: isDesktop?"0 40px 60px":isTablet?"0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))":"0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
+
+              {/* 4 stat cards */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                <StatCard label={t("statsOrders")} value={mOrders.length} sub={lang==="de"?`${mOrders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} offen`:`${mOrders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} open`}/>
+                <StatCard label={t("statsRevenue")} value={mRevenue > 0 ? `${C.currency} ${fmt(mRevenue)}` : "—"} accent={mRevenue>0?"#C9933A":undefined}/>
+                <StatCard label={t("statsUnits")} value={mUnits > 0 ? mUnits : "—"} sub={lang==="de"?"Steine / Stücke":"stones / pieces"}/>
+                <StatCard label={t("statsClients")} value={mClients > 0 ? mClients : "—"}/>
+              </div>
+
+              {/* Trend charts */}
+              <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"18px 16px", marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>{t("statsOrders")} — {t("statsTrend")}</div>
+                <MiniChart data={trend} key2="orders" color="#1B3F45" format={v=>v}/>
+              </div>
+
+              <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"18px 16px", marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>{t("statsRevenue")} — {t("statsTrend")}</div>
+                <MiniChart data={trend} key2="revenue" color="#C9933A" format={v=>`${fmt(v)}`}/>
+              </div>
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"18px 16px" }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>{t("statsUnits")}</div>
+                  <MiniChart data={trend} key2="units" color="#5A7A80" format={v=>v}/>
+                </div>
+                <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"18px 16px" }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:14 }}>{t("statsClients")}</div>
+                  <MiniChart data={trend} key2="clients" color="#8B5CF6" format={v=>v}/>
+                </div>
+              </div>
+
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── ORDERS TAB ── */}
       {tab==="orders" && (
@@ -3138,7 +3156,7 @@ export default function App() {
         <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:WRAP_MAX, background:"#ffffff", borderTop:"none", boxShadow:"0 -4px 20px rgba(27,63,69,0.07)", display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
           {[
             { key:"home",    icon:"orders",  label:t("tabHome")    },
-            { key:"scan",    icon:"scan",    label:t("tabScan")    },
+            { key:"scan",    icon:"chart",   label:t("tabScan")    },
             { key:"orders",  icon:"gem",     label:t("tabOrders")  },
             { key:"clients", icon:"person",  label:t("tabClients") },
             { key:"invoice", icon:"invoice", label:t("tabInvoice") },
