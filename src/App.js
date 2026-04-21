@@ -471,6 +471,7 @@ const BtnPrimary = ({ children, onClick, disabled, style={} }) => (
   </Button>
 );
 
+// eslint-disable-next-line no-unused-vars
 const BtnGhost = ({ children, onClick, disabled, style={} }) => (
   <Button
     kind="ghost"
@@ -535,11 +536,11 @@ export default function App() {
   const [workOrderPreview, setWorkOrderPreview] = useState(null);
   const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
-  const [photoStep, setPhotoStep] = useState("capture");
-  const [imgData, setImgData]   = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiMsg, setAiMsg]       = useState("");
-  const [aiError, setAiError]   = useState("");
+  const [photoStep, setPhotoStep] = useState("capture"); // eslint-disable-line no-unused-vars
+  const [imgData, setImgData]   = useState(null); // eslint-disable-line no-unused-vars
+  const [aiLoading, setAiLoading] = useState(false); // eslint-disable-line no-unused-vars
+  const [aiMsg, setAiMsg]       = useState(""); // eslint-disable-line no-unused-vars
+  const [aiError, setAiError]   = useState(""); // eslint-disable-line no-unused-vars
   const [newOrderStep, setNewOrderStep]   = useState(1);
   const [newClientSheet, setNewClientSheet] = useState(false);
   const [sheetClient, setSheetClient]     = useState({ name:"", address:"", phone:"", email:"" });
@@ -553,7 +554,7 @@ export default function App() {
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const dragTouchStartY = useRef(null);
   const [extracted, setExtracted] = useState(null);
-  const fileRef = useRef();
+  const fileRef = useRef(); // eslint-disable-line no-unused-vars
   const draftPhotoRef = useRef();
   const calStripRef = useRef();
   const piecePhotoRef = useRef();
@@ -681,6 +682,7 @@ export default function App() {
   };
 
   // ── PHOTO AI ──
+  // eslint-disable-next-line no-unused-vars
   const analyzePhoto = async () => {
     setAiLoading(true);
     setAiError("");
@@ -711,6 +713,7 @@ export default function App() {
     setAiLoading(false);
   };
 
+  // eslint-disable-next-line no-unused-vars
   const confirmOrder = () => {
     const order = { ...newOrder(), client:extracted.client||"", field1:extracted.field1||"", field2:extracted.field2||"", pieces:extracted.pieces||"", description:extracted.notes||"", notes:extracted.notes||"", photo: imgData||null };
     setOrders([order, ...orders]);
@@ -720,6 +723,7 @@ export default function App() {
 
   const resetPhoto = () => { setPhotoStep("capture"); setImgData(null); setExtracted(null); setAiError(""); };
 
+  // eslint-disable-next-line no-unused-vars
   const goHome = () => { setTab("home"); setView("list"); setPhotoStep("capture"); setInvView("list"); setClientView("list"); };
 
   // ── EXCEL EXPORT ──
