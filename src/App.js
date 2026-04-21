@@ -1515,11 +1515,13 @@ export default function App() {
 
       {/* ── STATS TAB ── */}
       {tab==="scan" && (() => {
+        // eslint-disable-next-line no-unused-vars
         const prevMonth = () => {
           const [y, m] = statsMonth.split("-").map(Number);
           const d = new Date(y, m - 2, 1);
           setStatsMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);
         };
+        // eslint-disable-next-line no-unused-vars
         const nextMonth = () => {
           const [y, m] = statsMonth.split("-").map(Number);
           const d = new Date(y, m, 1);
@@ -1528,6 +1530,7 @@ export default function App() {
           const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
           if (next <= maxYM) setStatsMonth(next);
         };
+        // eslint-disable-next-line no-unused-vars
         const isCurrentMonth = statsMonth === new Date().toISOString().slice(0,7);
         const monthLabel = new Date(statsMonth+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"long",year:"numeric"});
 
@@ -1624,45 +1627,41 @@ export default function App() {
 
         return (
           <div style={{ animation:"fadeUp 0.3s ease" }}>
-            {/* Header */}
-            <div style={{ padding: isDesktop?"32px 40px 16px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 16px 16px", background:"white", borderBottom:"1px solid #F0EDE8" }}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-                <div style={{ fontSize:26, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
-                <div style={{ display:"flex", alignItems:"center", gap:6, background:"#F0F6F7", borderRadius:12, padding:"6px 10px" }}>
-                  <button onClick={prevMonth} style={{ background:"none", border:"none", cursor:"pointer", padding:"2px 4px", display:"flex" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-                  </button>
-                  <span style={{ fontSize:12, fontWeight:700, color:"#1B3F45", minWidth:100, textAlign:"center" }}>{monthLabel}</span>
-                  <button onClick={nextMonth} disabled={isCurrentMonth} style={{ background:"none", border:"none", cursor:isCurrentMonth?"default":"pointer", padding:"2px 4px", display:"flex", opacity:isCurrentMonth?0.3:1 }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-                  </button>
+            {/* Header — same structure as Orders/Invoice */}
+            <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                <div>
+                  <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
+                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{monthLabel}</div>
                 </div>
               </div>
 
-              {/* Client filter */}
-              <div style={{ marginBottom:10 }}>
-                <div style={{ overflowX:"auto", display:"flex", gap:6, paddingBottom:2 }}>
-                  <button onClick={()=>setStatsClientFilter("all")}
-                    style={{ flexShrink:0, padding:"6px 12px", borderRadius:20, border: statsClientFilter==="all"?"2px solid #1B3F45":"1.5px solid #E8E4DC", background:statsClientFilter==="all"?"#1B3F45":"white", color:statsClientFilter==="all"?"white":"#5A7A80", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap" }}>
-                    {lang==="de"?"Alle Kunden":"All clients"}
-                  </button>
-                  {clients.map(c => (
-                    <button key={c.id} onClick={()=>setStatsClientFilter(statsClientFilter===c.id?"all":c.id)}
-                      style={{ flexShrink:0, padding:"6px 12px", borderRadius:20, border: statsClientFilter===c.id?"2px solid #C9933A":"1.5px solid #E8E4DC", background:statsClientFilter===c.id?"#C9933A":"white", color:statsClientFilter===c.id?"white":"#5A7A80", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap" }}>
-                      {c.company||c.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Status filter */}
-              <div style={{ overflowX:"auto", display:"flex", gap:6, paddingBottom:2 }}>
-                {[["all", lang==="de"?"Alle":"All"], ...Object.entries(C.statuses).map(([k,v])=>[k,v.label])].map(([key, label]) => (
+              {/* Status pills — same pills-row as Orders */}
+              <div className="pills-row" style={{ marginBottom:10 }}>
+                {[["all", lang==="de"?"Alle":"All", mAllOrders.length], ...Object.entries(C.statuses).map(([k,v])=>[k,v.label,mAllOrders.filter(o=>o.status===k).length])].map(([key,label,cnt]) => (
                   <button key={key} onClick={()=>setStatsStatusFilter(key)}
-                    style={{ flexShrink:0, padding:"5px 10px", borderRadius:20, border: statsStatusFilter===key?`2px solid ${key==="all"?"#1B3F45":C.statuses[key]?.color||"#1B3F45"}`:"1.5px solid #E8E4DC", background:statsStatusFilter===key?(key==="all"?"#1B3F45":C.statuses[key]?.color||"#1B3F45"):"white", color:statsStatusFilter===key?"white":"#5A7A80", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap" }}>
-                    {label}
+                    style={{ padding:"8px 16px", borderRadius:100, border:"none", background:statsStatusFilter===key?"#1B3F45":"white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color:statsStatusFilter===key?"white":"#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                    {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
                   </button>
                 ))}
+              </div>
+
+              {/* Client filter — same Select as Orders/Invoice */}
+              <div style={{ marginBottom:10 }}>
+                <Select value={statsClientFilter} onChange={e=>setStatsClientFilter(e.target.value)} style={{ fontSize:13, padding:"10px 36px 10px 12px", color:statsClientFilter!=="all"?"#1B3F45":"#5A7A80" }}>
+                  <option value="all">{lang==="de"?"Alle Kunden":"All clients"}</option>
+                  {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}</option>)}
+                </Select>
+              </div>
+
+              {/* Month picker with calendar icon */}
+              <div style={{ position:"relative", display:"flex", alignItems:"center" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute", left:12, pointerEvents:"none", zIndex:1 }}>
+                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <input type="month" value={statsMonth} max={new Date().toISOString().slice(0,7)}
+                  onChange={e=>{ if(e.target.value) setStatsMonth(e.target.value); }}
+                  style={{ ...selectBase, paddingLeft:36, fontSize:13, color:"#1B3F45" }}/>
               </div>
             </div>
 
@@ -1850,7 +1849,10 @@ export default function App() {
                 {/* Date + Excel */}
                 <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
                   <div style={{ flex:1, position:"relative" }}>
-                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ width:"100%", fontSize:13, padding:"10px 12px", color: filterDate?"#1B3F45":"#9DB5B9" }}/>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", zIndex:1 }}>
+                      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ width:"100%", fontSize:13, padding:"10px 12px 10px 36px", color: filterDate?"#1B3F45":"#9DB5B9" }}/>
                   </div>
                   {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#5A7A80", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>✕</button>}
                   <button onClick={exportToExcel} style={{ padding:"10px 14px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>↓ Excel</button>
