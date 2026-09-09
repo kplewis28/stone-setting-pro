@@ -73,6 +73,8 @@ const TRANS = {
     chooseClientSection:"Choose a client", chooseClientSub:"Who is this order for? Select an existing client or create a new one.",
     addPiecesSection:"Add the pieces", addPiecesSub:"Describe each piece. Use the quantity field for the amount. Add as many pieces as needed.",
     setDeadlineSection:"Set the delivery deadline", setDeadlineSub:"When does this order need to be ready? You can also add special instructions.",
+    setPrioritySection:"How urgent is it?", setPrioritySub:"Pick a priority so the workshop knows what to do first. You can also add special instructions.",
+    priorityLabel:"Priority", noOrdersInGroup:"Nothing here",
     searchClientPlaceholder:"Search client...", createNewClientBtn:"Create new client",
     addAnotherPieceBtn:"Add another piece",
     addPhotoBtn:"Add photo of this piece",
@@ -213,6 +215,8 @@ const TRANS = {
     chooseClientSection:"Kunden w\u00e4hlen", chooseClientSub:"F\u00fcr wen ist dieser Auftrag? Bestehenden Kunden w\u00e4hlen oder neu anlegen.",
     addPiecesSection:"St\u00fccke hinzuf\u00fcgen", addPiecesSub:"Jedes St\u00fcck beschreiben. Menge im Mengenfeld angeben. Beliebig viele hinzuf\u00fcgen.",
     setDeadlineSection:"Lieferfrist festlegen", setDeadlineSub:"Wann muss der Auftrag fertig sein? Besondere Anweisungen k\u00f6nnen hier eingegeben werden.",
+    setPrioritySection:"Wie dringend ist es?", setPrioritySub:"Priorit\u00e4t w\u00e4hlen, damit die Werkstatt weiss, was zuerst zu tun ist. Besondere Anweisungen k\u00f6nnen hier erg\u00e4nzt werden.",
+    priorityLabel:"Priorit\u00e4t", noOrdersInGroup:"Nichts hier",
     searchClientPlaceholder:"Kunden suchen...", createNewClientBtn:"Neuen Kunden erstellen",
     addAnotherPieceBtn:"Weiteres St\u00fcck hinzuf\u00fcgen",
     addPhotoBtn:"Foto dieses St\u00fcks hinzuf\u00fcgen",
@@ -338,7 +342,16 @@ const SAMPLE_ORDERS = [
   { id:"0038", client:"Juwelier Keller",     received:"2026-03-08", field1:"Diamond",  field2:"Channel", pieces:2, status:"invoiced",   notes:"",                  amount:350 },
 ];
 
-const newOrder     = () => ({ id: String(Date.now()).slice(-4), client:"", clientId:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", description:"", deadline:"", pieces:"", status:"received", notes:"", amount:0, lineItems:[] });
+// ─── ORDER PRIORITY (replaces delivery-date deadlines) ──
+const PRIORITY_ORDER = ["urgent", "normal", "low"];
+const PRIORITY_META = {
+  urgent: { color:"#da1e28", bg:"#FFF0F0", en:"Urgent",  de:"Dringend"   },
+  normal: { color:"#C9933A", bg:"#FFF8ED", en:"Normal",  de:"Normal"     },
+  low:    { color:"#198038", bg:"#EEF9F0", en:"No rush", de:"Keine Eile" },
+};
+const orderPriority = o => (o && PRIORITY_META[o.priority]) ? o.priority : "normal";
+
+const newOrder     = () => ({ id: String(Date.now()).slice(-4), client:"", clientId:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", description:"", deadline:"", priority:"normal", pieces:"", status:"received", notes:"", amount:0, lineItems:[] });
 const newClient    = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
 const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", qty:"1", unitPrice:"", price:"" });
 const lineTotal    = it => (parseFloat(it.qty)||1) * (parseFloat(it.unitPrice)||parseFloat(it.price)||0);
@@ -565,7 +578,6 @@ export default function App() {
   const calStripRef = useRef();
   const piecePhotoRef = useRef();
   const TODAY = new Date().toISOString().split("T")[0];
-  const [selectedDate, setSelectedDate] = useState(TODAY);
   const [dayNotes, setDayNotes] = useState(() => { try { return JSON.parse(localStorage.getItem("ssp_day_notes")) || {}; } catch { return {}; } });
   const [noteAlert, setNoteAlert] = useState(null); // { date, text } to show on load
   const [dayModal, setDayModal]   = useState(null); // date string or null
@@ -715,7 +727,9 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredOrders = orders.filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return statusOk && dateOk && clientOk; });
+  const filteredOrders = orders
+    .filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return statusOk && dateOk && clientOk; })
+    .sort((a,b) => PRIORITY_ORDER.indexOf(orderPriority(a)) - PRIORITY_ORDER.indexOf(orderPriority(b)) || (b.received||"").localeCompare(a.received||""));
   const counts = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
 
   // ── GOOGLE SHEETS SYNC ──
@@ -1038,8 +1052,8 @@ export default function App() {
       <div class="field-line" style="padding-bottom:4px;">${fmtDate(order.received)}</div>
     </div>
     <div class="field-block">
-      <div class="field-label">Lieferdatum</div>
-      <div class="field-line" style="padding-bottom:4px;">${fmtDate(order.deadline)}</div>
+      <div class="field-label">Priorität</div>
+      <div class="field-line" style="padding-bottom:4px;font-weight:600;">${(PRIORITY_META[order.priority] || PRIORITY_META.normal).de}</div>
     </div>
   </div>
 
@@ -1364,210 +1378,73 @@ export default function App() {
             </button>
           </div>
 
-          {/* ── S3: URGENTES ── */}
+          {/* ── ÓRDENES ACTIVAS AGRUPADAS POR PRIORIDAD ── */}
           {(() => {
-            const todayStr = new Date().toISOString().split("T")[0];
-            const tmrw = new Date(); tmrw.setDate(tmrw.getDate()+1);
-            const tmrwStr = tmrw.toISOString().split("T")[0];
-            const urgentes = orders.filter(o =>
-              o.status !== "done" && o.status !== "invoiced" && o.deadline && (
-                o.deadline === todayStr ||
-                o.deadline === tmrwStr ||
-                (o.status === "received" && o.deadline < todayStr)
-              )
-            );
-            if(urgentes.length === 0) return null;
-            const trunca4 = (txt) => {
-              if(!txt) return "—";
-              if(/handwritten|scanned|extract/i.test(txt)) return "Scanned order";
-              const words = txt.trim().split(/\s+/);
-              return words.length <= 4 ? txt : words.slice(0,4).join(" ") + "…";
-            };
-            return (
-              <div style={{ padding: isDesktop ? "0 40px 20px" : isTablet ? "0 32px 18px" : "0 22px 18px" }}>
-                <div style={{ border:"2px solid #C9933A", borderRadius:12, overflow:"hidden" }}>
-                  {/* Header dorado sólido */}
-                  <div style={{ background:"#C9933A", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:14, fontWeight:500, color:"white" }}>{t("needsAttention")}</span>
-                    <div style={{ background:"rgba(255,255,255,0.2)", borderRadius:20, padding:"2px 10px" }}>
-                      <span style={{ fontSize:12, fontWeight:700, color:"white" }}>{urgentes.length} {lang==="de"?"dringend":"urgent"}</span>
-                    </div>
-                  </div>
-                  {/* Filas */}
-                  {urgentes.map((o, idx) => {
-                    const isToday = o.deadline === todayStr;
-                    const isOverdue = o.deadline < todayStr;
-                    const labelFecha = isOverdue ? t("overdueLabel") : isToday ? t("todayLabel") : t("tomorrowLabel");
-                    const desc = trunca4(o.description || [o.field1, o.field2].filter(Boolean).join(" · "));
-                    const tipo = o.status === "inprogress" ? t("inReviewStatus") : t("dueLabel");
-                    const piezas = o.pieces || "—";
-                    return (
-                      <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:14 }}>
-                        {/* Avatar piezas */}
-                        <div style={{ width:36, height:36, borderRadius:10, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                          <span style={{ fontSize:14, fontWeight:900, color:"#C9933A", lineHeight:1 }}>{piezas}</span>
-                        </div>
-                        {/* Info centro */}
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:15, fontWeight:800, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
-                          <div style={{ fontSize:12, color:"#5A7A80", marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{desc}</div>
-                        </div>
-                        {/* Derecha */}
-                        <div style={{ textAlign:"right", flexShrink:0 }}>
-                          <div style={{ fontSize:13, fontWeight:800, color: isOverdue ? "#da1e28" : "#C9933A", marginBottom:3 }}>{labelFecha}</div>
-                          <div style={{ fontSize:11, color:"#5A7A80" }}>{tipo}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* ── S4 + S5: BLOQUE UNIFICADO CALENDARIO + ÓRDENES ── */}
-          {(() => {
-            const todayStr = new Date().toISOString().split("T")[0];
-            const days = [];
-            for(let i = -7; i <= 30; i++) {
-              const d = new Date(); d.setDate(d.getDate()+i);
-              days.push(d.toISOString().split("T")[0]);
-            }
-            const DAYS_ES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]; // already English
-
             const active = orders.filter(o => o.status !== "done" && o.status !== "invoiced");
-            const withDeadline = active.filter(o => o.deadline).sort((a,b) => a.deadline.localeCompare(b.deadline));
-            const sorted = [...withDeadline, ...active.filter(o => !o.deadline)];
-
-            const ordersForDay = active.filter(o => o.deadline === selectedDate);
-
-            const getUrgency = (deadline) => {
-              if(!deadline) return { accent:"transparent", label:null };
-              if(deadline < todayStr) return { accent:"#da1e28", label:"Overdue" };
-              if(deadline === todayStr) return { accent:"#C9933A", label:"Today" };
-              const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(todayStr+"T12:00:00"))/(864e5));
-              if(diff === 1) return { accent:"#C9933A", label:"Tomorrow" };
-              if(diff <= 7)  return { accent:"#C9933A", label:null };
-              return { accent:"transparent", label:null };
-            };
-
+            const groups = PRIORITY_ORDER.map(p => ({
+              p,
+              meta: PRIORITY_META[p],
+              items: active
+                .filter(o => orderPriority(o) === p)
+                .sort((a,b) => (a.received||"").localeCompare(b.received||"")),
+            }));
             const statusBorderColor = { received:"#C9933A", inprogress:"#1B3F45", done:"#198038", invoiced:"#5A7A80" };
-
-            const d = new Date();
-            const dias  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-            const meses = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-            const headerDate = `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
-
+            const fmtD = d => d ? new Date(d+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"}) : "";
+            const descOf = (o) => {
+              const raw = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || null;
+              if(!raw) return null;
+              if(/handwritten|scanned|extract/i.test(raw)) return "Scanned order";
+              return raw.length > 30 ? raw.slice(0,30) + "…" : raw;
+            };
             return (
-              <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : isTablet ? "0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" : "0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" }}>
-                {/* ── Contenedor unificado ── */}
-                <div style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
-
-                  {/* Parte A: Header */}
-                  <div style={{ padding:"16px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:17, fontWeight:800, color:"#1B3F45" }}>{t("todaysOrders")}</span>
-                    <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{headerDate}</span>
+              <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : isTablet ? "0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" : "0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))", display:"flex", flexDirection:"column", gap:16 }}>
+                {active.length === 0 && (
+                  <div style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", padding:"44px 20px", textAlign:"center" }}>
+                    <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", marginBottom:4 }}>{t("noPendingOrders")}</div>
+                    <div style={{ fontSize:13, color:"#9DB5B9" }}>{t("noOrdersDesc")}</div>
                   </div>
-
-                  {/* Separador */}
-                  <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
-
-                  {/* Parte B: Strip de días */}
-                  <div ref={calStripRef} style={{ overflowX:"auto", display:"flex", gap:6, padding:"10px 12px", scrollbarWidth:"none" }}>
-                    {days.map(dayStr => {
-                      const date      = new Date(dayStr+"T12:00:00");
-                      const isToday   = dayStr === TODAY;
-                      const isSelected= dayStr === selectedDate;
-                      const hasOrders = orders.some(o => o.deadline === dayStr && o.status !== "done" && o.status !== "invoiced");
-                      const hasNote   = dayNotes[dayStr]?.text;
-                      const isPast    = dayStr < TODAY;
+                )}
+                {groups.filter(g => g.items.length > 0).map(g => (
+                  <div key={g.p} style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
+                    {/* Header del grupo */}
+                    <div style={{ background:g.meta.color, padding:"11px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+                        <div style={{ width:9, height:9, borderRadius:"50%", background:"white", opacity:0.9 }}/>
+                        <span style={{ fontSize:14, fontWeight:800, color:"white" }}>{lang==="de"?g.meta.de:g.meta.en}</span>
+                      </div>
+                      <div style={{ background:"rgba(255,255,255,0.22)", borderRadius:20, padding:"2px 10px" }}>
+                        <span style={{ fontSize:12, fontWeight:800, color:"white" }}>{g.items.length}</span>
+                      </div>
+                    </div>
+                    {/* Cards */}
+                    {g.items.map((o, idx) => {
+                      const borderColor = statusBorderColor[o.status] || "#E8E4DC";
+                      const descLabel = descOf(o);
                       return (
-                        <button key={dayStr} data-today={isToday||undefined} onClick={()=>{ setSelectedDate(dayStr); setDayModal(dayStr); }}
-                          style={{ flexShrink:0, width:52, padding:"9px 4px", borderRadius:16, border:"none", background: isSelected ? "#1B3F45" : isToday ? `${ACCENT}18` : "transparent", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                          <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", color: isSelected ? "rgba(255,255,255,0.6)" : "#5A7A80", letterSpacing:"0.08em" }}>{DAYS_ES[date.getDay()]}</span>
-                          <span style={{ fontSize:17, fontWeight:800, color: isSelected ? "white" : isPast ? "#c6c6c6" : "#1B3F45", lineHeight:1, letterSpacing:"-0.01em" }}>{date.getDate()}</span>
-                          <div style={{ display:"flex", gap:3, height:5, alignItems:"center" }}>
-                            {hasOrders && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.7)":ACCENT }}/>}
-                            {hasNote   && <div style={{ width:4, height:4, borderRadius:"50%", background: isSelected?"rgba(255,255,255,0.5)":"#C9933A" }}/>}
+                        <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                          style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"block" }}>
+                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}>
+                            <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `#${o.id}`}</div>
+                            {o.amount > 0 && <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(o.amount)}</div>}
+                          </div>
+                          <div style={{ fontSize:12, color:"#5A7A80", marginBottom:9, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                            <span style={{ fontFamily:"'IBM Plex Mono', monospace", fontWeight:600 }}>#{o.id}</span>
+                            {descLabel && <span> · {descLabel}</span>}
+                          </div>
+                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                            <span style={{ fontSize:11, color:"#9DB5B9", fontWeight:600 }}>{t("receivedLabel")} {fmtD(o.received)}</span>
+                            <StatusPill status={o.status}/>
                           </div>
                         </button>
                       );
                     })}
                   </div>
-
-                  {/* Separador */}
-                  <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
-
-                  {/* Parte D: Conteo del día seleccionado */}
-                  <div style={{ padding:"10px 16px", background:"#F7F5F0" }}>
-                    <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>
-                      {ordersForDay.length > 0
-                        ? `${ordersForDay.length} ${lang==="de"?(ordersForDay.length===1?"Auftrag":"Aufträge")+" für diesen Tag":(ordersForDay.length===1?"order":"orders")+" for this day"}`
-                        : t("noOrdersForDay")}
-                    </span>
-                  </div>
-
-                  {/* Separador */}
-                  <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
-
-                  {/* Cards de órdenes */}
-                  {sorted.length === 0 && (
-                    <div style={{ padding:"28px 16px", textAlign:"center", color:"#5A7A80", fontSize:14 }}>{t("noPendingOrders")}</div>
-                  )}
-                  {sorted.map((o, idx) => {
-                    const urg = getUrgency(o.deadline);
-                    const borderColor = statusBorderColor[o.status] || "#E8E4DC";
-                    const rawDesc = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || null;
-                    const descLabel = (() => {
-                      if(!rawDesc) return null;
-                      if(/handwritten|scanned|extract/i.test(rawDesc)) return "Scanned order";
-                      return rawDesc.length > 25 ? rawDesc.slice(0,25) + "…" : rawDesc;
-                    })();
-                    const fmtDl = o.deadline ? new Date(o.deadline+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : null;
-                    return (
-                      <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"15px 16px", cursor:"pointer", textAlign:"left", display:"block" }}>
-                        {/* Línea 1: cliente + monto */}
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}>
-                          <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `Orden #${o.id}`}</div>
-                          {o.amount > 0 && <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(o.amount)}</div>}
-                        </div>
-                        {/* Línea 2: ID mono · Espera: desc truncada */}
-                        <div style={{ fontSize:12, color:"#5A7A80", marginBottom:9, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                          <span style={{ fontFamily:"'IBM Plex Mono', monospace", fontWeight:600 }}>#{o.id}</span>
-                          {descLabel && <span> · {descLabel}</span>}
-                        </div>
-                        {/* Línea 3: ícono + fecha ←→ badge */}
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                            {fmtDl ? (
-                              <>
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={urg.accent !== "transparent" ? urg.accent : "#5A7A80"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                                <span style={{ fontSize:12, fontWeight:600, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", background: urg.accent !== "transparent" ? `${urg.accent}18` : "#F0F6F7", padding:"3px 9px", borderRadius:6 }}>
-                                  {urg.label ? `${urg.label} · ` : ""}{fmtDl}
-                                </span>
-                              </>
-                            ) : (
-                              <span style={{ fontSize:12, color:"#5A7A80" }}>{t("noDate")}</span>
-                            )}
-                          </div>
-                          <StatusPill status={o.status}/>
-                        </div>
-                      </button>
-                    );
-                  })}
-
-                  {/* Footer: ver todas */}
-                  {sorted.length > 0 && (
-                    <>
-                      <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
-                      <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"15px 16px", background:"#F7F5F0", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
-                        {t("viewAllOrders")}
-                      </button>
-                    </>
-                  )}
-                </div>
+                ))}
+                {active.length > 0 && (
+                  <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"15px 16px", background:"#F7F5F0", border:"0.5px solid #E8E4DC", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
+                    {t("viewAllOrders")}
+                  </button>
+                )}
               </div>
             );
           })()}
@@ -1951,21 +1828,8 @@ export default function App() {
 
                 {/* Order rows */}
                 {filteredOrders.map((o) => {
-                  const today = new Date().toISOString().split("T")[0];
-                  const getUrgency = (deadline) => {
-                    if(!deadline) return { accent:"transparent", label:null, bg:"#F0F6F7" };
-                    if(deadline < today) return { accent:"#da1e28", label:"Overdue", bg:"#FFF0F0" };
-                    if(deadline === today) return { accent:"#C9933A", label:"Today", bg:"#FFF8ED" };
-                    const diff = Math.round((new Date(deadline+"T12:00:00")-new Date(today+"T12:00:00"))/(864e5));
-                    if(diff === 1) return { accent:"#C9933A", label:"Tomorrow", bg:"#FFF8ED" };
-                    if(diff <= 7)  return { accent:"#C9933A", label:`${diff} days`, bg:"#FFF8ED" };
-                    return { accent:"#1B3F45", label:null, bg:"#F0F6F7" };
-                  };
-                  const urg = getUrgency(o.deadline);
+                  const pm = PRIORITY_META[orderPriority(o)];
                   const isChecked = selectedOrderIds.has(o.id);
-                  const deadlineDate = o.deadline ? new Date(o.deadline+"T12:00:00") : null;
-                  const deadlineDay = deadlineDate ? deadlineDate.getDate() : null;
-                  const deadlineMon = deadlineDate ? deadlineDate.toLocaleDateString("en-GB",{month:"short"}).toUpperCase() : null;
                   const swipeDx = swipingCard?.id === o.id ? swipingCard.dx : 0;
                   const isMoving = swipingCard?.id === o.id;
 
@@ -2041,24 +1905,11 @@ export default function App() {
                             <StatusPill status={o.status}/>
                           </div>
 
-                          {/* Delivery date — prominent */}
-                          <div style={{ display:"flex", alignItems:"center", gap:12, background: urg.bg, borderRadius:12, padding:"12px 14px", marginBottom: o.description ? 10 : 0 }}>
-                            {deadlineDay ? (
-                              <>
-                                <div style={{ textAlign:"center", flexShrink:0 }}>
-                                  <div style={{ fontSize:32, fontWeight:900, color: urg.accent !== "transparent" ? urg.accent : "#1B3F45", lineHeight:1 }}>{deadlineDay}</div>
-                                  <div style={{ fontSize:11, fontWeight:700, color: urg.accent !== "transparent" ? urg.accent : "#5A7A80", letterSpacing:"0.06em", marginTop:2 }}>{deadlineMon}</div>
-                                </div>
-                                <div style={{ width:"1px", height:40, background: urg.accent !== "transparent" ? `${urg.accent}30` : "#D8D4CC", flexShrink:0 }}/>
-                                <div>
-                                  <div style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:3 }}>{t("dueLabel")}</div>
-                                  {urg.label && <div style={{ fontSize:14, fontWeight:800, color: urg.accent }}>{urg.label}</div>}
-                                  {!urg.label && <div style={{ fontSize:13, fontWeight:600, color:"#5A7A80" }}>{deadlineDate.toLocaleDateString("en-US",{weekday:"long"})}</div>}
-                                </div>
-                              </>
-                            ) : (
-                              <div style={{ fontSize:13, color:"#9DB5B9", fontStyle:"italic" }}>{t("noDueDateLabel")}</div>
-                            )}
+                          {/* Priority */}
+                          <div style={{ display:"flex", alignItems:"center", gap:9, background: pm.bg, borderRadius:12, padding:"11px 14px", marginBottom: o.description ? 10 : 0 }}>
+                            <span style={{ width:10, height:10, borderRadius:"50%", background:pm.color, flexShrink:0 }}/>
+                            <span style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.07em", textTransform:"uppercase" }}>{t("priorityLabel")}</span>
+                            <span style={{ fontSize:14, fontWeight:800, color:pm.color, marginLeft:"auto" }}>{lang==="de"?pm.de:pm.en}</span>
                           </div>
 
                           {/* Description */}
@@ -2155,13 +2006,6 @@ export default function App() {
                 }
                 setDragIdx(null); setDragOverIdx(null);
               };
-
-              const addDays = (n) => { const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().split("T")[0]; };
-              const quickDates = [
-                { label:"1 week",    date: addDays(7)  },
-                { label:"2 weeks",   date: addDays(14) },
-                { label:"1 month",   date: addDays(30) },
-              ];
 
               const saveOrder = () => {
                 const orderNumber = draft.orderNumber || genOrderNumber(orders, draft.client);
@@ -2333,26 +2177,26 @@ export default function App() {
                   </div>
                   )}
 
-                  {/* ── PASO 3: FECHA Y NOTAS ── */}
+                  {/* ── PASO 3: PRIORIDAD Y NOTAS ── */}
                   {newOrderStep === 3 && (
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="3" text={t("setDeadlineSection")} subtitle={t("setDeadlineSub")}/>
-                    {/* Fechas rápidas */}
-                    <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-                      {quickDates.map(qd=>(
-                        <button key={qd.label} onClick={()=>setDraft(d=>({...d,deadline:qd.date}))}
-                          style={{ flex:1, padding:"12px 4px", borderRadius:12,
-                            border: draft.deadline===qd.date?"2px solid #1B3F45":"1.5px solid #E8E4DC",
-                            background: draft.deadline===qd.date?"#1B3F45":"white",
-                            color: draft.deadline===qd.date?"white":"#5A7A80",
-                            fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", transition:"all 0.15s" }}>
-                          {qd.label}
-                        </button>
-                      ))}
+                    <SectionLabel num="3" text={t("setPrioritySection")} subtitle={t("setPrioritySub")}/>
+                    <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
+                      {PRIORITY_ORDER.map(p=>{
+                        const m = PRIORITY_META[p];
+                        const sel = (draft.priority||"normal") === p;
+                        return (
+                          <button key={p} onClick={()=>setDraft(d=>({...d,priority:p}))}
+                            style={{ display:"flex", alignItems:"center", gap:14, padding:"16px 18px", borderRadius:14, cursor:"pointer", width:"100%", textAlign:"left",
+                              border: sel ? `2px solid ${m.color}` : "1.5px solid #E8E4DC",
+                              background: sel ? m.bg : "white", transition:"all 0.15s" }}>
+                            <div style={{ width:14, height:14, borderRadius:"50%", background:m.color, flexShrink:0 }}/>
+                            <span style={{ fontSize:16, fontWeight:800, color: sel ? m.color : "#1B3F45", flex:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{lang==="de"?m.de:m.en}</span>
+                            {sel && <Icon name="check" size={18} color={m.color}/>}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <input type="date" value={draft.deadline} onChange={e=>setDraft(d=>({...d,deadline:e.target.value}))}
-                      style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:15, color: draft.deadline?"#1B3F45":"#9DB5B9",
-                        fontFamily:"'IBM Plex Sans', sans-serif", background:"white", boxSizing:"border-box", outline:"none", marginBottom:14 }}/>
                     <textarea value={draft.description} onChange={e=>setDraft(d=>({...d,description:e.target.value}))}
                       placeholder={t("specialInstructionsPlaceholder")}
                       rows={3}
@@ -2460,8 +2304,22 @@ export default function App() {
                 <Field label={t("workDescLabel")}>
                   <Textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} placeholder={t("workDescLabel")+"\u2026"}/>
                 </Field>
-                <Field label={t("deliveryDateLabel")}>
-                  <Input type="date" value={draft.deadline} onChange={e=>setDraft({...draft,deadline:e.target.value})}/>
+                <Field label={t("priorityLabel")}>
+                  <div style={{ display:"flex", gap:8 }}>
+                    {PRIORITY_ORDER.map(p=>{
+                      const m = PRIORITY_META[p];
+                      const sel = (draft.priority||"normal") === p;
+                      return (
+                        <button key={p} onClick={()=>setDraft({...draft,priority:p})}
+                          style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:7, padding:"12px 6px", borderRadius:10, cursor:"pointer",
+                            border: sel ? `2px solid ${m.color}` : "1.5px solid #E8E4DC", background: sel ? m.bg : "white",
+                            fontSize:13, fontWeight:700, color: sel ? m.color : "#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                          <span style={{ width:9, height:9, borderRadius:"50%", background:m.color, flexShrink:0 }}/>
+                          {lang==="de"?m.de:m.en}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </Field>
                 <div style={{ marginTop:8, marginBottom:4 }}>
                   <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>{t("itemsForInvoice")}</div>
@@ -2501,9 +2359,8 @@ export default function App() {
             {/* ── DETAIL ── */}
             {view==="detail" && selectedOrder && (()=>{
               const st = selectedOrder.status;
-              const today = new Date().toISOString().split("T")[0];
               const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
-              const dlPast = selectedOrder.deadline && selectedOrder.deadline < today;
+              const oPm = PRIORITY_META[orderPriority(selectedOrder)];
               const orderTotal = (selectedOrder.lineItems||[]).length > 0
                 ? (selectedOrder.lineItems).reduce((s,li)=>s+lineTotal(li),0)
                 : parseFloat(selectedOrder.amount)||0;
@@ -2530,7 +2387,7 @@ export default function App() {
                       <div>
                         <div style={{ fontSize:13, fontWeight:500, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("pendingStatus")}</div>
                         <div style={{ fontSize:10, color:"#BA9B55", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                          {t("receivedLabel")} {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · ${t("dueLabel")} ${fmtDate(selectedOrder.deadline)}` : ""}
+                          {t("receivedLabel")} {fmtDate(selectedOrder.received)}
                         </div>
                       </div>
                     </div>
@@ -2543,7 +2400,7 @@ export default function App() {
                       <div>
                         <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("inReviewStatus")}</div>
                         <div style={{ fontSize:10, color:"#5A7A80", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>
-                          {t("receivedLabel")} {fmtDate(selectedOrder.received)}{selectedOrder.deadline ? ` · ${t("dueLabel")} ${fmtDate(selectedOrder.deadline)}` : ""}
+                          {t("receivedLabel")} {fmtDate(selectedOrder.received)}
                         </div>
                       </div>
                     </div>
@@ -2596,12 +2453,13 @@ export default function App() {
                         <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("orderIdLabel")}</div>
                         <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>#{selectedOrder.id}</div>
                       </div>
-                      {selectedOrder.deadline && (
-                        <div style={{ textAlign:"right" }}>
-                          <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("dueDateLabel")}</div>
-                          <div style={{ fontSize:14, fontWeight:600, color: dlPast?"#E24B4A":"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{fmtDate(selectedOrder.deadline)}</div>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("priorityLabel")}</div>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, justifyContent:"flex-end" }}>
+                          <span style={{ width:9, height:9, borderRadius:"50%", background:oPm.color, flexShrink:0 }}/>
+                          <span style={{ fontSize:14, fontWeight:700, color:oPm.color, fontFamily:"'IBM Plex Sans', sans-serif" }}>{lang==="de"?oPm.de:oPm.en}</span>
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Fila B — Descripción */}
@@ -2963,7 +2821,7 @@ export default function App() {
                           <option value="">{t("addFromOrder")}</option>
                           {otherOrders.map(o=>(
                             <option key={o.id} value={o.id}>
-                              #{o.id}{o.description ? ` · ${o.description}` : ""}{o.deadline ? ` · ${o.deadline}` : ""}
+                              #{o.id}{o.description ? ` · ${o.description}` : ""}
                             </option>
                           ))}
                         </Select>
@@ -3322,7 +3180,7 @@ export default function App() {
                     <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                       style={{ width:"100%", background:"white", border:"1.5px solid #E8E4DC", borderRadius:16, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", textAlign:"left" }}>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", marginBottom:3 }}>#{o.id}{o.deadline ? ` · Delivery: ${o.deadline}` : ""}</div>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", marginBottom:3 }}>#{o.id}</div>
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                           <div style={{ width:6, height:6, borderRadius:"50%", background:C.statuses[o.status]?.color, flexShrink:0 }}/>
                           <span style={{ fontSize:12, color:"#5A7A80" }}>{C.statuses[o.status]?.label}</span>
@@ -3442,8 +3300,8 @@ export default function App() {
                     <div style={lineStyle}>{fmtDate(o.received)}</div>
                   </div>
                   <div>
-                    <div style={labelStyle}>Lieferdatum</div>
-                    <div style={lineStyle}>{fmtDate(o.deadline)}</div>
+                    <div style={labelStyle}>Priorität</div>
+                    <div style={{...lineStyle, fontWeight:600}}>{(PRIORITY_META[o.priority] || PRIORITY_META.normal).de}</div>
                   </div>
                 </div>
 
