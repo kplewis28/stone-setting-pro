@@ -1364,12 +1364,15 @@ export default function App() {
                 .sort((a,b) => (a.received||"").localeCompare(b.received||"")),
             }));
             const statusBorderColor = { received:"#C9933A", inprogress:"#1B3F45", done:"#198038", invoiced:"#5A7A80" };
-            const fmtD = d => d ? new Date(d+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"}) : "";
-            const descOf = (o) => {
-              const raw = o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || null;
-              if(!raw) return null;
-              if(/handwritten|scanned|extract/i.test(raw)) return "Scanned order";
-              return raw.length > 30 ? raw.slice(0,30) + "…" : raw;
+            // "what is this order" — first the pieces, else the instructions
+            const summarize = (o) => {
+              const li = (o.lineItems || []).filter(x => x.desc);
+              const pieces = li.reduce((s,x)=>s+(parseInt(x.qty)||0),0) || parseInt(o.pieces) || 0;
+              let what = li[0]?.desc || o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || "";
+              if(/handwritten|scanned|extract/i.test(what)) what = lang==="de" ? "Gescannter Auftrag" : "Scanned order";
+              if(what.length > 40) what = what.slice(0,40) + "…";
+              const more = Math.max(0, li.length - 1);
+              return { pieces, what, more };
             };
             const current = groups.find(g => g.p === homePrio) || groups[0];
             const shownMeta = current.meta;
@@ -1406,22 +1409,21 @@ export default function App() {
                     </div>
                   ) : current.items.map((o, idx) => {
                     const borderColor = statusBorderColor[o.status] || "#E8E4DC";
-                    const descLabel = descOf(o);
+                    const s = summarize(o);
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"block" }}>
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}>
-                          <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `#${o.id}`}</div>
-                          {o.amount > 0 && <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(o.amount)}</div>}
+                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:13 }}>
+                        {/* Contador de piezas */}
+                        <div style={{ minWidth:46, height:46, borderRadius:12, background:"#F2EDE4", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flexShrink:0, padding:"0 6px" }}>
+                          <span style={{ fontSize:17, fontWeight:900, color:"#1B3F45", lineHeight:1 }}>{s.pieces || "—"}</span>
+                          <span style={{ fontSize:8, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.06em", textTransform:"uppercase", marginTop:2 }}>{lang==="de"?"Stk":"pcs"}</span>
                         </div>
-                        <div style={{ fontSize:12, color:"#5A7A80", marginBottom:9, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                          <span style={{ fontFamily:"'IBM Plex Mono', monospace", fontWeight:600 }}>#{o.id}</span>
-                          {descLabel && <span> · {descLabel}</span>}
+                        {/* Cliente + qué es */}
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || `#${o.id}`}</div>
+                          {s.what && <div style={{ fontSize:13, color:"#5A7A80", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.what}{s.more > 0 ? ` +${s.more}` : ""}</div>}
                         </div>
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                          <span style={{ fontSize:11, color:"#9DB5B9", fontWeight:600 }}>{t("receivedLabel")} {fmtD(o.received)}</span>
-                          <StatusPill status={o.status}/>
-                        </div>
+                        <StatusPill status={o.status}/>
                       </button>
                     );
                   })}
