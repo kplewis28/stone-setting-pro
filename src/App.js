@@ -1412,7 +1412,7 @@ export default function App() {
                     const borderColor = PRIORITY_META[orderPriority(o)].color;
                     const s = orderSummary(o);
                     return (
-                      <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                      <button className="ssp-sq" key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`5px solid ${borderColor}`, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:13 }}>
                         {/* Contador de piezas */}
                         <div style={{ minWidth:46, height:46, borderRadius:12, background:"#F2EDE4", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flexShrink:0, padding:"0 6px" }}>
@@ -1614,7 +1614,7 @@ export default function App() {
                   { key:"revenue", val:mRevenue, display: mRevenue>0?`${C.currency} ${fmt(mRevenue)}`:"—", sub:lang==="de"?"inkl. Porto & MWST":"incl. shipping & tax" },
                   { key:"net",     val:mNet,     display: mNet>0?`${C.currency} ${fmt(mNet)}`:"—",         sub:lang==="de"?"ohne Porto & MWST":"excl. shipping & tax" },
                 ].map(({ key, display, sub }) => (
-                  <button key={key} onClick={()=>setStatsMetric(key)}
+                  <button className="ssp-sq" key={key} onClick={()=>setStatsMetric(key)}
                     style={{ background: statsMetric===key?metricCfg[key].color:"white", borderRadius:18, padding:"16px 14px", border: statsMetric===key?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: statsMetric===key?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
                     <div style={{ fontSize:10, fontWeight:700, color: statsMetric===key?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{metricCfg[key].label}</div>
                     <div style={{ fontSize:22, fontWeight:900, color: statsMetric===key?"white":metricCfg[key].color, letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
@@ -1627,7 +1627,7 @@ export default function App() {
                   { key:"units",   val:mUnits,  display: mUnits>0?String(mUnits):"—", sub:lang==="de"?"Steine/Stücke":"stones / pieces" },
                   { key:"clients", val:mClients,display: mClients>0?String(mClients):"—" },
                 ].map(({ key, display, sub }) => (
-                  <button key={key} onClick={()=>setStatsMetric(key)}
+                  <button className="ssp-sq" key={key} onClick={()=>setStatsMetric(key)}
                     style={{ background: statsMetric===key?metricCfg[key].color:"white", borderRadius:18, padding:"16px 14px", border: statsMetric===key?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: statsMetric===key?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
                     <div style={{ fontSize:10, fontWeight:700, color: statsMetric===key?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{metricCfg[key].label}</div>
                     <div style={{ fontSize:28, fontWeight:900, color: statsMetric===key?"white":"#1B3F45", letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
@@ -2067,7 +2067,7 @@ export default function App() {
                         const orderCount = orders.filter(o=>o.clientId===c.id||o.client===name).length;
                         const isSelected = draft.clientId===c.id;
                         return (
-                          <button key={c.id} onClick={()=>{ setDraft(d=>({...d,clientId:c.id,client:name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); setTimeout(()=>setNewOrderStep(2), 160); }}
+                          <button className="ssp-sq" key={c.id} onClick={()=>{ setDraft(d=>({...d,clientId:c.id,client:name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); setTimeout(()=>setNewOrderStep(2), 160); }}
                             style={{ width:"100%", background: isSelected?"#F0F6F7":"white", border:"none", borderTop: idx>0?"0.5px solid #E8E4DC":"none", padding:"14px", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
                             <div style={{ width:40, height:40, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                               <span style={{ fontSize:14, fontWeight:700, color:"#C9933A" }}>{initials}</span>
@@ -2617,7 +2617,7 @@ export default function App() {
                   {filtered.map((inv) => {
                     const invTotal = roundCHF(inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate) + (parseFloat(inv.porto)||0));
                     return (
-                      <button key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); }}
+                      <button className="ssp-sq" key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); }}
                         style={{ width:"100%", background:"white", border:"1.5px solid #F0EDE8", borderRadius:20, padding:"18px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
                         <div style={{ width:46, height:46, borderRadius:14, background: inv.printed?"#E8F3EF":"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                           <Icon name="receipt" size={22} color={inv.printed?"#1B6048":"#5A7A80"}/>
@@ -3018,7 +3018,7 @@ export default function App() {
                       const initials = name.split(" ").map(w=>w[0]||"").join("").slice(0,2).toUpperCase();
                       const orderCount = orders.filter(o=>o.clientId===c.id||o.client===name).length;
                       return (
-                        <button key={c.id} onClick={()=>{ setSelectedClientId(c.id); setClientView("detail"); }}
+                        <button className="ssp-sq" key={c.id} onClick={()=>{ setSelectedClientId(c.id); setClientView("detail"); }}
                           style={{ width:"100%", background:"white", border:"none", borderTop: idx>0?"0.5px solid #F0F0EE":"none", padding:"14px 16px", cursor:"pointer", display:"flex", alignItems:"center", gap:14, textAlign:"left" }}>
                           <div style={{ width:42, height:42, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                             <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", letterSpacing:"0.02em" }}>{initials}</span>
@@ -3177,7 +3177,7 @@ export default function App() {
                     <div style={{ textAlign:"center", padding:"24px", color:"#5A7A80", fontSize:13 }}>{t("noOrdersForClient")}</div>
                   )}
                   {clientOrders.map(o=>(
-                    <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                    <button className="ssp-sq" key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                       style={{ width:"100%", background:"white", border:"1.5px solid #E8E4DC", borderRadius:16, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.04)", textAlign:"left" }}>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", marginBottom:3 }}>#{o.id}</div>
@@ -3202,7 +3202,7 @@ export default function App() {
                   {clientInvoices.map(inv=>{
                     const invTotal = roundCHF(inv.items.reduce((s,it)=>s+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(inv.porto)||0));
                     return (
-                      <button key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); setTab("invoice"); }}
+                      <button className="ssp-sq" key={inv.id} onClick={()=>{ setSelectedInvoice(inv); setInvView("detail"); setTab("invoice"); }}
                         style={{ width:"100%", background:"white", border:"1.5px solid #F0EDE8", borderRadius:16, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14, cursor:"pointer", textAlign:"left", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
                         <div style={{ width:40, height:40, borderRadius:12, background:inv.printed?"#E8F3EF":"#F0F6F7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                           <Icon name="receipt" size={20} color={inv.printed?"#1B6048":"#5A7A80"}/>
