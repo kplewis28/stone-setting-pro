@@ -78,6 +78,7 @@ const TRANS = {
     addPhotoBtn:"Add photo of this piece",
     week1:"1 week", weeks2:"2 weeks", month1:"1 month",
     selectClientFirst:"Select a client first",
+    continueBtn:"Continue", stepPiecesTitle:"Pieces", stepDeadlineTitle:"Deadline",
     specialInstructionsPlaceholder:"Special instructions, client reference, desired finish\u2026",
     descPlaceholder:"What needs to be done? Start with a number for quantity, e.g. 3 rings to polish",
     markCompletedBtn:"Mark as completed", printBtn:"Print",
@@ -215,6 +216,7 @@ const TRANS = {
     searchClientPlaceholder:"Kunden suchen...", createNewClientBtn:"Neuen Kunden erstellen",
     addAnotherPieceBtn:"Weiteres St\u00fcck hinzuf\u00fcgen",
     addPhotoBtn:"Foto dieses St\u00fcks hinzuf\u00fcgen",
+    continueBtn:"Weiter", stepPiecesTitle:"St\u00fccke", stepDeadlineTitle:"Frist",
     week1:"1 Woche", weeks2:"2 Wochen", month1:"1 Monat",
     selectClientFirst:"Zuerst Kunden ausw\u00e4hlen",
     specialInstructionsPlaceholder:"Besondere Anweisungen, Kundenreferenz, gew\u00fcnschte Oberfl\u00e4che\u2026",
@@ -2192,7 +2194,7 @@ export default function App() {
               );
 
               return (
-                <div style={{ paddingBottom:"max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
+                <div style={{ paddingBottom: newOrderStep===1 ? 24 : "max(110px, calc(90px + env(safe-area-inset-bottom, 0px)))" }}>
                   <input ref={draftPhotoRef} type="file" accept="image/*" style={{display:"none"}} onChange={()=>{}}/>
                   <input ref={piecePhotoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}}
                     onChange={e=>{
@@ -2200,7 +2202,8 @@ export default function App() {
                       const r=new FileReader(); r.onload=ev=>{ compressPhoto(ev.target.result).then(c=>{ updItem(editingPieceId,{photo:c}); setEditingPieceId(null); }); }; r.readAsDataURL(f);
                     }}/>
 
-                  {/* ── SECCIÓN 1: CLIENTE ── */}
+                  {/* ── PASO 1: CLIENTE ── */}
+                  {newOrderStep === 1 && (
                   <div style={{ padding:"20px 16px 0" }}>
                     <SectionLabel num="1" text={t("chooseClientSection")} subtitle={t("chooseClientSub")}/>
                     <div style={{ background:"white", borderRadius:16, border:"1px solid #E8E4DC", overflow:"hidden" }}>
@@ -2220,7 +2223,7 @@ export default function App() {
                         const orderCount = orders.filter(o=>o.clientId===c.id||o.client===name).length;
                         const isSelected = draft.clientId===c.id;
                         return (
-                          <button key={c.id} onClick={()=>{ setDraft(d=>({...d,clientId:c.id,client:name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); }}
+                          <button key={c.id} onClick={()=>{ setDraft(d=>({...d,clientId:c.id,client:name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); setTimeout(()=>setNewOrderStep(2), 160); }}
                             style={{ width:"100%", background: isSelected?"#F0F6F7":"white", border:"none", borderTop: idx>0?"0.5px solid #E8E4DC":"none", padding:"14px", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
                             <div style={{ width:40, height:40, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                               <span style={{ fontSize:14, fontWeight:700, color:"#C9933A" }}>{initials}</span>
@@ -2244,11 +2247,10 @@ export default function App() {
                       </button>
                     </div>
                   </div>
+                  )}
 
-                  {/* Divisor */}
-                  <div style={{ margin:"24px 16px 0", height:"1px", background:"#E8E4DC" }}/>
-
-                  {/* ── SECCIÓN 2: PIEZAS ── */}
+                  {/* ── PASO 2: PIEZAS ── */}
+                  {newOrderStep === 2 && (
                   <div style={{ padding:"20px 16px 0" }}>
                     <SectionLabel num="2" text={`${t("addPiecesSection")}${items.length > 0 ? ` · ${items.reduce((s,li)=>s+(parseInt(li.qty)||1),0)} pcs` : ""}`} subtitle={t("addPiecesSub")}/>
                     <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
@@ -2329,11 +2331,10 @@ export default function App() {
                       </button>
                     </div>
                   </div>
+                  )}
 
-                  {/* Divisor */}
-                  <div style={{ margin:"24px 16px 0", height:"1px", background:"#E8E4DC" }}/>
-
-                  {/* ── SECCIÓN 3: FECHA Y NOTAS ── */}
+                  {/* ── PASO 3: FECHA Y NOTAS ── */}
+                  {newOrderStep === 3 && (
                   <div style={{ padding:"20px 16px 0" }}>
                     <SectionLabel num="3" text={t("setDeadlineSection")} subtitle={t("setDeadlineSub")}/>
                     {/* Fechas rápidas */}
@@ -2358,16 +2359,28 @@ export default function App() {
                       style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:15, color:"#1B3F45",
                         fontFamily:"'IBM Plex Sans', sans-serif", resize:"none", background:"white", boxSizing:"border-box", outline:"none", lineHeight:1.5 }}/>
                   </div>
+                  )}
 
-                  {/* ── BOTÓN FIJO ── */}
+                  {/* ── BOTÓN FIJO — cambia según el paso ── */}
+                  {newOrderStep > 1 && (
                   <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"#F2EDE4", padding:"12px 20px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:200 }}>
-                    <button disabled={!draft.client} onClick={saveOrder}
-                      style={{ width:"100%", padding:"17px", background: draft.client?"#C9933A":"#E8E4DC", color: draft.client?"white":"#9DB5B9", border:"none", borderRadius:14,
-                        fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor: draft.client?"pointer":"default",
-                        boxShadow: draft.client?"0 4px 16px rgba(201,147,58,0.3)":"none", transition:"all 0.2s" }}>
-                      {draft.client ? `${t("saveOrderBtn")} · ${clientName}` : t("selectClientFirst")}
-                    </button>
+                    {newOrderStep === 2 ? (
+                      <button onClick={()=>setNewOrderStep(3)}
+                        style={{ width:"100%", padding:"17px", background:"#C9933A", color:"white", border:"none", borderRadius:14,
+                          fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer",
+                          boxShadow:"0 4px 16px rgba(201,147,58,0.3)", transition:"all 0.2s" }}>
+                        {t("continueBtn")} →
+                      </button>
+                    ) : (
+                      <button disabled={!draft.client} onClick={saveOrder}
+                        style={{ width:"100%", padding:"17px", background: draft.client?"#C9933A":"#E8E4DC", color: draft.client?"white":"#9DB5B9", border:"none", borderRadius:14,
+                          fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor: draft.client?"pointer":"default",
+                          boxShadow: draft.client?"0 4px 16px rgba(201,147,58,0.3)":"none", transition:"all 0.2s" }}>
+                        {draft.client ? `${t("saveOrderBtn")} · ${clientName}` : t("selectClientFirst")}
+                      </button>
+                    )}
                   </div>
+                  )}
 
                   {/* ── BOTTOM SHEET: NUEVO CLIENTE ── */}
                   {newClientSheet && (<>
@@ -2416,6 +2429,7 @@ export default function App() {
                           setClients(prev=>[...prev,nc]);
                           setDraft(d=>({...d,clientId:nc.id,client:nc.name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]}));
                           setNewClientSheet(false);
+                          setNewOrderStep(2);
                         }} style={{ width:"100%", padding:"17px", background:sheetClient.name.trim()?"#C9933A":"#E8E4DC",
                           color:sheetClient.name.trim()?"white":"#9DB5B9", border:"none", borderRadius:16,
                           fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700,
@@ -3318,7 +3332,7 @@ export default function App() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8E4DC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                     </button>
                   ))}
-                  <BtnPrimary onClick={()=>{ setView("new"); setDraft({...newOrder(), clientId:c.id, client: clientName}); setTab("orders"); }} style={{ marginTop:8 }}>
+                  <BtnPrimary onClick={()=>{ setView("new"); setNewOrderStep(2); setDraft({...newOrder(), clientId:c.id, client: clientName, lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]}); setTab("orders"); }} style={{ marginTop:8 }}>
                     {t("newOrderForClient")}
                   </BtnPrimary>
 
@@ -3557,7 +3571,7 @@ export default function App() {
                 )}
 
                 {/* Add order for this day */}
-                <button onClick={()=>{ setDayModal(null); setDraft({...newOrder(), deadline:d}); setView("new"); setTab("orders"); }}
+                <button onClick={()=>{ setDayModal(null); setNewOrderStep(1); setDraft({...newOrder(), deadline:d}); setView("new"); setTab("orders"); }}
                   style={{ width:"100%", padding:"13px", background:"#F0F6F7", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, color:"#1B3F45", cursor:"pointer", marginTop:4, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                   <Icon name="plus" size={16} color="#1B3F45"/> {t("addOrderForDay")}
                 </button>
