@@ -1251,11 +1251,8 @@ export default function App() {
           <div style={{ padding: isDesktop ? "36px 40px 20px" : isTablet ? "max(32px, env(safe-area-inset-top, 32px)) 32px 18px" : "max(56px, env(safe-area-inset-top, 56px)) 22px 18px" }}>
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
               <div>
-                <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{greeting},</div>
+                <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{t(greeting)},</div>
                 <div style={{ fontSize:36, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.03em", lineHeight:1.05 }}>{C.ownerName.split(" ")[0]}</div>
-                <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500, marginTop:5 }}>
-                  {orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} active order{orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length!==1?"s":""}
-                </div>
               </div>
               {/* Avatar */}
               <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:4, position:"relative" }}>
