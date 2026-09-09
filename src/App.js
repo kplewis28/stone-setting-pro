@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { dbGet, dbSet, supabase } from './supabase';
+import { dbGet, dbSet, supabase, isStagingData } from './supabase';
 import { Button, TextInput, TextArea } from '@carbon/react';
 import { connectDrive, disconnectDrive, isDriveConnected, silentReconnect, saveInvoiceToDrive } from './googleDrive';
 
@@ -1143,6 +1143,9 @@ export default function App() {
           <span>{t("updateReadyMsg")}</span>
           <button onClick={()=>window.location.reload()} style={{ background:ACCENT, color:"#1B3F45", border:"none", borderRadius:8, padding:"5px 12px", fontSize:12, fontWeight:800, cursor:"pointer" }}>{t("updateReloadBtn")}</button>
         </div>
+      )}
+      {isStagingData && (
+        <div style={{ position:"fixed", bottom:"calc(78px + env(safe-area-inset-bottom, 0px))", right:10, zIndex:99998, background:"#8A6220", color:"white", padding:"3px 8px", borderRadius:6, fontSize:10, fontWeight:800, letterSpacing:"0.08em", opacity:0.85, pointerEvents:"none" }}>STAGING</div>
       )}
       <style>{`
         @keyframes spin { to { transform:rotate(360deg); } }
