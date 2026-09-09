@@ -1872,17 +1872,18 @@ export default function App() {
             {/* ── LIST ── */}
             {view==="list" && (
               <>
-                {/* Urgency filter pills */}
-                <div className="pills-row" style={{ marginBottom:16 }}>
+                {/* Urgency filter pills — a lo ancho */}
+                <div style={{ display:"flex", gap:6, marginBottom:16 }}>
                   {[["all", lang==="de"?"Alle":"All", orders.length, null],
                     ...PRIORITY_ORDER.map(p => [p, lang==="de"?PRIORITY_META[p].de:PRIORITY_META[p].en, prioCounts[p], PRIORITY_META[p].color])
                   ].map(([key,label,cnt,dot])=>{
                     const sel = filterPrio===key;
                     return (
                       <button key={key} onClick={()=>setFilterPrio(key)}
-                        style={{ padding:"8px 15px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", gap:7 }}>
-                        {dot && <span style={{ width:8, height:8, borderRadius:"50%", background:dot, flexShrink:0 }}/>}
-                        {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
+                        style={{ flex:1, minWidth:0, padding:"9px 6px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:5, overflow:"hidden", textOverflow:"ellipsis" }}>
+                        {dot && <span style={{ width:7, height:7, borderRadius:"50%", background:dot, flexShrink:0 }}/>}
+                        <span style={{ overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
+                        <span style={{ fontWeight:500, opacity:0.55, flexShrink:0 }}>{cnt}</span>
                       </button>
                     );
                   })}
@@ -2689,16 +2690,17 @@ export default function App() {
 
                   {invoices.length > 0 && (
                     <>
-                      {/* Status pills */}
-                      <div className="pills-row" style={{ marginBottom:10 }}>
+                      {/* Status pills — a lo ancho */}
+                      <div style={{ display:"flex", gap:6, marginBottom:10 }}>
                         {[
                           { key:"all",       label:t("allFilter"),           count: invoices.length },
                           { key:"unprinted", label:t("unprintedFilter"),   count: invoices.filter(i=>!i.printed).length },
                           { key:"printed",   label:t("printedFilter"),     count: invoices.filter(i=>i.printed).length  },
                         ].map(({key, label, count}) => (
                           <button key={key} onClick={()=>setFilterInvStatus(key)}
-                            style={{ padding:"8px 16px", borderRadius:100, border:"none", background: filterInvStatus===key?"#1B3F45":"white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterInvStatus===key?"white":"#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-                            {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{count}</span>
+                            style={{ flex:1, minWidth:0, padding:"9px 6px", borderRadius:100, border:"none", background: filterInvStatus===key?"#1B3F45":"white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterInvStatus===key?"white":"#5A7A80", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:5, overflow:"hidden" }}>
+                            <span style={{ overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
+                            <span style={{ fontWeight:500, opacity:0.55, flexShrink:0 }}>{count}</span>
                           </button>
                         ))}
                       </div>
