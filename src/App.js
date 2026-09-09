@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import * as XLSX from "xlsx";
 import { dbGet, dbSet, supabase, isStagingData } from './supabase';
 import { Button, TextInput, TextArea } from '@carbon/react';
 import { connectDrive, disconnectDrive, isDriveConnected, silentReconnect, saveInvoiceToDrive } from './googleDrive';
@@ -770,26 +769,6 @@ export default function App() {
 
   // eslint-disable-next-line no-unused-vars
   const goHome = () => { setTab("home"); setView("list"); setPhotoStep("capture"); setInvView("list"); setClientView("list"); };
-
-  // ── EXCEL EXPORT ──
-  const orderToRow = o => ({
-    "Order #":         o.id,
-    "Client":          o.client,
-    "Received":        o.received,
-    [C.fieldLabel]:    o.field1,
-    [C.subFieldLabel]: o.field2,
-    [C.piecesLabel]:   o.pieces,
-    "Status":          C.statuses[o.status]?.label || o.status,
-    "Amount":          o.amount || 0,
-    "Notes":           o.notes,
-  });
-
-  const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(filteredOrders.map(orderToRow));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Orders");
-    XLSX.writeFile(wb, `orders-${new Date().toISOString().split("T")[0]}.xlsx`);
-  };
 
   // ── LOAD ORDER INTO INVOICE BUILDER ──
   const loadOrderIntoInvoice = (o) => {
@@ -1790,25 +1769,21 @@ export default function App() {
                   })}
                 </div>
 
-                {/* Client filter */}
-                {[...new Set(orders.map(o=>o.client).filter(Boolean))].length > 1 && (
-                  <div style={{ marginBottom:10 }}>
-                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ fontSize:13, padding:"10px 36px 10px 12px", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>
+                {/* Cliente + Fecha, uno al lado del otro */}
+                <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
+                  {[...new Set(orders.map(o=>o.client).filter(Boolean))].length > 1 && (
+                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ flex:1, minWidth:0, fontSize:13, padding:"10px 30px 10px 12px", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>
                       <option value="all">{t("allClients")}</option>
                       {[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
                     </Select>
-                  </div>
-                )}
-                {/* Date + Excel */}
-                <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
-                  <div style={{ flex:1, position:"relative" }}>
+                  )}
+                  <div style={{ flex:1, minWidth:0, position:"relative" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", zIndex:1 }}>
                       <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
                     <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ width:"100%", fontSize:13, padding:"10px 12px 10px 36px", color: filterDate?"#1B3F45":"#9DB5B9" }}/>
                   </div>
-                  {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#5A7A80", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>✕</button>}
-                  <button onClick={exportToExcel} style={{ padding:"10px 14px", border:"none", borderRadius:12, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>↓ Excel</button>
+                  {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:100, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#5A7A80", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>✕</button>}
                 </div>
                 {/* Swipe hint — desaparece tras primera interacción */}
                 {!swipeHintSeen && !selectMode && filteredOrders.length > 0 && (
