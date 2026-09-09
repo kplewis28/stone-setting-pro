@@ -519,7 +519,7 @@ const SectionTitle = ({ children }) => (
 export default function App() {
   const [tab, setTab]           = useState("home");
   const [homePrio, setHomePrio] = useState("urgent"); // Home priority tab
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterPrio, setFilterPrio] = useState("all"); // Orders tab: filter by urgency
   const [filterDate, setFilterDate]   = useState("");
   const [orders, setOrders]     = useState(() => { try { const s = localStorage.getItem("ssp_orders"); return s ? JSON.parse(s) : SAMPLE_ORDERS; } catch { return SAMPLE_ORDERS; } });
   const [view, setView]         = useState("list");
@@ -703,9 +703,9 @@ export default function App() {
   }, []);
 
   const filteredOrders = orders
-    .filter(o => { const statusOk = filterStatus === "all" || o.status === filterStatus; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return statusOk && dateOk && clientOk; })
+    .filter(o => { const prioOk = filterPrio === "all" || orderPriority(o) === filterPrio; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return prioOk && dateOk && clientOk; })
     .sort((a,b) => PRIORITY_ORDER.indexOf(orderPriority(a)) - PRIORITY_ORDER.indexOf(orderPriority(b)) || (b.received||"").localeCompare(a.received||""));
-  const counts = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
+  const prioCounts = PRIORITY_ORDER.reduce((a,p) => ({...a,[p]:orders.filter(o=>orderPriority(o)===p).length}),{});
 
   // "what is this order" — piece count + first-piece description (fallbacks: instructions, stone·setting)
   const orderSummary = (o) => {
@@ -1779,13 +1779,20 @@ export default function App() {
             {/* ── LIST ── */}
             {view==="list" && (
               <>
-                {/* Status filter pills */}
+                {/* Urgency filter pills */}
                 <div className="pills-row" style={{ marginBottom:16 }}>
-                  {[["all","All",orders.length], ...Object.entries(C.statuses).map(([k,v])=>[k,v.label,counts[k]])].map(([key,label,cnt])=>(
-                    <button key={key} style={{ padding:"8px 16px", borderRadius:100, border:"none", background: filterStatus===key ? "#1B3F45" : "white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterStatus===key ? "white" : "#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }} onClick={()=>setFilterStatus(key)}>
-                      {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
-                    </button>
-                  ))}
+                  {[["all", lang==="de"?"Alle":"All", orders.length, null],
+                    ...PRIORITY_ORDER.map(p => [p, lang==="de"?PRIORITY_META[p].de:PRIORITY_META[p].en, prioCounts[p], PRIORITY_META[p].color])
+                  ].map(([key,label,cnt,dot])=>{
+                    const sel = filterPrio===key;
+                    return (
+                      <button key={key} onClick={()=>setFilterPrio(key)}
+                        style={{ padding:"8px 15px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", gap:7 }}>
+                        {dot && <span style={{ width:8, height:8, borderRadius:"50%", background:dot, flexShrink:0 }}/>}
+                        {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Client filter */}
