@@ -707,6 +707,16 @@ export default function App() {
     .sort((a,b) => PRIORITY_ORDER.indexOf(orderPriority(a)) - PRIORITY_ORDER.indexOf(orderPriority(b)) || (b.received||"").localeCompare(a.received||""));
   const counts = Object.keys(C.statuses).reduce((a,k) => ({...a,[k]:orders.filter(o=>o.status===k).length}),{});
 
+  // "what is this order" — piece count + first-piece description (fallbacks: instructions, stone·setting)
+  const orderSummary = (o) => {
+    const li = (o.lineItems || []).filter(x => x.desc);
+    const pieces = li.reduce((s,x)=>s+(parseInt(x.qty)||0),0) || parseInt(o.pieces) || 0;
+    let what = li[0]?.desc || o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || "";
+    if(/handwritten|scanned|extract/i.test(what)) what = lang==="de" ? "Gescannter Auftrag" : "Scanned order";
+    if(what.length > 44) what = what.slice(0,44) + "…";
+    return { pieces, what, more: Math.max(0, li.length - 1) };
+  };
+
   // ── GOOGLE SHEETS SYNC ──
   const syncToSheets = (order) => {
     fetch("/api/sheets", {
@@ -1364,16 +1374,6 @@ export default function App() {
                 .sort((a,b) => (a.received||"").localeCompare(b.received||"")),
             }));
             const statusBorderColor = { received:"#C9933A", inprogress:"#1B3F45", done:"#198038", invoiced:"#5A7A80" };
-            // "what is this order" — first the pieces, else the instructions
-            const summarize = (o) => {
-              const li = (o.lineItems || []).filter(x => x.desc);
-              const pieces = li.reduce((s,x)=>s+(parseInt(x.qty)||0),0) || parseInt(o.pieces) || 0;
-              let what = li[0]?.desc || o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || "";
-              if(/handwritten|scanned|extract/i.test(what)) what = lang==="de" ? "Gescannter Auftrag" : "Scanned order";
-              if(what.length > 40) what = what.slice(0,40) + "…";
-              const more = Math.max(0, li.length - 1);
-              return { pieces, what, more };
-            };
             const current = groups.find(g => g.p === homePrio) || groups[0];
             const shownMeta = current.meta;
             return (
@@ -1409,7 +1409,7 @@ export default function App() {
                     </div>
                   ) : current.items.map((o, idx) => {
                     const borderColor = statusBorderColor[o.status] || "#E8E4DC";
-                    const s = summarize(o);
+                    const s = orderSummary(o);
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
                         style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:13 }}>
@@ -1818,6 +1818,7 @@ export default function App() {
                 {/* Order rows */}
                 {filteredOrders.map((o) => {
                   const pm = PRIORITY_META[orderPriority(o)];
+                  const summ = orderSummary(o);
                   const isChecked = selectedOrderIds.has(o.id);
                   const swipeDx = swipingCard?.id === o.id ? swipingCard.dx : 0;
                   const isMoving = swipingCard?.id === o.id;
@@ -1885,30 +1886,31 @@ export default function App() {
 
                         {/* Main content */}
                         <div style={{ flex:1, minWidth:0 }}>
-                          {/* Client name + status */}
-                          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:10 }}>
+                          {/* Piezas + cliente + estado */}
+                          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:10 }}>
+                            <div style={{ minWidth:44, height:44, borderRadius:12, background:"#F2EDE4", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flexShrink:0, padding:"0 5px" }}>
+                              <span style={{ fontSize:16, fontWeight:900, color:"#1B3F45", lineHeight:1 }}>{summ.pieces || "—"}</span>
+                              <span style={{ fontSize:8, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.06em", textTransform:"uppercase", marginTop:2 }}>{lang==="de"?"Stk":"pcs"}</span>
+                            </div>
                             <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || "—"}</div>
-                              {o.orderNumber && <div style={{ fontSize:11, fontWeight:600, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Order #{o.orderNumber}</div>}
+                              <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.client || "—"}</div>
+                              <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:3 }}>
+                                <span style={{ width:7, height:7, borderRadius:"50%", background:pm.color, flexShrink:0 }}/>
+                                <span style={{ fontSize:11, fontWeight:700, color:pm.color }}>{lang==="de"?pm.de:pm.en}</span>
+                                {o.orderNumber && <span style={{ fontSize:11, color:"#9DB5B9", fontWeight:600 }}>· #{o.orderNumber}</span>}
+                              </div>
                             </div>
                             <StatusPill status={o.status}/>
                           </div>
 
-                          {/* Priority */}
-                          <div style={{ display:"flex", alignItems:"center", gap:9, background: pm.bg, borderRadius:12, padding:"11px 14px", marginBottom: o.description ? 10 : 0 }}>
-                            <span style={{ width:10, height:10, borderRadius:"50%", background:pm.color, flexShrink:0 }}/>
-                            <span style={{ fontSize:11, fontWeight:700, color:"#9DB5B9", letterSpacing:"0.07em", textTransform:"uppercase" }}>{t("priorityLabel")}</span>
-                            <span style={{ fontSize:14, fontWeight:800, color:pm.color, marginLeft:"auto" }}>{lang==="de"?pm.de:pm.en}</span>
-                          </div>
-
-                          {/* Description */}
-                          {o.description && (
-                            <div style={{ fontSize:13, color:"#7A9AA0", lineHeight:1.5, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", marginBottom:10 }}>{o.description}</div>
+                          {/* Qué es */}
+                          {summ.what && (
+                            <div style={{ fontSize:13, color:"#5A7A80", lineHeight:1.4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:10 }}>{summ.what}{summ.more>0?` +${summ.more}`:""}</div>
                           )}
 
                           {/* Action buttons */}
                           {!selectMode && (
-                            <div style={{ display:"flex", gap:8, marginTop: o.description ? 0 : 10 }} onClick={e=>e.stopPropagation()}>
+                            <div style={{ display:"flex", gap:8, marginTop: summ.what ? 0 : 10 }} onClick={e=>e.stopPropagation()}>
                               <button onClick={()=>setWorkOrderPreview(o)}
                                 style={{ flex:1, padding:"9px 6px", background:"#F0F6F7", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                                 <Icon name="print" size={13} color="#1B3F45"/> {t("workOrderBtn")}
