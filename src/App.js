@@ -518,6 +518,7 @@ const SectionTitle = ({ children }) => (
 // ─── MAIN APP ────────────────────────────────────────────
 export default function App() {
   const [tab, setTab]           = useState("home");
+  const [homePrio, setHomePrio] = useState("urgent"); // Home priority tab
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDate, setFilterDate]   = useState("");
   const [orders, setOrders]     = useState(() => { try { const s = localStorage.getItem("ssp_orders"); return s ? JSON.parse(s) : SAMPLE_ORDERS; } catch { return SAMPLE_ORDERS; } });
@@ -1370,50 +1371,62 @@ export default function App() {
               if(/handwritten|scanned|extract/i.test(raw)) return "Scanned order";
               return raw.length > 30 ? raw.slice(0,30) + "…" : raw;
             };
+            const current = groups.find(g => g.p === homePrio) || groups[0];
+            const shownMeta = current.meta;
             return (
-              <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : isTablet ? "0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" : "0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))", display:"flex", flexDirection:"column", gap:16 }}>
-                {active.length === 0 && (
-                  <div style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", padding:"44px 20px", textAlign:"center" }}>
-                    <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", marginBottom:4 }}>{t("noPendingOrders")}</div>
-                    <div style={{ fontSize:13, color:"#9DB5B9" }}>{t("noOrdersDesc")}</div>
-                  </div>
-                )}
-                {groups.filter(g => g.items.length > 0).map(g => (
-                  <div key={g.p} style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
-                    {/* Header del grupo */}
-                    <div style={{ background:g.meta.color, padding:"11px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-                        <div style={{ width:9, height:9, borderRadius:"50%", background:"white", opacity:0.9 }}/>
-                        <span style={{ fontSize:14, fontWeight:800, color:"white" }}>{lang==="de"?g.meta.de:g.meta.en}</span>
+              <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : isTablet ? "0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" : "0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))", display:"flex", flexDirection:"column", gap:12 }}>
+
+                {/* Tabs de prioridad */}
+                <div style={{ display:"flex", gap:8 }}>
+                  {groups.map(g => {
+                    const sel = g.p === homePrio;
+                    return (
+                      <button key={g.p} onClick={()=>setHomePrio(g.p)}
+                        style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"11px 4px", borderRadius:12, cursor:"pointer",
+                          border: sel ? `2px solid ${g.meta.color}` : "1.5px solid #E8E4DC",
+                          background: sel ? g.meta.bg : "white", transition:"all 0.15s" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <span style={{ width:9, height:9, borderRadius:"50%", background:g.meta.color, flexShrink:0 }}/>
+                          <span style={{ fontSize:13, fontWeight:800, color: sel ? g.meta.color : "#5A7A80" }}>{lang==="de"?g.meta.de:g.meta.en}</span>
+                        </div>
+                        <span style={{ fontSize:18, fontWeight:900, color: sel ? g.meta.color : "#9DB5B9", lineHeight:1 }}>{g.items.length}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Lista de la prioridad seleccionada */}
+                <div style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
+                  {current.items.length === 0 ? (
+                    <div style={{ padding:"40px 20px", textAlign:"center" }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", marginBottom:3 }}>
+                        {lang==="de" ? `Nichts unter „${shownMeta.de}"` : `Nothing under "${shownMeta.en}"`}
                       </div>
-                      <div style={{ background:"rgba(255,255,255,0.22)", borderRadius:20, padding:"2px 10px" }}>
-                        <span style={{ fontSize:12, fontWeight:800, color:"white" }}>{g.items.length}</span>
-                      </div>
+                      <div style={{ fontSize:12, color:"#9DB5B9" }}>{active.length === 0 ? t("noOrdersDesc") : ""}</div>
                     </div>
-                    {/* Cards */}
-                    {g.items.map((o, idx) => {
-                      const borderColor = statusBorderColor[o.status] || "#E8E4DC";
-                      const descLabel = descOf(o);
-                      return (
-                        <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                          style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"block" }}>
-                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}>
-                            <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `#${o.id}`}</div>
-                            {o.amount > 0 && <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(o.amount)}</div>}
-                          </div>
-                          <div style={{ fontSize:12, color:"#5A7A80", marginBottom:9, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                            <span style={{ fontFamily:"'IBM Plex Mono', monospace", fontWeight:600 }}>#{o.id}</span>
-                            {descLabel && <span> · {descLabel}</span>}
-                          </div>
-                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                            <span style={{ fontSize:11, color:"#9DB5B9", fontWeight:600 }}>{t("receivedLabel")} {fmtD(o.received)}</span>
-                            <StatusPill status={o.status}/>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
+                  ) : current.items.map((o, idx) => {
+                    const borderColor = statusBorderColor[o.status] || "#E8E4DC";
+                    const descLabel = descOf(o);
+                    return (
+                      <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
+                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"block" }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}>
+                          <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:8 }}>{o.client || `#${o.id}`}</div>
+                          {o.amount > 0 && <div style={{ fontSize:15, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(o.amount)}</div>}
+                        </div>
+                        <div style={{ fontSize:12, color:"#5A7A80", marginBottom:9, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          <span style={{ fontFamily:"'IBM Plex Mono', monospace", fontWeight:600 }}>#{o.id}</span>
+                          {descLabel && <span> · {descLabel}</span>}
+                        </div>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                          <span style={{ fontSize:11, color:"#9DB5B9", fontWeight:600 }}>{t("receivedLabel")} {fmtD(o.received)}</span>
+                          <StatusPill status={o.status}/>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {active.length > 0 && (
                   <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"15px 16px", background:"#F7F5F0", border:"0.5px solid #E8E4DC", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
                     {t("viewAllOrders")}
