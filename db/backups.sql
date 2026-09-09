@@ -2,7 +2,7 @@
 -- Stone Setting Pro — automatic daily backup of app_data
 -- ============================================================================
 -- The whole app stores its data as 4 JSON blobs in public.app_data
--- (keys: orders, invoices, clients, day_notes). This keeps a dated snapshot
+-- (keys: orders, invoices, clients). This keeps a dated snapshot
 -- of each one every day, inside the same database, so a single collection can
 -- be restored to how it looked on a given day without a full-DB rollback.
 --
@@ -42,7 +42,7 @@ as $$
   insert into public.app_data_backups (snapshot_date, key, value)
   select current_date, key, value
   from public.app_data
-  where key in ('orders', 'invoices', 'clients', 'day_notes')
+  where key in ('orders', 'invoices', 'clients')
   on conflict (snapshot_date, key) do update
     set value = excluded.value,
         created_at = now();

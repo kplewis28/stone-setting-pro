@@ -575,12 +575,7 @@ export default function App() {
   const [extracted, setExtracted] = useState(null);
   const fileRef = useRef(); // eslint-disable-line no-unused-vars
   const draftPhotoRef = useRef();
-  const calStripRef = useRef();
   const piecePhotoRef = useRef();
-  const TODAY = new Date().toISOString().split("T")[0];
-  const [dayNotes, setDayNotes] = useState(() => { try { return JSON.parse(localStorage.getItem("ssp_day_notes")) || {}; } catch { return {}; } });
-  const [noteAlert, setNoteAlert] = useState(null); // { date, text } to show on load
-  const [dayModal, setDayModal]   = useState(null); // date string or null
 
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const [isTablet,  setIsTablet]  = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
@@ -638,14 +633,13 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const [o, inv, cl, dn] = await Promise.all([
-          dbGet('orders'), dbGet('invoices'), dbGet('clients'), dbGet('day_notes')
+        const [o, inv, cl] = await Promise.all([
+          dbGet('orders'), dbGet('invoices'), dbGet('clients')
         ]);
         if (cancelled) return;
         if (o   != null) setOrders(o);
         if (inv != null) setInvoices(inv);
         if (cl  != null) setClients(cl);
-        if (dn  != null) setDayNotes(dn);
         loadedRetryRef.current = cloudRetry;
         setCloudError(false);
         setDbLoaded(true);
@@ -689,11 +683,6 @@ export default function App() {
     try { localStorage.setItem("ssp_clients", JSON.stringify(clients)); } catch(_) {}
     dbSet('clients', clients).catch(e => { console.error('[cloud] save failed: clients', e); setCloudError(true); });
   }, [clients, dbLoaded]);
-  useEffect(() => {
-    if (!dbLoaded) return;
-    try { localStorage.setItem("ssp_day_notes", JSON.stringify(dayNotes)); } catch(_) {}
-    dbSet('day_notes', dayNotes).catch(e => { console.error('[cloud] save failed: day_notes', e); setCloudError(true); });
-  }, [dayNotes, dbLoaded]);
 
   // ── PWA auto-update: tell the service worker whether the user is mid-edit,
   //    so a new version doesn't reload the page and lose an unsaved form ──
@@ -710,21 +699,6 @@ export default function App() {
     const onUpdate = () => setSwUpdateReady(true);
     window.addEventListener("ssp-update-ready", onUpdate);
     return () => window.removeEventListener("ssp-update-ready", onUpdate);
-  }, []);
-
-  // Scroll calendar strip to today on mount
-  useEffect(() => {
-    if(calStripRef.current) {
-      const todayEl = calStripRef.current.querySelector("[data-today='true']");
-      if(todayEl) todayEl.scrollIntoView({ inline:"center", block:"nearest", behavior:"instant" });
-    }
-  }, []);
-
-  // Show alert for today's note if flagged
-  useEffect(() => {
-    const n = dayNotes[TODAY];
-    if(n && n.alert && n.text) setNoteAlert({ date: TODAY, text: n.text });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredOrders = orders
@@ -3329,150 +3303,6 @@ export default function App() {
         );
       })()}
 
-      {/* ── DAY MODAL ── */}
-      {dayModal && (() => {
-        const d = dayModal;
-        const dateObj   = new Date(d+"T12:00:00");
-        const isToday   = d === TODAY;
-        const isPast    = d < TODAY;
-        const dayLabel  = isToday ? "Today" : dateObj.toLocaleDateString("en-GB",{ weekday:"long", day:"numeric", month:"long" });
-        const dayOrders = orders.filter(o => o.deadline === d && o.status !== "done" && o.status !== "invoiced");
-        const doneOrders = orders.filter(o => o.deadline === d && (o.status === "done" || o.status === "invoiced"));
-        const alertOn   = !!dayNotes[d]?.alert;
-        const noteText  = dayNotes[d]?.text || "";
-
-        // Delivery alert: overdue or today with pending orders
-        const hasPendingDelivery = dayOrders.length > 0 && (isToday || isPast);
-        return (
-          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:2100, display:"flex", alignItems:"flex-end", justifyContent:"center" }} onClick={()=>setDayModal(null)}>
-            <div onClick={e=>e.stopPropagation()} style={{ background:"white", borderRadius:"28px 28px 0 0", width:"100%", maxWidth:480, maxHeight:"88vh", display:"flex", flexDirection:"column", animation:"fadeUp 0.25s ease" }}>
-
-              {/* Header */}
-              <div style={{ padding:"16px 22px 18px", flexShrink:0 }}>
-                <div style={{ width:40, height:4, background:"#E8E4DC", borderRadius:2, margin:"0 auto 18px" }}/>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <div>
-                    <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", textTransform:"capitalize", letterSpacing:"-0.02em" }}>{dayLabel}</div>
-                    <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>
-                      {dateObj.toLocaleDateString("en-GB",{ day:"numeric", month:"long", year:"numeric" })}
-                    </div>
-                  </div>
-                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                    {/* Alert toggle */}
-                    <button onClick={()=>setDayNotes(n=>({...n,[d]:{...(n[d]||{}),alert:!alertOn}}))}
-                      style={{ width:36, height:36, borderRadius:11, background: alertOn?"#1B3F45":"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      <Icon name="bell" size={18} color={alertOn?"white":"#5A7A80"}/>
-                    </button>
-                    <button onClick={()=>setDayModal(null)} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", fontSize:20, color:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Scrollable body */}
-              <div style={{ overflowY:"auto", padding:"16px 20px 32px", flex:1 }}>
-
-                {/* Delivery alert banner */}
-                {hasPendingDelivery && (
-                  <div style={{ background: isPast&&!isToday?"#da1e28":"#C9933A", borderRadius:14, padding:"14px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:12 }}>
-                    <Icon name="bell" size={20} color="white"/>
-                    <div>
-                      <div style={{ fontSize:14, fontWeight:700, color:"white" }}>
-                        {isPast&&!isToday
-                          ? (lang==="de" ? `${dayOrders.length} überfällige Lieferung${dayOrders.length>1?"en":""}` : `${dayOrders.length} overdue deliver${dayOrders.length>1?"ies":"y"}`)
-                          : (lang==="de" ? `${dayOrders.length} Lieferung${dayOrders.length>1?"en":""} heute` : `${dayOrders.length} deliver${dayOrders.length>1?"ies":"y"} today`)}
-                      </div>
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.85)" }}>{lang==="de"?"Diese Aufträge sind noch ausstehend":"These orders are still pending"}</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Pending orders */}
-                {dayOrders.length > 0 && (
-                  <>
-                    <div style={{ fontSize:11, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("pendingStatus")} · {dayOrders.length}</div>
-                    {dayOrders.map(o=>(
-                      <button key={o.id} onClick={()=>{ setDayModal(null); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:PASTELS.inprogress, border:"none", borderRadius:14, padding:"13px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left" }}>
-                        {o.photo && <img src={o.photo} alt="" style={{ width:38, height:38, borderRadius:9, objectFit:"cover", flexShrink:0 }}/>}
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", marginBottom:2 }}>{o.client || `#${o.id}`}</div>
-                          {o.description && <div style={{ fontSize:12, color:"#5A7A80", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
-                        </div>
-                        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4, flexShrink:0 }}>
-                          <StatusPill status={o.status}/>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8E4DC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-                        </div>
-                      </button>
-                    ))}
-                  </>
-                )}
-
-                {/* Done orders for this day */}
-                {doneOrders.length > 0 && (
-                  <>
-                    <div style={{ fontSize:11, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, marginTop:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("completedLabel")} · {doneOrders.length}</div>
-                    {doneOrders.map(o=>(
-                      <button key={o.id} onClick={()=>{ setDayModal(null); setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:PASTELS.done, border:"none", borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", opacity:0.8 }}>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45" }}>{o.client || `#${o.id}`}</div>
-                          {o.description && <div style={{ fontSize:11, color:"#5A7A80", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.description}</div>}
-                        </div>
-                        <StatusPill status={o.status}/>
-                      </button>
-                    ))}
-                  </>
-                )}
-
-                {dayOrders.length===0 && doneOrders.length===0 && (
-                  <div style={{ textAlign:"center", padding:"20px 0 8px", color:"#E8E4DC", fontSize:13 }}>{t("noOrdersForDay")}</div>
-                )}
-
-                {/* Add order for this day */}
-                <button onClick={()=>{ setDayModal(null); setNewOrderStep(1); setDraft({...newOrder(), deadline:d}); setView("new"); setTab("orders"); }}
-                  style={{ width:"100%", padding:"13px", background:"#F0F6F7", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, color:"#1B3F45", cursor:"pointer", marginTop:4, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                  <Icon name="plus" size={16} color="#1B3F45"/> {t("addOrderForDay")}
-                </button>
-
-                {/* Notes */}
-                <div style={{ marginTop:16 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8, fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:6 }}>
-                    {t("notesLabel")}
-                    {alertOn && <span style={{ fontSize:10, color:ACCENT, background:`${ACCENT}15`, padding:"2px 7px", borderRadius:6, fontWeight:700 }}>{t("activeAlert")}</span>}
-                  </div>
-                  <Textarea
-                    placeholder={t("notePlaceholder")}
-                    value={noteText}
-                    onChange={e=>setDayNotes(n=>({...n,[d]:{...(n[d]||{}),text:e.target.value}}))}
-                    rows={3}
-                  />
-                  {alertOn && <div style={{ fontSize:11, color:"#5A7A80", marginTop:6 }}>{t("alertInfo")}</div>}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ── DAY NOTE ALERT ── */}
-      {noteAlert && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:2100, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-          <div style={{ background:"white", borderRadius:"28px 28px 0 0", padding:"24px 24px 44px", width:"100%", maxWidth:480, animation:"fadeUp 0.25s ease" }}>
-            <div style={{ width:40, height:4, background:"#E8E4DC", borderRadius:2, margin:"0 auto 22px" }}/>
-            <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
-              <div style={{ width:44, height:44, borderRadius:13, background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <Icon name="bell" size={20} color="white"/>
-              </div>
-              <div>
-                <div style={{ fontSize:17, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em" }}>{t("noteForToday")}</div>
-                <div style={{ fontSize:12, color:"#5A7A80", fontWeight:500 }}>{new Date(noteAlert.date+"T12:00:00").toLocaleDateString("en-GB",{ weekday:"long", day:"numeric", month:"long" })}</div>
-              </div>
-            </div>
-            <div style={{ background:PASTELS.scan, borderRadius:14, padding:"14px 16px", fontSize:14, color:"#1B3F45", lineHeight:1.6, marginBottom:20, whiteSpace:"pre-wrap", fontWeight:500 }}>{noteAlert.text}</div>
-            <button onClick={()=>setNoteAlert(null)} style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, cursor:"pointer" }}>{t("gotItBtn")}</button>
-          </div>
-        </div>
-      )}
 
       {/* ── DONE MODAL ── */}
       {doneModal && (
