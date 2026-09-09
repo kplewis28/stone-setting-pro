@@ -7,13 +7,13 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── STAGING / PRODUCTION DATA ISOLATION ──────────────────────────────────
 // Production and every preview build share one Supabase project, so staging
-// builds must not touch production's rows. Preview deploys are marked with the
-// Vercel env var REACT_APP_DB_ENV=staging and then read/write "staging:"-
-// prefixed keys instead. Safe by default: with the var unset (or if a staging
-// build is ever served on the production host) it falls back to the real data.
+// builds must not touch production's rows. Vercel sets REACT_APP_ENV=staging on
+// Preview deploys only; those read/write "staging:"-prefixed keys instead.
+// Safe by default: with the var unset (or if a staging build is ever served on
+// the production host) it falls back to the real production data.
 const PROD_HOST = 'stone-setting-pro.vercel.app';
 const onProdHost = typeof window !== 'undefined' && window.location.hostname === PROD_HOST;
-const NS = (process.env.REACT_APP_DB_ENV === 'staging' && !onProdHost) ? 'staging:' : '';
+const NS = (process.env.REACT_APP_ENV === 'staging' && !onProdHost) ? 'staging:' : '';
 export const isStagingData = NS !== '';
 const nsKey = (key) => NS + key;
 
