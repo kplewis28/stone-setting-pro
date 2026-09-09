@@ -627,6 +627,9 @@ export default function App() {
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
+  const [filterInvDate, setFilterInvDate] = useState("");
+  const [invClientPickerOpen, setInvClientPickerOpen] = useState(false);
+  const [invDatePickerOpen, setInvDatePickerOpen] = useState(false);
   const [invClientAddress, setInvClientAddress] = useState("");
   const [invNumber, setInvNumber] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -2613,6 +2616,7 @@ export default function App() {
               if(filterInvStatus === "printed" && !inv.printed) return false;
               if(filterInvStatus === "unprinted" && inv.printed) return false;
               if(filterInvClient !== "all" && inv.client !== filterInvClient) return false;
+              if(filterInvDate && inv.date !== filterInvDate) return false;
               return true;
             });
             const totalFiltered = filtered.reduce((s,inv)=>s+(inv.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(inv.porto)||0)),0);
@@ -2651,19 +2655,34 @@ export default function App() {
                         ))}
                       </div>
 
-                      {/* Client filter */}
-                      {invClients.length > 1 && (
-                        <div style={{ marginBottom:14 }}>
-                          <select value={filterInvClient} onChange={e=>setFilterInvClient(e.target.value)}
-                            style={{ ...selectBase, fontSize:13, padding:"10px 36px 10px 12px", color: filterInvClient!=="all"?"#1B3F45":"#5A7A80" }}>
-                            <option value="all">{t("allClients")}</option>
-                            {invClients.map(c=><option key={c} value={c}>{c}</option>)}
-                          </select>
-                        </div>
-                      )}
+                      {/* Cliente + Fecha */}
+                      {(() => {
+                        const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
+                        const chev = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>;
+                        const dLabel = filterInvDate ? new Date(filterInvDate+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short",year:"numeric"}) : (lang==="de"?"Datum":"Date");
+                        return (
+                          <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
+                            {invClients.length > 1 && (
+                              <button className="ssp-sq" onClick={()=>setInvClientPickerOpen(true)} style={fieldStyle}>
+                                <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: filterInvClient!=="all"?"#1B3F45":"#5A7A80" }}>{filterInvClient==="all" ? t("allClients") : filterInvClient}</span>
+                                {chev}
+                              </button>
+                            )}
+                            <button className="ssp-sq" onClick={()=>setInvDatePickerOpen(true)} style={fieldStyle}>
+                              <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color: filterInvDate?"#1B3F45":"#5A7A80" }}>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={filterInvDate?"#C9933A":"#9DB5B9"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dLabel}</span>
+                              </span>
+                              {filterInvDate
+                                ? <span onClick={e=>{ e.stopPropagation(); setFilterInvDate(""); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>
+                                : chev}
+                            </button>
+                          </div>
+                        );
+                      })()}
 
                       {/* Results summary */}
-                      {(filterInvStatus!=="all" || filterInvClient!=="all") && filtered.length > 0 && (
+                      {(filterInvStatus!=="all" || filterInvClient!=="all" || filterInvDate) && filtered.length > 0 && (
                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, padding:"0 2px" }}>
                           <span style={{ fontSize:12, color:"#9DB5B9", fontWeight:500 }}>{filtered.length} result{filtered.length!==1?"s":""}</span>
                           <span style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{C.currency} {fmt(totalFiltered)}</span>
@@ -3417,6 +3436,23 @@ export default function App() {
         maxW={SHEET_MAX}
         onSelect={setFilterDate}
         onClose={()=>setDatePickerOpen(false)}
+      />
+      <SelectSheet
+        open={invClientPickerOpen}
+        title={lang==="de" ? "Kunde" : "Client"}
+        maxW={SHEET_MAX}
+        value={filterInvClient}
+        onSelect={setFilterInvClient}
+        onClose={()=>setInvClientPickerOpen(false)}
+        options={[{ value:"all", label:t("allClients") }, ...[...new Set(invoices.map(i=>i.client).filter(Boolean))].sort().map(c=>({ value:c, label:c }))]}
+      />
+      <DateSheet
+        open={invDatePickerOpen}
+        value={filterInvDate}
+        lang={lang}
+        maxW={SHEET_MAX}
+        onSelect={setFilterInvDate}
+        onClose={()=>setInvDatePickerOpen(false)}
       />
 
       {/* ── DONE MODAL ── */}
