@@ -3,7 +3,6 @@ import { clientsClaim } from 'workbox-core';
 import {
   precacheAndRoute,
   cleanupOutdatedCaches,
-  createHandlerBoundToURL,
 } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst } from 'workbox-strategies';
@@ -21,14 +20,23 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// ── Precache all CRA build assets (JS, CSS, HTML) ──
-// __WB_MANIFEST is injected at build time by CRA's InjectManifest plugin
-precacheAndRoute(self.__WB_MANIFEST);
+// ── Precache all CRA build assets (JS, CSS) — but NOT index.html ──
+// __WB_MANIFEST is injected at build time by CRA's InjectManifest plugin.
+// index.html is excluded so page loads always fetch the latest one when online
+// (it's tiny and un-hashed; a stale copy pins users to an old JS bundle).
+precacheAndRoute((self.__WB_MANIFEST || []).filter((e) => !/index\.html$/.test(e.url || e)));
 cleanupOutdatedCaches();
 
-// ── SPA navigation: serve index.html for all page navigations ──
+// ── SPA navigation: fresh index.html from the network when online, fall back
+//    to the last-seen copy only when offline ──
 registerRoute(
-  new NavigationRoute(createHandlerBoundToURL('/index.html'))
+  new NavigationRoute(
+    new NetworkFirst({
+      cacheName: 'stone-art-pages',
+      networkTimeoutSeconds: 4,
+      plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
+    })
+  )
 );
 
 // ── Cache-first: static assets (images, fonts) — long-lived ──

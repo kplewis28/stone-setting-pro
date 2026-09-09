@@ -20,12 +20,29 @@ export function register() {
     const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;
 
     // When the SW controller changes (new SW activated), reload the page so
-    // users always see the freshest build — fully automatic, no prompt needed.
+    // users always see the freshest build. Automatic — but never while the user
+    // is mid-edit (window.__sspDirty), or the reload would wipe an unsaved form.
     let reloadPending = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
+    const doReload = () => {
       if (reloadPending) return; // guard against double-reload
       reloadPending = true;
       window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!window.__sspDirty) { doReload(); return; }
+      window.__sspReloadPending = true;
+      window.dispatchEvent(new CustomEvent('ssp-update-ready'));
+    });
+    // Once the user leaves the form, apply the pending update.
+    setInterval(() => {
+      if (window.__sspReloadPending && !window.__sspDirty) doReload();
+    }, 3000);
+
+    // Re-check for a new deployment every time the app returns to the
+    // foreground — a pinned PWA can stay "open" for days without a page load.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      navigator.serviceWorker.getRegistration().then((reg) => { if (reg) reg.update(); });
     });
 
     if (isLocalhost) {

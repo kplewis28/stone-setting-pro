@@ -53,6 +53,8 @@ const TRANS = {
     tabHome:"Home", tabScan:"Stats", tabOrders:"Orders", tabClients:"Clients", tabInvoice:"Invoice",
     statsTitle:"Statistics", statsOrders:"Orders", statsRevenue:"Revenue", statsUnits:"Units", statsClients:"Active clients", statsTrend:"Monthly trend",
     signInTo:"Sign in to continue", emailLabel:"Email", passwordLabel:"Password", signingIn:"Signing in\u2026", signInBtn:"Sign in",
+    cloudErrorMsg:"No connection to the database \u2014 your changes are NOT being saved.", cloudRetryBtn:"Retry",
+    updateReadyMsg:"A new version is ready.", updateReloadBtn:"Reload",
     profileLanguage:"Language", profileChangePw:"Change password", profileSignOut:"Sign out",
     changePwTitle:"Change password", newPasswordLabel:"New password", confirmPwLabel:"Confirm password",
     pwMinChars:"Minimum 6 characters", repeatPw:"Repeat new password",
@@ -190,6 +192,8 @@ const TRANS = {
     tabHome:"Start", tabScan:"Statistik", tabOrders:"Auftr\u00e4ge", tabClients:"Kunden", tabInvoice:"Rechnung",
     statsTitle:"Statistiken", statsOrders:"Auftr\u00e4ge", statsRevenue:"Einnahmen", statsUnits:"Einheiten", statsClients:"Aktive Kunden", statsTrend:"Monatliche Entwicklung",
     signInTo:"Bitte anmelden", emailLabel:"E-Mail", passwordLabel:"Passwort", signingIn:"Anmelden\u2026", signInBtn:"Anmelden",
+    cloudErrorMsg:"Keine Verbindung zur Datenbank \u2014 \u00c4nderungen werden NICHT gespeichert.", cloudRetryBtn:"Erneut versuchen",
+    updateReadyMsg:"Eine neue Version ist bereit.", updateReloadBtn:"Neu laden",
     profileLanguage:"Sprache", profileChangePw:"Passwort \u00e4ndern", profileSignOut:"Abmelden",
     changePwTitle:"Passwort \u00e4ndern", newPasswordLabel:"Neues Passwort", confirmPwLabel:"Passwort best\u00e4tigen",
     pwMinChars:"Mindestens 6 Zeichen", repeatPw:"Neues Passwort wiederholen",
@@ -602,24 +606,44 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── LOAD FROM SUPABASE ON MOUNT (cloud overrides local cache) ──
-  const [dbLoaded, setDbLoaded] = useState(false);
+  // ── LOAD FROM SUPABASE (cloud is the source of truth) ──
+  // Runs once the auth session is known AND the user is signed in, so every
+  // request carries the user's token (the database is locked to authenticated
+  // users). If the load fails we do NOT set dbLoaded → saving stays disabled.
+  // Writing a stale/empty local cache back over good cloud data is exactly how
+  // invoices were lost before.
+  const [dbLoaded, setDbLoaded]     = useState(false);
+  const [cloudError, setCloudError] = useState(false);
+  const [cloudRetry, setCloudRetry] = useState(0);
+  const loadedRetryRef = useRef(-1);
   useEffect(() => {
-    const load = async () => {
+    if (!authChecked || !authUser) return;
+    // Load once per sign-in; re-run only on an explicit retry, never on a
+    // routine token refresh (which would clobber in-memory state mid-edit).
+    if (dbLoaded && loadedRetryRef.current === cloudRetry) return;
+    let cancelled = false;
+    (async () => {
       try {
         const [o, inv, cl, dn] = await Promise.all([
           dbGet('orders'), dbGet('invoices'), dbGet('clients'), dbGet('day_notes')
         ]);
+        if (cancelled) return;
         if (o   != null) setOrders(o);
         if (inv != null) setInvoices(inv);
         if (cl  != null) setClients(cl);
         if (dn  != null) setDayNotes(dn);
-      } catch(_) {}
-      setDbLoaded(true);
-    };
-    load();
+        loadedRetryRef.current = cloudRetry;
+        setCloudError(false);
+        setDbLoaded(true);
+      } catch (e) {
+        if (cancelled) return;
+        console.error('[cloud] load failed — saving is disabled to protect your data', e);
+        setCloudError(true);
+      }
+    })();
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authChecked, authUser, cloudRetry, dbLoaded]);
 
   // ── AUTO-RECONNECT GOOGLE DRIVE on app load (silent, no popup) ──
   useEffect(() => {
@@ -632,27 +656,47 @@ export default function App() {
   }, []);
 
   // ── SAVE TO LOCALSTORAGE + SUPABASE ──
+  // Cloud writes only happen after a successful load (dbLoaded). A failed write
+  // flags cloudError so the user is warned instead of it failing silently.
   useEffect(() => {
     if (!dbLoaded) return;
+    if (orders === SAMPLE_ORDERS) return; // never persist the built-in demo data
     try { localStorage.setItem("ssp_orders", JSON.stringify(orders)); }
     catch(e) { try { localStorage.setItem("ssp_orders", JSON.stringify(orders.map(o=>({...o,photo:null})))); } catch(_) {} }
-    dbSet('orders', orders).catch(()=>{});
+    dbSet('orders', orders).catch(e => { console.error('[cloud] save failed: orders', e); setCloudError(true); });
   }, [orders, dbLoaded]);
   useEffect(() => {
     if (!dbLoaded) return;
     try { localStorage.setItem("ssp_invoices", JSON.stringify(invoices)); } catch(_) {}
-    dbSet('invoices', invoices).catch(()=>{});
+    dbSet('invoices', invoices).catch(e => { console.error('[cloud] save failed: invoices', e); setCloudError(true); });
   }, [invoices, dbLoaded]);
   useEffect(() => {
     if (!dbLoaded) return;
     try { localStorage.setItem("ssp_clients", JSON.stringify(clients)); } catch(_) {}
-    dbSet('clients', clients).catch(()=>{});
+    dbSet('clients', clients).catch(e => { console.error('[cloud] save failed: clients', e); setCloudError(true); });
   }, [clients, dbLoaded]);
   useEffect(() => {
     if (!dbLoaded) return;
     try { localStorage.setItem("ssp_day_notes", JSON.stringify(dayNotes)); } catch(_) {}
-    dbSet('day_notes', dayNotes).catch(()=>{});
+    dbSet('day_notes', dayNotes).catch(e => { console.error('[cloud] save failed: day_notes', e); setCloudError(true); });
   }, [dayNotes, dbLoaded]);
+
+  // ── PWA auto-update: tell the service worker whether the user is mid-edit,
+  //    so a new version doesn't reload the page and lose an unsaved form ──
+  const [swUpdateReady, setSwUpdateReady] = useState(false);
+  useEffect(() => {
+    const editing =
+      (tab === "orders"  && (view === "new" || view === "edit")) ||
+      (tab === "invoice" && invView === "new") ||
+      (tab === "clients" && (clientView === "new" || clientView === "edit")) ||
+      newClientSheet || photoStep === "review";
+    window.__sspDirty = !!editing;
+  }, [tab, view, invView, clientView, newClientSheet, photoStep]);
+  useEffect(() => {
+    const onUpdate = () => setSwUpdateReady(true);
+    window.addEventListener("ssp-update-ready", onUpdate);
+    return () => window.removeEventListener("ssp-update-ready", onUpdate);
+  }, []);
 
   // Scroll calendar strip to today on mount
   useEffect(() => {
@@ -1088,6 +1132,18 @@ export default function App() {
 
   return (
     <div style={{ fontFamily:"'IBM Plex Sans', sans-serif", background:"#F7F5F0", minHeight:"100vh" }}>
+      {cloudError && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:100000, background:"#da1e28", color:"white", padding:"9px 14px calc(9px + env(safe-area-inset-top, 0px))", fontSize:13, fontWeight:600, display:"flex", alignItems:"center", justifyContent:"center", gap:12, textAlign:"center" }}>
+          <span>{t("cloudErrorMsg")}</span>
+          <button onClick={()=>setCloudRetry(n=>n+1)} style={{ background:"white", color:"#da1e28", border:"none", borderRadius:8, padding:"5px 12px", fontSize:12, fontWeight:800, cursor:"pointer", flexShrink:0 }}>{t("cloudRetryBtn")}</button>
+        </div>
+      )}
+      {swUpdateReady && (
+        <div style={{ position:"fixed", bottom:"calc(80px + env(safe-area-inset-bottom, 0px))", left:"50%", transform:"translateX(-50%)", zIndex:100000, background:"#1B3F45", color:"white", padding:"11px 16px", borderRadius:14, fontSize:13, fontWeight:600, display:"flex", alignItems:"center", gap:12, boxShadow:"0 8px 30px rgba(0,0,0,0.3)", whiteSpace:"nowrap" }}>
+          <span>{t("updateReadyMsg")}</span>
+          <button onClick={()=>window.location.reload()} style={{ background:ACCENT, color:"#1B3F45", border:"none", borderRadius:8, padding:"5px 12px", fontSize:12, fontWeight:800, cursor:"pointer" }}>{t("updateReloadBtn")}</button>
+        </div>
+      )}
       <style>{`
         @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
