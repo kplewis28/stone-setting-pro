@@ -1133,7 +1133,7 @@ export default function App() {
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         html, body { overflow-x: hidden; width: 100%; }
         input, select, textarea { font-size: 16px !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; }
-        select:focus { outline: 2px solid ${ACCENT} !important; outline-offset: 0px; background: #ffffff !important; }
+        select:focus { outline: none !important; border-color: ${ACCENT} !important; box-shadow: 0 0 0 3px rgba(201,147,58,0.18) !important; background: #ffffff !important; }
         /* modern pill buttons everywhere except tagged card-shaped / segmented controls */
         button:not(.ssp-sq) { border-radius: 9999px !important; }
         ::-webkit-scrollbar { display: none; }

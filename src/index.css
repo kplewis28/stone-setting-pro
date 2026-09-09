@@ -67,17 +67,19 @@ code {
   opacity: 0.6;
 }
 
-/* ── Carbon TextInput overrides ── */
+/* ── Carbon TextInput overrides — clean rounded box, no Carbon underline ── */
 .cds--text-input {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-  border-radius: 4px !important;
-  background: var(--sa-teal-pale) !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
   color: var(--sa-teal) !important;
-  border-bottom-color: #8d8d8d !important;
+  border: 1.5px solid var(--sa-border) !important;
+  min-height: 46px;
 }
 .cds--text-input:focus {
-  outline: 2px solid var(--sa-gold) !important;
-  outline-offset: -2px !important;
+  outline: none !important;
+  border-color: var(--sa-gold) !important;
+  box-shadow: 0 0 0 3px rgba(201, 147, 58, 0.18) !important;
   background: #ffffff !important;
 }
 .cds--text-input-wrapper {
@@ -87,18 +89,20 @@ code {
   width: 100%;
 }
 
-/* ── Carbon TextArea overrides ── */
+/* ── Carbon TextArea overrides — clean rounded box ── */
 .cds--text-area {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-  border-radius: 4px !important;
-  background: var(--sa-teal-pale) !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
   color: var(--sa-teal) !important;
-  border-bottom-color: #8d8d8d !important;
+  border: 1.5px solid var(--sa-border) !important;
   resize: none !important;
+  padding: 12px 14px !important;
 }
 .cds--text-area:focus {
-  outline: 2px solid var(--sa-gold) !important;
-  outline-offset: -2px !important;
+  outline: none !important;
+  border-color: var(--sa-gold) !important;
+  box-shadow: 0 0 0 3px rgba(201, 147, 58, 0.18) !important;
   background: #ffffff !important;
 }
 .cds--text-area-wrapper {
