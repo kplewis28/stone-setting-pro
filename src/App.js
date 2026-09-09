@@ -1677,7 +1677,7 @@ export default function App() {
         return (
           <div style={{ animation:"fadeUp 0.3s ease" }}>
             {/* Header — same structure as Orders/Invoice */}
-            <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
+            <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
                 <div>
                   <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
@@ -1823,7 +1823,7 @@ export default function App() {
       {tab==="orders" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* HEADER */}
-          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
+          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               {/* Left: date block (list) or back + title (other views) */}
               {view==="list" ? (
@@ -1883,7 +1883,7 @@ export default function App() {
 
           {/* Barra de progreso — solo en nueva orden */}
           {view==="new" && (
-            <div style={{ display:"flex", gap:4, padding:"10px 22px 12px", background:"white" }}>
+            <div style={{ display:"flex", gap:4, padding:"10px 22px 12px" }}>
               {[1,2,3].map(s=>(
                 <div key={s} style={{ flex:1, height:3, borderRadius:2, background: s<newOrderStep?"#1B3F45":s===newOrderStep?"#C9933A":"#E8E4DC", transition:"background 0.2s" }}/>
               ))}
@@ -2671,7 +2671,7 @@ export default function App() {
             return (
               <>
                 {/* Header */}
-                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px", background:"white" }}>
+                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
@@ -2841,7 +2841,7 @@ export default function App() {
             return (
               <>
                 {/* Header with live total */}
-                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
+                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
@@ -3008,7 +3008,7 @@ export default function App() {
             const invTotal = roundCHF(invSub + invPortoVal + invMwst);
             return (
               <>
-                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
+                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
@@ -3111,7 +3111,7 @@ export default function App() {
       {tab==="clients" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* Header */}
-          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px", background:"white" }}>
+          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {clientView!=="list" && (
