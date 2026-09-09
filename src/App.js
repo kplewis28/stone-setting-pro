@@ -1373,7 +1373,6 @@ export default function App() {
                 .filter(o => orderPriority(o) === p)
                 .sort((a,b) => (a.received||"").localeCompare(b.received||"")),
             }));
-            const statusBorderColor = { received:"#C9933A", inprogress:"#1B3F45", done:"#198038", invoiced:"#5A7A80" };
             const current = groups.find(g => g.p === homePrio) || groups[0];
             const shownMeta = current.meta;
             return (
@@ -1408,7 +1407,7 @@ export default function App() {
                       <div style={{ fontSize:12, color:"#9DB5B9" }}>{active.length === 0 ? t("noOrdersDesc") : ""}</div>
                     </div>
                   ) : current.items.map((o, idx) => {
-                    const borderColor = statusBorderColor[o.status] || "#E8E4DC";
+                    const borderColor = PRIORITY_META[orderPriority(o)].color;
                     const s = orderSummary(o);
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
@@ -1878,7 +1877,7 @@ export default function App() {
                         }}
                         style={{ position:"relative", transform:`translateX(${swipeDx}px)`, transition: isMoving?"none":"transform 0.3s ease",
                           background: isChecked?"#FFF3F0":"white", border: isChecked?"2px solid #da1e2840":"1.5px solid #F0EDE8",
-                          borderLeft: `5px solid ${(C.statuses[o.status]||{}).color || "#E8E4DC"}`,
+                          borderLeft: `5px solid ${pm.color}`,
                           borderRadius:20, padding:"18px 16px", display:"flex", alignItems:"stretch", gap:14,
                           cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", userSelect:"none" }}>
 
