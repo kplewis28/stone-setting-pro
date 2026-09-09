@@ -1380,15 +1380,16 @@ export default function App() {
             return (
               <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : isTablet ? "0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" : "0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))", display:"flex", flexDirection:"column", gap:12 }}>
 
-                {/* Filtro de urgencia — mismo estilo que Orders */}
-                <div className="pills-row">
+                {/* Filtro de urgencia — a lo ancho de la pantalla */}
+                <div style={{ display:"flex", gap:6 }}>
                   {pills.map(([key,label,cnt,dot])=>{
                     const sel = homePrio===key;
                     return (
                       <button key={key} onClick={()=>setHomePrio(key)}
-                        style={{ padding:"8px 15px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", gap:7 }}>
-                        {dot && <span style={{ width:8, height:8, borderRadius:"50%", background:dot, flexShrink:0 }}/>}
-                        {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
+                        style={{ flex:1, minWidth:0, padding:"9px 6px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:5, overflow:"hidden", textOverflow:"ellipsis" }}>
+                        {dot && <span style={{ width:7, height:7, borderRadius:"50%", background:dot, flexShrink:0 }}/>}
+                        <span style={{ overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
+                        <span style={{ fontWeight:500, opacity:0.55, flexShrink:0 }}>{cnt}</span>
                       </button>
                     );
                   })}
