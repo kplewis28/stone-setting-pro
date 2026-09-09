@@ -664,7 +664,6 @@ export default function App() {
   const [driveLoading, setDriveLoading] = useState(false);
   const [statsMonth, setStatsMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [statsClientFilter, setStatsClientFilter] = useState("all");
-  const [statsStatusFilter, setStatsStatusFilter] = useState("all");
   const [statsClientPickerOpen, setStatsClientPickerOpen] = useState(false);
   const [statsMonthPickerOpen, setStatsMonthPickerOpen] = useState(false);
   const [statsMetric, setStatsMetric] = useState("revenue"); // "orders"|"revenue"|"units"|"clients"
@@ -1574,11 +1573,9 @@ export default function App() {
         const monthLabel = new Date(statsMonth+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"long",year:"numeric"});
 
         // ── Apply filters
-        const filterOrders = (os) => os.filter(o => {
-          const clientMatch = statsClientFilter === "all" || o.clientId === statsClientFilter || o.client === statsClientFilter;
-          const statusMatch = statsStatusFilter === "all" || o.status === statsStatusFilter;
-          return clientMatch && statusMatch;
-        });
+        const filterOrders = (os) => os.filter(o =>
+          statsClientFilter === "all" || o.clientId === statsClientFilter || o.client === statsClientFilter
+        );
         const filterInvoicesForClient = (ivs) => ivs.filter(i =>
           statsClientFilter === "all" || i.client === (clients.find(c=>c.id===statsClientFilter)?.company || clients.find(c=>c.id===statsClientFilter)?.name || statsClientFilter)
         );
@@ -1687,15 +1684,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Status pills — same pills-row as Orders */}
-              <div className="pills-row" style={{ marginBottom:10 }}>
-                {[["all", lang==="de"?"Alle":"All", mAllOrders.length], ...Object.entries(C.statuses).map(([k,v])=>[k,v.label,mAllOrders.filter(o=>o.status===k).length])].map(([key,label,cnt]) => (
-                  <button key={key} onClick={()=>setStatsStatusFilter(key)}
-                    style={{ padding:"8px 16px", borderRadius:100, border:"none", background:statsStatusFilter===key?"#1B3F45":"white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color:statsStatusFilter===key?"white":"#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-                    {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
-                  </button>
-                ))}
-              </div>
 
               {/* Cliente + Mes — pickers propios */}
               {(() => {
@@ -1792,7 +1780,7 @@ export default function App() {
               )}
 
               {/* Status breakdown donut-style pills */}
-              {statsStatusFilter === "all" && mAllOrders.length > 0 && (
+              {mAllOrders.length > 0 && (
                 <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"14px 16px" }}>
                   <div style={{ fontSize:12, fontWeight:700, color:"#1B3F45", marginBottom:12 }}>{lang==="de"?"Nach Status":"By status"}</div>
                   <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
