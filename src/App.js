@@ -428,7 +428,7 @@ const StatusPill = ({ status }) => {
   const badge = SA_BADGE[status];
   if(!st || !badge) return null;
   return (
-    <span style={{ background: badge.bg, color: badge.color, border:`1px solid ${badge.border}`, borderRadius:20, padding:"4px 12px", fontSize:11, fontWeight:700, fontFamily:"'IBM Plex Sans', sans-serif", letterSpacing:"0.03em", whiteSpace:"nowrap" }}>
+    <span style={{ background: badge.bg, color: badge.color, border:`1px solid ${badge.border}`, borderRadius:20, padding:"4px 12px", fontSize:11, fontWeight:700, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", letterSpacing:"0.03em", whiteSpace:"nowrap" }}>
       {st.label}
     </span>
   );
@@ -436,7 +436,7 @@ const StatusPill = ({ status }) => {
 
 const Field = ({ label, children }) => (
   <div style={{ marginBottom:16 }}>
-    <div style={{ fontSize:13, fontWeight:700, color:"#5A7A80", letterSpacing:"0.04em", textTransform:"uppercase", marginBottom:6, fontFamily:"'IBM Plex Sans', sans-serif" }}>{label}</div>
+    <div style={{ fontSize:13, fontWeight:700, color:"#5A7A80", letterSpacing:"0.04em", textTransform:"uppercase", marginBottom:6, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{label}</div>
     {children}
   </div>
 );
@@ -456,7 +456,7 @@ const Input = ({ labelText = "", id: providedId, ...props }) => {
 };
 
 const CHEVRON_URL = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235A7A80' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C%2Fsvg%3E\")";
-const selectBase = { width:"100%", padding:"13px 40px 13px 14px", border:"1.5px solid #E8E4DC", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, color:"#1B3F45", background:"#ffffff", outline:"none", boxSizing:"border-box", appearance:"none", WebkitAppearance:"none", backgroundImage:CHEVRON_URL, backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center" };
+const selectBase = { width:"100%", padding:"13px 40px 13px 14px", border:"1.5px solid #E8E4DC", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, color:"#1B3F45", background:"#ffffff", outline:"none", boxSizing:"border-box", appearance:"none", WebkitAppearance:"none", backgroundImage:CHEVRON_URL, backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center" };
 const Select = ({ children, ...props }) => (
   <select {...props} style={{ ...selectBase, color: props.value ? "#1B3F45" : "#5A7A80", ...props.style }}>
     {children}
@@ -510,7 +510,7 @@ const Card = ({ children, onClick, style={} }) => (
 );
 
 const SectionTitle = ({ children }) => (
-  <div style={{ fontSize:13, fontWeight:700, color:"#5A7A80", letterSpacing:"0.04em", textTransform:"uppercase", marginBottom:12, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+  <div style={{ fontSize:13, fontWeight:700, color:"#5A7A80", letterSpacing:"0.04em", textTransform:"uppercase", marginBottom:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
     {children}
   </div>
 );
@@ -1104,7 +1104,7 @@ export default function App() {
   );
 
   if (!authUser) return (
-    <div style={{ fontFamily:"'IBM Plex Sans', sans-serif", minHeight:"100vh", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
+    <div style={{ fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", minHeight:"100vh", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
       <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
       <div style={{ width:"100%", maxWidth:360, background:"white", borderRadius:24, padding:"36px 28px", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
         <img src="/logo.png" alt={C.businessName} style={{ height:52, objectFit:"contain", display:"block", marginBottom:8 }} onError={e=>e.target.style.display="none"}/>
@@ -1114,17 +1114,17 @@ export default function App() {
           <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.emailLabel ?? TRANS.en.emailLabel}</div>
           <input type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&signIn()}
             placeholder="email@example.com"
-            style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
+            style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", outline:"none", boxSizing:"border-box" }}/>
         </div>
         <div style={{ marginBottom:20 }}>
           <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.passwordLabel ?? TRANS.en.passwordLabel}</div>
           <input type="password" value={authPw} onChange={e=>setAuthPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&signIn()}
             placeholder="••••••••"
-            style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
+            style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", outline:"none", boxSizing:"border-box" }}/>
         </div>
         {authError && <div style={{ fontSize:13, color:"#da1e28", marginBottom:14, background:"#FFF0F0", border:"1px solid #F7C1C1", borderRadius:10, padding:"10px 12px" }}>{authError}</div>}
         <button onClick={signIn} disabled={authLoading}
-          style={{ width:"100%", padding:"15px", background: authLoading?"#E8E4DC":"#1B3F45", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor: authLoading?"default":"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+          style={{ width:"100%", padding:"15px", background: authLoading?"#E8E4DC":"#1B3F45", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor: authLoading?"default":"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
           {authLoading ? <><div style={{ width:16, height:16, border:"2px solid white", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.signingIn ?? TRANS.en.signingIn}</> : (TRANS[localStorage.getItem("ssp_lang")||"en"]?.signInBtn ?? TRANS.en.signInBtn)}
         </button>
       </div>
@@ -1132,7 +1132,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ fontFamily:"'IBM Plex Sans', sans-serif", background:"#F7F5F0", minHeight:"100vh" }}>
+    <div style={{ fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", background:"#F7F5F0", minHeight:"100vh" }}>
       {cloudError && (
         <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:100000, background:"#da1e28", color:"white", padding:"9px 14px calc(9px + env(safe-area-inset-top, 0px))", fontSize:13, fontWeight:600, display:"flex", alignItems:"center", justifyContent:"center", gap:12, textAlign:"center" }}>
           <span>{t("cloudErrorMsg")}</span>
@@ -1153,8 +1153,10 @@ export default function App() {
         @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         html, body { overflow-x: hidden; width: 100%; }
-        input, select, textarea { font-size: 16px !important; font-family: 'IBM Plex Sans', sans-serif !important; }
+        input, select, textarea { font-size: 16px !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; }
         select:focus { outline: 2px solid ${ACCENT} !important; outline-offset: 0px; background: #ffffff !important; }
+        /* modern pill buttons everywhere except tagged card-shaped / segmented controls */
+        button:not(.ssp-sq) { border-radius: 9999px !important; }
         ::-webkit-scrollbar { display: none; }
         scrollbar-width: none;
         .safe-top { padding-top: max(56px, env(safe-area-inset-top, 56px)); }
@@ -1218,8 +1220,8 @@ export default function App() {
           <div style={{ padding:"0 24px 28px", borderBottom:"1px solid rgba(255,255,255,0.1)", marginBottom:8 }}>
             <img src="/logo.png" alt="Stone Art Precision GmbH" style={{ height:48, objectFit:"contain", display:"block" }} onError={e=>{ e.target.style.display="none"; e.target.nextSibling.style.display="block"; }}/>
             <div style={{ display:"none" }}>
-              <div style={{ fontSize:"1.1rem", fontWeight:700, color:"#ffffff", fontFamily:"'IBM Plex Sans', sans-serif" }}>Stone Art</div>
-              <div style={{ fontSize:"0.7rem", color:"rgba(255,255,255,0.5)", fontWeight:400, marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>Precision GmbH</div>
+              <div style={{ fontSize:"1.1rem", fontWeight:700, color:"#ffffff", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>Stone Art</div>
+              <div style={{ fontSize:"0.7rem", color:"rgba(255,255,255,0.5)", fontWeight:400, marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>Precision GmbH</div>
             </div>
           </div>
           {[
@@ -1232,7 +1234,7 @@ export default function App() {
             <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); if(key==="clients")setClientView("list"); }}
               style={{ width:"100%", background: tab===key ? "rgba(201,147,58,0.18)" : "none", borderLeft: tab===key ? `3px solid #C9933A` : "3px solid transparent", borderTop:"none", borderRight:"none", borderBottom:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:12, padding:"14px 20px", transition:"all 0.1s" }}>
               <Icon name={icon} size={20} color={tab===key ? "#C9933A" : "rgba(255,255,255,0.55)"}/>
-              <span style={{ fontSize:"0.875rem", fontWeight: tab===key ? 600 : 400, color: tab===key ? "#ffffff" : "rgba(255,255,255,0.55)", fontFamily:"'IBM Plex Sans', sans-serif" }}>{label}</span>
+              <span style={{ fontSize:"0.875rem", fontWeight: tab===key ? 600 : 400, color: tab===key ? "#ffffff" : "rgba(255,255,255,0.55)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{label}</span>
             </button>
           ))}
         </div>
@@ -1259,7 +1261,7 @@ export default function App() {
               <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:4, position:"relative" }}>
                 <button onClick={()=>setProfileOpen(p=>!p)}
                   style={{ width:40, height:40, borderRadius:12, background:"#1B3F45", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <span style={{ fontSize:14, fontWeight:700, color:"white", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.ownerName.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
+                  <span style={{ fontSize:14, fontWeight:700, color:"white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{C.ownerName.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
                 </button>
 
                 {/* Profile dropdown */}
@@ -1278,7 +1280,7 @@ export default function App() {
                         <div style={{ display:"flex", gap:6 }}>
                           {[{code:"en",label:"English"},{code:"de",label:"Deutsch"}].map(l=>(
                             <button key={l.code} onClick={()=>{ setLang(l.code); localStorage.setItem("ssp_lang",l.code); }}
-                              style={{ flex:1, padding:"7px 0", borderRadius:8, border: lang===l.code?"2px solid #1B3F45":"1.5px solid #E8E4DC", background: lang===l.code?"#1B3F45":"white", color: lang===l.code?"white":"#5A7A80", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                              style={{ flex:1, padding:"7px 0", borderRadius:8, border: lang===l.code?"2px solid #1B3F45":"1.5px solid #E8E4DC", background: lang===l.code?"#1B3F45":"white", color: lang===l.code?"white":"#5A7A80", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                               {l.label}
                             </button>
                           ))}
@@ -1295,12 +1297,12 @@ export default function App() {
                                 <span style={{ fontSize:13, color:"#1B3F45", fontWeight:600 }}>{lang==="de"?"Verbunden":"Connected"}</span>
                               </div>
                               <button onClick={()=>{ disconnectDrive(); setDriveConnected(false); showToast(lang==="de"?"Drive getrennt":"Drive disconnected","#5A7A80"); }}
-                                style={{ background:"none", border:"1px solid #E8E4DC", borderRadius:8, padding:"4px 10px", fontSize:12, fontWeight:600, color:"#5A7A80", cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                                style={{ background:"none", border:"1px solid #E8E4DC", borderRadius:8, padding:"4px 10px", fontSize:12, fontWeight:600, color:"#5A7A80", cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                                 {lang==="de"?"Trennen":"Disconnect"}
                               </button>
                             </div>
                             <button onClick={syncAllToDrive} disabled={driveSyncing}
-                              style={{ width:"100%", padding:"10px", background: driveSyncing?"#F0F6F7":"#1B3F45", border:"none", borderRadius:10, fontSize:13, fontWeight:700, color: driveSyncing?"#9DB5B9":"white", cursor: driveSyncing?"default":"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                              style={{ width:"100%", padding:"10px", background: driveSyncing?"#F0F6F7":"#1B3F45", border:"none", borderRadius:10, fontSize:13, fontWeight:700, color: driveSyncing?"#9DB5B9":"white", cursor: driveSyncing?"default":"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={driveSyncing?"#9DB5B9":"white"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                               {driveSyncing ? (lang==="de"?"Synchronisiere…":"Syncing…") : (lang==="de"?`Alle ${invoices.length} Rechnungen hochladen`:`Upload all ${invoices.length} invoices`)}
                             </button>
@@ -1317,7 +1319,7 @@ export default function App() {
                                 showToast(lang==="de"?"Verbindung fehlgeschlagen":"Connection failed","#da1e28");
                               } finally { setDriveLoading(false); }
                             }}
-                            style={{ width:"100%", padding:"10px", background: driveLoading?"#F0F6F7":"#1B3F45", border:"none", borderRadius:10, fontSize:13, fontWeight:700, color: driveLoading?"#5A7A80":"white", cursor: driveLoading?"default":"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                            style={{ width:"100%", padding:"10px", background: driveLoading?"#F0F6F7":"#1B3F45", border:"none", borderRadius:10, fontSize:13, fontWeight:700, color: driveLoading?"#5A7A80":"white", cursor: driveLoading?"default":"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill={driveLoading?"#9DB5B9":"#4285F4"}/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill={driveLoading?"#9DB5B9":"#34A853"}/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill={driveLoading?"#9DB5B9":"#FBBC05"}/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill={driveLoading?"#9DB5B9":"#EA4335"}/></svg>
                             {driveLoading ? (lang==="de"?"Verbinde…":"Connecting…") : (lang==="de"?"Mit Google Drive verbinden":"Connect Google Drive")}
                           </button>
@@ -1328,13 +1330,13 @@ export default function App() {
                       </div>
                       {/* Change password */}
                       <button onClick={()=>{ setProfileOpen(false); setChangePwOpen(true); }}
-                        style={{ width:"100%", padding:"13px 16px", background:"none", border:"none", borderBottom:"0.5px solid #F0EDE8", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:10 }}>
+                        style={{ width:"100%", padding:"13px 16px", background:"none", border:"none", borderBottom:"0.5px solid #F0EDE8", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", display:"flex", alignItems:"center", gap:10 }}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                         {t("profileChangePw")}
                       </button>
                       {/* Sign out */}
                       <button onClick={signOut}
-                        style={{ width:"100%", padding:"13px 16px", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:600, color:"#da1e28", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:10 }}>
+                        style={{ width:"100%", padding:"13px 16px", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:600, color:"#da1e28", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", display:"flex", alignItems:"center", gap:10 }}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#da1e28" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
                         {t("profileSignOut")}
                       </button>
@@ -1347,7 +1349,7 @@ export default function App() {
 
           {/* ── S2: CTA PRINCIPAL ── */}
           <div style={{ padding: isDesktop ? "0 40px 20px" : isTablet ? "0 32px 18px" : "0 22px 18px", background:"white" }}>
-            <button onClick={()=>{ setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); setTab("orders"); setView("new"); }} style={{ width:"100%", background:PASTELS.orders, border:"none", borderRadius:20, padding:"20px 20px 22px", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
+            <button className="ssp-sq" onClick={()=>{ setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); setTab("orders"); setView("new"); }} style={{ width:"100%", background:PASTELS.orders, border:"none", borderRadius:20, padding:"20px 20px 22px", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
               <div style={{ display:"flex", alignItems:"center", gap:16 }}>
                 <div style={{ width:60, height:60, borderRadius:18, background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   <Icon name="gem" size={28} color="white"/>
@@ -1383,8 +1385,8 @@ export default function App() {
                   {groups.map(g => {
                     const sel = g.p === homePrio;
                     return (
-                      <button key={g.p} onClick={()=>setHomePrio(g.p)}
-                        style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"11px 4px", borderRadius:12, cursor:"pointer",
+                      <button key={g.p} className="ssp-sq" onClick={()=>setHomePrio(g.p)}
+                        style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"11px 4px", borderRadius:14, cursor:"pointer",
                           border: sel ? `2px solid ${g.meta.color}` : "1.5px solid #E8E4DC",
                           background: sel ? g.meta.bg : "white", transition:"all 0.15s" }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -1429,7 +1431,7 @@ export default function App() {
                 </div>
 
                 {active.length > 0 && (
-                  <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"15px 16px", background:"#F7F5F0", border:"0.5px solid #E8E4DC", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
+                  <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"15px 16px", background:"#F7F5F0", border:"0.5px solid #E8E4DC", borderRadius:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
                     {t("viewAllOrders")}
                   </button>
                 )}
@@ -1578,7 +1580,7 @@ export default function App() {
               <div className="pills-row" style={{ marginBottom:10 }}>
                 {[["all", lang==="de"?"Alle":"All", mAllOrders.length], ...Object.entries(C.statuses).map(([k,v])=>[k,v.label,mAllOrders.filter(o=>o.status===k).length])].map(([key,label,cnt]) => (
                   <button key={key} onClick={()=>setStatsStatusFilter(key)}
-                    style={{ padding:"8px 16px", borderRadius:100, border:"none", background:statsStatusFilter===key?"#1B3F45":"white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color:statsStatusFilter===key?"white":"#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                    style={{ padding:"8px 16px", borderRadius:100, border:"none", background:statsStatusFilter===key?"#1B3F45":"white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color:statsStatusFilter===key?"white":"#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
                     {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
                   </button>
                 ))}
@@ -1729,7 +1731,7 @@ export default function App() {
                       {view==="new" ? t("newOrderTitle") : view==="edit" ? t("editOrderTitle") : view==="detail" ? selectedOrder?.client : t("ordersHeader")}
                     </div>
                     {view==="detail" && selectedOrder?.orderNumber && (
-                      <div style={{ fontSize:11, fontWeight:600, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>Order #{selectedOrder.orderNumber}</div>
+                      <div style={{ fontSize:11, fontWeight:600, color:"#9DB5B9", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>Order #{selectedOrder.orderNumber}</div>
                     )}
                   </div>
                 </div>
@@ -1741,9 +1743,9 @@ export default function App() {
               {view==="list" && (
                 <div style={{ display:"flex", gap:8 }}>
                   {selectMode
-                    ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("cancelBtn")}</button>
+                    ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("cancelBtn")}</button>
                     : <>
-                        <button onClick={()=>setSelectMode(true)} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("selectBtn")}</button>
+                        <button onClick={()=>setSelectMode(true)} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("selectBtn")}</button>
                         <button onClick={()=>{ setView("new"); setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); }} style={{ width:38, height:38, borderRadius:14, background:"#C9933A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           <Icon name="plus" size={18} color="white"/>
                         </button>
@@ -1753,7 +1755,7 @@ export default function App() {
               )}
               {view==="detail" && selectedOrder && (
                 <div style={{ display:"flex", gap:8 }}>
-                  <button onClick={()=>setWorkOrderPreview(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                  <button onClick={()=>setWorkOrderPreview(selectedOrder)} style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                     <Icon name="print" size={15} color="#1B3F45"/> {t("printBtn")}
                   </button>
                   <button onClick={()=>setOptionsMenu(selectedOrder)} style={{ width:38, height:38, background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -1786,7 +1788,7 @@ export default function App() {
                     const sel = filterPrio===key;
                     return (
                       <button key={key} onClick={()=>setFilterPrio(key)}
-                        style={{ padding:"8px 15px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", gap:7 }}>
+                        style={{ padding:"8px 15px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", gap:7 }}>
                         {dot && <span style={{ width:8, height:8, borderRadius:"50%", background:dot, flexShrink:0 }}/>}
                         {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
                       </button>
@@ -1816,7 +1818,7 @@ export default function App() {
                 </div>
                 {/* Swipe hint — desaparece tras primera interacción */}
                 {!swipeHintSeen && !selectMode && filteredOrders.length > 0 && (
-                  <div style={{ textAlign:"center", fontSize:9, color:"#9DB5B9", fontWeight:500, letterSpacing:"0.04em", marginBottom:12, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                  <div style={{ textAlign:"center", fontSize:9, color:"#9DB5B9", fontWeight:500, letterSpacing:"0.04em", marginBottom:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                     ← Swipe to mark done &nbsp;·&nbsp; Swipe to delete →
                   </div>
                 )}
@@ -1836,7 +1838,7 @@ export default function App() {
                       <div style={{ position:"absolute", inset:0, background:"#E8F3EF", borderRadius:20, display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:22 }}>
                         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
                           <Icon name="check" size={22} color="#1B6048"/>
-                          <span style={{ fontSize:10, color:"#1B6048", fontWeight:700, fontFamily:"'IBM Plex Sans', sans-serif" }}>Done</span>
+                          <span style={{ fontSize:10, color:"#1B6048", fontWeight:700, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>Done</span>
                         </div>
                       </div>
                       {/* Fondo rojo — acción "Eliminar" (se revela con swipe derecha) */}
@@ -1919,20 +1921,20 @@ export default function App() {
                           {!selectMode && (
                             <div style={{ display:"flex", gap:8, marginTop: summ.what ? 0 : 10 }} onClick={e=>e.stopPropagation()}>
                               <button onClick={()=>setWorkOrderPreview(o)}
-                                style={{ flex:1, padding:"9px 6px", background:"#F0F6F7", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                style={{ flex:1, padding:"9px 6px", background:"#F0F6F7", border:"none", borderRadius:10, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                                 <Icon name="print" size={13} color="#1B3F45"/> {t("workOrderBtn")}
                               </button>
                               {o.status==="invoiced" ? (()=>{
                                 const linkedInv = invoices.find(inv=>inv.items&&inv.items.some(it=>it.orderRef===o.id));
                                 return (
                                   <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast(t("invoiceNotFound"),"#da1e28"); }}
-                                    style={{ flex:1, padding:"9px 6px", background:"#1B3F45", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:700, color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                    style={{ flex:1, padding:"9px 6px", background:"#1B3F45", border:"none", borderRadius:10, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12, fontWeight:700, color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                                     <Icon name="invoice" size={13} color="#C9933A"/> {t("printInvoiceBtn")}
                                   </button>
                                 );
                               })() : (
                                 <button onClick={()=>setConfirmSheet({ type:"invoice", order:o })}
-                                  style={{ flex:1, padding:"9px 6px", background:"#C9933A", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:12, fontWeight:700, color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                  style={{ flex:1, padding:"9px 6px", background:"#C9933A", border:"none", borderRadius:10, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12, fontWeight:700, color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                                   <Icon name="invoice" size={13} color="white"/> {t("createInvoiceBtn")}
                                 </button>
                               )}
@@ -1955,7 +1957,7 @@ export default function App() {
                         setSelectMode(false);
                         showToast(`${count} order${count>1?"s":""} deleted`, "#da1e28");
                       });
-                    }} style={{ width:"100%", padding:"17px", background:"#da1e28", color:"white", border:"none", borderRadius:18, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 20px rgba(255,59,48,0.4)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                    }} style={{ width:"100%", padding:"17px", background:"#da1e28", color:"white", border:"none", borderRadius:18, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 20px rgba(255,59,48,0.4)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                       <Icon name="trash" size={18} color="white"/> Delete {selectedOrderIds.size} order{selectedOrderIds.size>1?"s":""}
                     </button>
                   </div>
@@ -2030,7 +2032,7 @@ export default function App() {
                   </div>
                   <div>
                     <div style={{ fontSize:16, fontWeight:800, color:"#1B3F45", letterSpacing:"-0.01em" }}>{text}</div>
-                    {subtitle && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, lineHeight:1.4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{subtitle}</div>}
+                    {subtitle && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, lineHeight:1.4, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{subtitle}</div>}
                   </div>
                 </div>
               );
@@ -2052,7 +2054,7 @@ export default function App() {
                       {/* Buscador */}
                       <div style={{ display:"flex", alignItems:"center", gap:10, padding:"13px 14px" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                        <input value={clientSearch} onChange={e=>setClientSearch(e.target.value)} placeholder={t("searchClientPlaceholder")} style={{ flex:1, border:"none", outline:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent" }}/>
+                        <input value={clientSearch} onChange={e=>setClientSearch(e.target.value)} placeholder={t("searchClientPlaceholder")} style={{ flex:1, border:"none", outline:"none", fontSize:15, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", background:"transparent" }}/>
                         {clientSearch && <button onClick={()=>setClientSearch("")} style={{ background:"none", border:"none", color:"#9DB5B9", cursor:"pointer", fontSize:18, padding:0, lineHeight:1 }}>×</button>}
                       </div>
                       <div style={{ height:"0.5px", background:"#E8E4DC" }}/>
@@ -2085,7 +2087,7 @@ export default function App() {
                       <button onClick={()=>{ setSheetClient({name:"",address:"",phone:"",email:""}); setNewClientSheet(true); }}
                         style={{ width:"100%", background:"none", border:"none", padding:"15px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:10, justifyContent:"center" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("createNewClientBtn")}</span>
+                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("createNewClientBtn")}</span>
                       </button>
                     </div>
                   </div>
@@ -2127,21 +2129,21 @@ export default function App() {
                             <div style={{ padding:"12px 14px 14px" }}>
                               <textarea placeholder={t("descPiecePlaceholder")} value={li.desc||""}
                                 onChange={e=>updItem(li.id,{desc:e.target.value})}
-                                style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
+                                style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
                               {/* Qty row */}
                               <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10, paddingTop:10, borderTop:"0.5px solid #F0F6F7" }}>
                                 <span style={{ fontSize:12, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", flexShrink:0 }}>{t("unitsLabel")}</span>
                                 <div style={{ display:"flex", alignItems:"center", gap:0, background:"#F7F5F0", borderRadius:10, overflow:"hidden", flex:1 }}>
                                   <button onClick={()=>{ const cur=Math.max(1,(parseInt(li.qty)||1)-1); updItem(li.id,{qty:String(cur)}); }}
-                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"10px 14px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif", flexShrink:0 }}>−</button>
+                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"10px 14px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", flexShrink:0 }}>−</button>
                                   <input
                                     type="number" min="1" value={li.qty||""}
                                     onChange={e=>updItem(li.id,{qty:e.target.value})}
                                     onBlur={e=>{ if(!e.target.value||parseInt(e.target.value)<1) updItem(li.id,{qty:"1"}); }}
                                     placeholder="1"
-                                    style={{ flex:1, textAlign:"center", border:"none", outline:"none", background:"transparent", fontSize:16, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", padding:"10px 0", minWidth:0 }}/>
+                                    style={{ flex:1, textAlign:"center", border:"none", outline:"none", background:"transparent", fontSize:16, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", padding:"10px 0", minWidth:0 }}/>
                                   <button onClick={()=>{ const cur=(parseInt(li.qty)||1)+1; updItem(li.id,{qty:String(cur)}); }}
-                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"10px 14px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"'IBM Plex Sans', sans-serif", flexShrink:0 }}>+</button>
+                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"10px 14px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", flexShrink:0 }}>+</button>
                                 </div>
                               </div>
                               {/* Photo section */}
@@ -2158,7 +2160,7 @@ export default function App() {
                                   <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
                                     style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", background:"#FBF5E8", border:"1.5px dashed #C9933A", borderRadius:10, cursor:"pointer", width:"100%", justifyContent:"center" }}>
                                     <Icon name="camera" size={16} color="#C9933A"/>
-                                    <span style={{ fontSize:13, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("addPhotoBtn")}</span>
+                                    <span style={{ fontSize:13, fontWeight:700, color:"#C9933A", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("addPhotoBtn")}</span>
                                   </button>
                                 )}
                               </div>
@@ -2169,7 +2171,7 @@ export default function App() {
                       <button onClick={()=>setDraft(d=>({...d,lineItems:[...(d.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:"",photo:null}]}))}
                         style={{ width:"100%", border:"1.5px dashed #C9933A", borderRadius:14, background:"none", padding:"15px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:4 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("addAnotherPieceBtn")}</span>
+                        <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("addAnotherPieceBtn")}</span>
                       </button>
                     </div>
                   </div>
@@ -2184,12 +2186,12 @@ export default function App() {
                         const m = PRIORITY_META[p];
                         const sel = (draft.priority||"normal") === p;
                         return (
-                          <button key={p} onClick={()=>setDraft(d=>({...d,priority:p}))}
-                            style={{ display:"flex", alignItems:"center", gap:14, padding:"16px 18px", borderRadius:14, cursor:"pointer", width:"100%", textAlign:"left",
+                          <button key={p} className="ssp-sq" onClick={()=>setDraft(d=>({...d,priority:p}))}
+                            style={{ display:"flex", alignItems:"center", gap:14, padding:"16px 18px", borderRadius:16, cursor:"pointer", width:"100%", textAlign:"left",
                               border: sel ? `2px solid ${m.color}` : "1.5px solid #E8E4DC",
                               background: sel ? m.bg : "white", transition:"all 0.15s" }}>
                             <div style={{ width:14, height:14, borderRadius:"50%", background:m.color, flexShrink:0 }}/>
-                            <span style={{ fontSize:16, fontWeight:800, color: sel ? m.color : "#1B3F45", flex:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{lang==="de"?m.de:m.en}</span>
+                            <span style={{ fontSize:16, fontWeight:800, color: sel ? m.color : "#1B3F45", flex:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{lang==="de"?m.de:m.en}</span>
                             {sel && <Icon name="check" size={18} color={m.color}/>}
                           </button>
                         );
@@ -2199,7 +2201,7 @@ export default function App() {
                       placeholder={t("specialInstructionsPlaceholder")}
                       rows={3}
                       style={{ width:"100%", padding:"14px", borderRadius:12, border:"1.5px solid #E8E4DC", fontSize:15, color:"#1B3F45",
-                        fontFamily:"'IBM Plex Sans', sans-serif", resize:"none", background:"white", boxSizing:"border-box", outline:"none", lineHeight:1.5 }}/>
+                        fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", resize:"none", background:"white", boxSizing:"border-box", outline:"none", lineHeight:1.5 }}/>
                   </div>
                   )}
 
@@ -2209,14 +2211,14 @@ export default function App() {
                     {newOrderStep === 2 ? (
                       <button onClick={()=>setNewOrderStep(3)}
                         style={{ width:"100%", padding:"17px", background:"#C9933A", color:"white", border:"none", borderRadius:14,
-                          fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer",
+                          fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer",
                           boxShadow:"0 4px 16px rgba(201,147,58,0.3)", transition:"all 0.2s" }}>
                         {t("continueBtn")} →
                       </button>
                     ) : (
                       <button disabled={!draft.client} onClick={saveOrder}
                         style={{ width:"100%", padding:"17px", background: draft.client?"#C9933A":"#E8E4DC", color: draft.client?"white":"#9DB5B9", border:"none", borderRadius:14,
-                          fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor: draft.client?"pointer":"default",
+                          fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor: draft.client?"pointer":"default",
                           boxShadow: draft.client?"0 4px 16px rgba(201,147,58,0.3)":"none", transition:"all 0.2s" }}>
                         {draft.client ? `${t("saveOrderBtn")} · ${clientName}` : t("selectClientFirst")}
                       </button>
@@ -2241,7 +2243,7 @@ export default function App() {
                         <input autoFocus placeholder="Company name *" value={sheetClient.name} onChange={e=>setSheetClient(s=>({...s,name:e.target.value}))}
                           style={{ width:"100%", padding:"16px", fontSize:16, fontWeight:600, color:"#1B3F45",
                             border: sheetClient.name.trim()?"2px solid #1B3F45":"2px solid #E8E4DC",
-                            borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif",
+                            borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
                             background: sheetClient.name.trim()?"#F0F6F7":"white",
                             outline:"none", boxSizing:"border-box", transition:"all 0.15s" }}/>
                       </div>
@@ -2257,7 +2259,7 @@ export default function App() {
                           <div key={f.key} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, background:"white" }}>
                             {f.icon}
                             <input placeholder={f.placeholder} value={sheetClient[f.key]||""} onChange={e=>setSheetClient(s=>({...s,[f.key]:e.target.value}))} type={f.type}
-                              style={{ flex:1, border:"none", outline:"none", fontSize:14, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
+                              style={{ flex:1, border:"none", outline:"none", fontSize:14, color:"#5A7A80", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", background:"transparent", padding:0 }}/>
                           </div>
                         ))}
                       </div>
@@ -2274,7 +2276,7 @@ export default function App() {
                           setNewOrderStep(2);
                         }} style={{ width:"100%", padding:"17px", background:sheetClient.name.trim()?"#C9933A":"#E8E4DC",
                           color:sheetClient.name.trim()?"white":"#9DB5B9", border:"none", borderRadius:16,
-                          fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700,
+                          fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:700,
                           cursor:sheetClient.name.trim()?"pointer":"default",
                           boxShadow: sheetClient.name.trim()?"0 4px 14px rgba(201,147,58,0.3)":"none",
                           transition:"all 0.15s" }}>
@@ -2308,10 +2310,10 @@ export default function App() {
                       const m = PRIORITY_META[p];
                       const sel = (draft.priority||"normal") === p;
                       return (
-                        <button key={p} onClick={()=>setDraft({...draft,priority:p})}
-                          style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:7, padding:"12px 6px", borderRadius:10, cursor:"pointer",
+                        <button key={p} className="ssp-sq" onClick={()=>setDraft({...draft,priority:p})}
+                          style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:7, padding:"12px 6px", borderRadius:12, cursor:"pointer",
                             border: sel ? `2px solid ${m.color}` : "1.5px solid #E8E4DC", background: sel ? m.bg : "white",
-                            fontSize:13, fontWeight:700, color: sel ? m.color : "#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                            fontSize:13, fontWeight:700, color: sel ? m.color : "#5A7A80", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                           <span style={{ width:9, height:9, borderRadius:"50%", background:m.color, flexShrink:0 }}/>
                           {lang==="de"?m.de:m.en}
                         </button>
@@ -2342,7 +2344,7 @@ export default function App() {
                       {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#5A7A80", marginTop:6 }}>Total: <strong style={{color:"#1B3F45"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
                     </div>
                   );})}
-                  <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E8E4DC", borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("addItemBtn")}</button>
+                  <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E8E4DC", borderRadius:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("addItemBtn")}</button>
                 </div>
                 <BtnPrimary disabled={!draft.client} onClick={()=>{ setOrders(orders.map(o=>o.id===draft.id?{...draft}:o)); setView("detail"); showToast(t("orderUpdated")); }}>
                   {t("saveChangesBtn")}
@@ -2383,8 +2385,8 @@ export default function App() {
                         <Icon name="alert" size={18} color="#8A6220"/>
                       </div>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("pendingStatus")}</div>
-                        <div style={{ fontSize:10, color:"#BA9B55", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#8A6220", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("pendingStatus")}</div>
+                        <div style={{ fontSize:10, color:"#BA9B55", marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                           {t("receivedLabel")} {fmtDate(selectedOrder.received)}
                         </div>
                       </div>
@@ -2396,8 +2398,8 @@ export default function App() {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
                       </div>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("inReviewStatus")}</div>
-                        <div style={{ fontSize:10, color:"#5A7A80", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("inReviewStatus")}</div>
+                        <div style={{ fontSize:10, color:"#5A7A80", marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                           {t("receivedLabel")} {fmtDate(selectedOrder.received)}
                         </div>
                       </div>
@@ -2409,8 +2411,8 @@ export default function App() {
                         <Icon name="checkCircle" size={18} color="#1B6048"/>
                       </div>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B6048", fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?t("invoicedLabel"):t("completedLabel")}</div>
-                        <div style={{ fontSize:10, color:"#3B8060", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>{st==="invoiced"?t("invoiceCreatedLabel"):t("readyToInvoice")}</div>
+                        <div style={{ fontSize:13, fontWeight:500, color:"#1B6048", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{st==="invoiced"?t("invoicedLabel"):t("completedLabel")}</div>
+                        <div style={{ fontSize:10, color:"#3B8060", marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{st==="invoiced"?t("invoiceCreatedLabel"):t("readyToInvoice")}</div>
                       </div>
                     </div>
                   )}
@@ -2432,7 +2434,7 @@ export default function App() {
                                   : null
                               }
                             </div>
-                            <span style={{ fontSize:10, fontWeight:500, color: isCompleted(idx)?"#1B3F45": isActive(idx)?"#C9933A":"#9DB5B9", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap" }}>{label}</span>
+                            <span style={{ fontSize:10, fontWeight:500, color: isCompleted(idx)?"#1B3F45": isActive(idx)?"#C9933A":"#9DB5B9", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap" }}>{label}</span>
                           </div>
                           {idx < STEPS.length-1 && (
                             <div style={{ flex:1, height:2, background: isCompleted(idx+1)?"#1B3F45":"#E8E4DC", margin:"0 3px", marginBottom:14 }}/>
@@ -2448,14 +2450,14 @@ export default function App() {
                     {/* Fila A — Order ID + Entrega */}
                     <div style={{ padding:"13px 16px", borderBottom:"0.5px solid #F5F3EF", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                       <div>
-                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("orderIdLabel")}</div>
-                        <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>#{selectedOrder.id}</div>
+                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("orderIdLabel")}</div>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>#{selectedOrder.id}</div>
                       </div>
                       <div style={{ textAlign:"right" }}>
-                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("priorityLabel")}</div>
+                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:4, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("priorityLabel")}</div>
                         <div style={{ display:"flex", alignItems:"center", gap:6, justifyContent:"flex-end" }}>
                           <span style={{ width:9, height:9, borderRadius:"50%", background:oPm.color, flexShrink:0 }}/>
-                          <span style={{ fontSize:14, fontWeight:700, color:oPm.color, fontFamily:"'IBM Plex Sans', sans-serif" }}>{lang==="de"?oPm.de:oPm.en}</span>
+                          <span style={{ fontSize:14, fontWeight:700, color:oPm.color, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{lang==="de"?oPm.de:oPm.en}</span>
                         </div>
                       </div>
                     </div>
@@ -2463,8 +2465,8 @@ export default function App() {
                     {/* Fila B — Descripción */}
                     {selectedOrder.description && (
                       <div style={{ padding:"13px 16px", borderBottom:"0.5px solid #F5F3EF" }}>
-                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("descriptionLabel")}</div>
-                        <div style={{ fontSize:13, color:"#1B3F45", lineHeight:1.6, fontFamily:"'IBM Plex Sans', sans-serif" }}>{selectedOrder.description}</div>
+                        <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("descriptionLabel")}</div>
+                        <div style={{ fontSize:13, color:"#1B3F45", lineHeight:1.6, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{selectedOrder.description}</div>
                       </div>
                     )}
 
@@ -2475,11 +2477,11 @@ export default function App() {
                           <Icon name="gem" size={18} color="#5A7A80"/>
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{li.desc||"—"}</div>
-                          {(li.qty&&li.qty!=="1") && <div style={{ fontSize:11, color:"#9DB5B9", fontFamily:"'IBM Plex Sans', sans-serif", marginTop:2 }}>×{li.qty}</div>}
+                          <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{li.desc||"—"}</div>
+                          {(li.qty&&li.qty!=="1") && <div style={{ fontSize:11, color:"#9DB5B9", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", marginTop:2 }}>×{li.qty}</div>}
                         </div>
                         {lineTotal(li)>0 && (
-                          <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", flexShrink:0 }}>{C.currency} {fmt(lineTotal(li))}</div>
+                          <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", flexShrink:0 }}>{C.currency} {fmt(lineTotal(li))}</div>
                         )}
                       </div>
                     ))}
@@ -2487,8 +2489,8 @@ export default function App() {
                     {/* Fila D — Total */}
                     {orderTotal > 0 && (
                       <div style={{ padding:"13px 16px", background:"#F7F5F0", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <span style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("totalLabel")}</span>
-                        <span style={{ fontSize:18, fontWeight:700, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.currency} {fmt(orderTotal)}</span>
+                        <span style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("totalLabel")}</span>
+                        <span style={{ fontSize:18, fontWeight:700, color:"#C9933A", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{C.currency} {fmt(orderTotal)}</span>
                       </div>
                     )}
                   </div>
@@ -2497,13 +2499,13 @@ export default function App() {
                   <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"#F2EDE4", padding:"12px 20px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
                     {(st==="received"||st==="inprogress") && (
                       <button onClick={()=>setConfirmSheet({ type:"done", order:selectedOrder })}
-                        style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                        style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                         <Icon name="check" size={18} color="#C9933A"/> {t("markCompletedBtn")}
                       </button>
                     )}
                     {st==="done" && (
                       <button onClick={()=>setConfirmSheet({ type:"invoice", order:selectedOrder })}
-                        style={{ width:"100%", padding:"16px", background:"#C9933A", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                        style={{ width:"100%", padding:"16px", background:"#C9933A", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                         <Icon name="invoice" size={18} color="white"/> {t("createInvoiceBtn")}
                       </button>
                     )}
@@ -2512,11 +2514,11 @@ export default function App() {
                       return (
                         <div style={{ display:"flex", gap:10 }}>
                           <button onClick={()=>setWorkOrderPreview(selectedOrder)}
-                            style={{ flex:1, padding:"15px 8px", background:"#E0EDEF", color:"#1B3F45", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                            style={{ flex:1, padding:"15px 8px", background:"#E0EDEF", color:"#1B3F45", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                             <Icon name="print" size={16} color="#1B3F45"/> {t("workOrderBtn")}
                           </button>
                           <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast(t("invoiceNotFound"),"#da1e28"); }}
-                            style={{ flex:1, padding:"15px 8px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                            style={{ flex:1, padding:"15px 8px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                             <Icon name="invoice" size={16} color="#C9933A"/> {t("printInvoiceBtn")}
                           </button>
                         </div>
@@ -2554,7 +2556,7 @@ export default function App() {
                       {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
                     </div>
                     <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
-                      style={{ background:"#C9933A", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", letterSpacing:"-0.01em" }}>
+                      style={{ background:"#C9933A", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", letterSpacing:"-0.01em" }}>
                       {t("newBtn")}
                     </button>
                   </div>
@@ -2573,7 +2575,7 @@ export default function App() {
                           { key:"printed",   label:t("printedFilter"),     count: invoices.filter(i=>i.printed).length  },
                         ].map(({key, label, count}) => (
                           <button key={key} onClick={()=>setFilterInvStatus(key)}
-                            style={{ padding:"8px 16px", borderRadius:100, border:"none", background: filterInvStatus===key?"#1B3F45":"white", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterInvStatus===key?"white":"#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                            style={{ padding:"8px 16px", borderRadius:100, border:"none", background: filterInvStatus===key?"#1B3F45":"white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterInvStatus===key?"white":"#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
                             {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{count}</span>
                           </button>
                         ))}
@@ -2752,10 +2754,10 @@ export default function App() {
                         </svg>
                       </div>
                       <div>
-                        <div style={{ fontSize:15, fontWeight:800, color: invPorto ? "#1B6048" : "#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                        <div style={{ fontSize:15, fontWeight:800, color: invPorto ? "#1B6048" : "#8A6220", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                           Postage ({C.currency})
                         </div>
-                        <div style={{ fontSize:12, color: invPorto ? "#3B8060" : "#BA9B55", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                        <div style={{ fontSize:12, color: invPorto ? "#3B8060" : "#BA9B55", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                           {invPorto ? `${C.currency} ${fmt(parseFloat(invPorto))} included` : "Don't forget to add shipping cost"}
                         </div>
                       </div>
@@ -2767,7 +2769,7 @@ export default function App() {
                       onChange={e=>setInvPorto(e.target.value)}
                       style={{ width:"100%", padding:"14px 16px", fontSize:18, fontWeight:700, color:"#1B3F45",
                         border: invPorto ? "2px solid #9FCFBC" : "2px solid #E8C97A",
-                        borderRadius:12, fontFamily:"'IBM Plex Sans', sans-serif",
+                        borderRadius:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
                         background:"white", outline:"none", boxSizing:"border-box", transition:"border 0.2s" }}/>
                   </div>
 
@@ -2796,7 +2798,7 @@ export default function App() {
                     </Card>
                   );})}
 
-                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E8E4DC", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:600, color:"#5A7A80", cursor:"pointer", marginBottom:10 }}>{t("addItemBtn")}</button>
+                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E8E4DC", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:600, color:"#5A7A80", cursor:"pointer", marginBottom:10 }}>{t("addItemBtn")}</button>
 
                   {/* Add items from another order of the same client */}
                   {(() => {
@@ -2845,14 +2847,14 @@ export default function App() {
                     <div style={{ background:"#FBF5E8", border:"1px solid #E8C97A", borderRadius:12, padding:"12px 14px", marginBottom:14, display:"flex", alignItems:"flex-start", gap:10 }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A6220" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginTop:1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:700, color:"#8A6220", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("postageNotAdded")}</div>
-                        <div style={{ fontSize:12, color:"#BA9B55", marginTop:2, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("postageScrollUp")}</div>
+                        <div style={{ fontSize:13, fontWeight:700, color:"#8A6220", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("postageNotAdded")}</div>
+                        <div style={{ fontSize:12, color:"#BA9B55", marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("postageScrollUp")}</div>
                       </div>
                     </div>
                   )}
                   <button disabled={!invClient||items.every(it=>!it.desc&&!it.price)}
                     onClick={()=>saveInvoice(true)}
-                    style={{ width:"100%", padding:"16px", background: (!invClient||items.every(it=>!it.desc&&!it.price))?"#C6C6C6":"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor: (!invClient||items.every(it=>!it.desc&&!it.price))?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                    style={{ width:"100%", padding:"16px", background: (!invClient||items.every(it=>!it.desc&&!it.price))?"#C6C6C6":"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor: (!invClient||items.every(it=>!it.desc&&!it.price))?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                     <Icon name="invoice" size={18} color={(!invClient||items.every(it=>!it.desc&&!it.price)) ? "white" : "#C9933A"}/> {t("saveInvoiceBtn")}
                   </button>
                 </div>
@@ -2956,7 +2958,7 @@ export default function App() {
                   {/* Botón fijo al fondo */}
                   <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"#F2EDE4", padding:"12px 20px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
                     <button onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}
-                      style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                       <Icon name="print" size={18} color="#C9933A"/> {t("printInvoiceBtn")}
                     </button>
                   </div>
@@ -3048,7 +3050,7 @@ export default function App() {
                     onChange={e=>setClientDraft(d=>({...d,company:e.target.value,name:e.target.value}))}
                     style={{ width:"100%", padding:"18px 16px", fontSize:17, fontWeight:600, color:"#1B3F45",
                       border:(clientDraft.company||clientDraft.name)?"2px solid #1B3F45":"2px solid #E8E4DC",
-                      borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif",
+                      borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
                       background:(clientDraft.company||clientDraft.name)?"#F0F6F7":"white",
                       outline:"none", boxSizing:"border-box", transition:"all 0.15s" }}/>
                 </div>
@@ -3070,7 +3072,7 @@ export default function App() {
                         onChange={e=>setClientDraft(d=>({...d,[f.key]:e.target.value}))}
                         type={f.type}
                         style={{ flex:1, border:"none", outline:"none", fontSize:14, color:"#1B3F45",
-                          fontFamily:"'IBM Plex Sans', sans-serif", background:"transparent", padding:0 }}/>
+                          fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", background:"transparent", padding:0 }}/>
                     </div>
                   ))}
                 </div>
@@ -3102,7 +3104,7 @@ export default function App() {
                   style={{ width:"100%", padding:"18px", border:"none", borderRadius:16,
                     background:(clientDraft.company||clientDraft.name)?"#C9933A":"#E8E4DC",
                     color:(clientDraft.company||clientDraft.name)?"white":"#9DB5B9",
-                    fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700,
+                    fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:700,
                     cursor:(clientDraft.company||clientDraft.name)?"pointer":"default",
                     boxShadow:(clientDraft.company||clientDraft.name)?"0 4px 14px rgba(201,147,58,0.3)":"none",
                     transition:"all 0.15s" }}>
@@ -3241,7 +3243,7 @@ export default function App() {
               <div style={{ width:44, height:32, background:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <Icon name={icon} size={20} color={tab===key ? "#1B3F45" : "#5A7A80"}/>
               </div>
-              <span style={{ fontSize:"0.625rem", fontWeight: tab===key ? 600 : 400, color: tab===key ? "#1B3F45" : "#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif" }}>{label}</span>
+              <span style={{ fontSize:"0.625rem", fontWeight: tab===key ? 600 : 400, color: tab===key ? "#1B3F45" : "#5A7A80", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{label}</span>
             </button>
           ))}
         </div>
@@ -3253,15 +3255,15 @@ export default function App() {
         const o = workOrderPreview;
         const GOLD = "#B8960C";
         const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("de-CH") : "—";
-        const labelStyle = { fontSize:9, fontWeight:700, color:GOLD, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:5, fontFamily:"'IBM Plex Sans', sans-serif" };
-        const lineStyle  = { borderBottom:`1px solid #ccc`, paddingBottom:4, minHeight:24, fontSize:13, fontWeight:600, color:"#1a1a1a", fontFamily:"'IBM Plex Sans', sans-serif" };
+        const labelStyle = { fontSize:9, fontWeight:700, color:GOLD, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:5, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" };
+        const lineStyle  = { borderBottom:`1px solid #ccc`, paddingBottom:4, minHeight:24, fontSize:13, fontWeight:600, color:"#1a1a1a", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" };
         return (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1000, overflowY:"auto", display:"flex", flexDirection:"column" }}>
             {/* Sticky top bar */}
             <div style={{ position:"sticky", top:0, background:"white", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", borderBottom:"1px solid #E8E4DC", zIndex:10, flexShrink:0 }}>
               <button onClick={()=>setWorkOrderPreview(null)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#1B3F45", padding:"0 4px", lineHeight:1 }}>×</button>
-              <span style={{ fontWeight:700, fontSize:15, fontFamily:"'IBM Plex Sans', sans-serif" }}>Vorschau Arbeitsauftrag</span>
-              <button onClick={()=>printWorkOrder(o)} style={{ background:GOLD, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontWeight:700, fontSize:15, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>Vorschau Arbeitsauftrag</span>
+              <button onClick={()=>printWorkOrder(o)} style={{ background:GOLD, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", display:"flex", alignItems:"center", gap:6 }}>
                 <Icon name="print" size={14} color="white"/> Drucken / PDF
               </button>
             </div>
@@ -3342,7 +3344,7 @@ export default function App() {
             <div style={{ fontSize:14, color:"#5A7A80", textAlign:"center", marginBottom:28, lineHeight:1.6, fontWeight:500 }}>{t("createInvoicePrompt")}</div>
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
               <button onClick={()=>{ setDoneModal(null); setView("detail"); showToast(t("markedAsDone"),"#198038"); }}
-                style={{ width:"100%", padding:"16px", background:"#F0F6F7", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, color:"#1B3F45", cursor:"pointer" }}>
+                style={{ width:"100%", padding:"16px", background:"#F0F6F7", border:"none", borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:700, color:"#1B3F45", cursor:"pointer" }}>
                 {t("notNowBtn")}
               </button>
               <button onClick={()=>{
@@ -3350,7 +3352,7 @@ export default function App() {
                 setDoneModal(null);
                 if(o) loadOrderIntoInvoice(o);
               }}
-                style={{ width:"100%", padding:"16px", background:"#1B3F45", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:700, color:"white", cursor:"pointer" }}>
+                style={{ width:"100%", padding:"16px", background:"#1B3F45", border:"none", borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:700, color:"white", cursor:"pointer" }}>
                 {t("yesCreateInvoice")}
               </button>
             </div>
@@ -3379,8 +3381,8 @@ export default function App() {
                 <Icon name="pencil" size={18} color="#1B3F45"/>
               </div>
               <div>
-                <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("editOrderMenu")}</div>
-                <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("editOrderSub")}</div>
+                <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("editOrderMenu")}</div>
+                <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("editOrderSub")}</div>
               </div>
             </button>
 
@@ -3402,8 +3404,8 @@ export default function App() {
                 <Icon name="copy" size={18} color="#1B3F45"/>
               </div>
               <div>
-                <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("duplicateOrderMenu")}</div>
-                <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("duplicateOrderSub")}</div>
+                <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("duplicateOrderMenu")}</div>
+                <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("duplicateOrderSub")}</div>
               </div>
             </button>
 
@@ -3415,8 +3417,8 @@ export default function App() {
                   <Icon name="check" size={18} color="#1B6048"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("markCompletedBtn")}</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("workCompletedSub")}</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("markCompletedBtn")}</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("workCompletedSub")}</div>
                 </div>
               </button>
             )}
@@ -3429,8 +3431,8 @@ export default function App() {
                   <Icon name="invoice" size={18} color="#8A6220"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("createInvoiceBtn")}</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("createInvoiceForOrder")}</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("createInvoiceBtn")}</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("createInvoiceForOrder")}</div>
                 </div>
               </button>
             )}
@@ -3448,8 +3450,8 @@ export default function App() {
                   <Icon name="trash" size={18} color="#A32D2D"/>
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#A32D2D", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("deleteOrderBtn")}</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("cannotUndone")}</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#A32D2D", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("deleteOrderBtn")}</div>
+                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("cannotUndone")}</div>
                 </div>
               </button>
             )}
@@ -3468,22 +3470,22 @@ export default function App() {
         const OrderSummary = () => (
           <div style={{ background:"#F7F5F0", borderRadius:9, padding:"12px 14px", marginBottom:16 }}>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-              <span style={{ fontSize:11, color:"#9DB5B9", fontWeight:500, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("clientFieldLabel")}</span>
-              <span style={{ fontSize:11, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{order.client||"—"}</span>
+              <span style={{ fontSize:11, color:"#9DB5B9", fontWeight:500, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("clientFieldLabel")}</span>
+              <span style={{ fontSize:11, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{order.client||"—"}</span>
             </div>
             {(order.lineItems||[]).filter(li=>li.desc).map(li=>(
               <div key={li.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                <span style={{ fontSize:11, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", flex:1, marginRight:8 }}>{li.desc}{li.qty&&li.qty!=="1"?` ×${li.qty}`:""}</span>
-                {lineTotal(li)>0 && <span style={{ fontSize:11, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", whiteSpace:"nowrap" }}>{C.currency} {fmt(lineTotal(li))}</span>}
+                <span style={{ fontSize:11, color:"#5A7A80", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", flex:1, marginRight:8 }}>{li.desc}{li.qty&&li.qty!=="1"?` ×${li.qty}`:""}</span>
+                {lineTotal(li)>0 && <span style={{ fontSize:11, color:"#5A7A80", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap" }}>{C.currency} {fmt(lineTotal(li))}</span>}
               </div>
             ))}
             {(order.lineItems||[]).filter(li=>li.desc).length===0 && order.description && (
-              <div style={{ fontSize:11, color:"#5A7A80", fontFamily:"'IBM Plex Sans', sans-serif", marginBottom:6 }}>{order.description}</div>
+              <div style={{ fontSize:11, color:"#5A7A80", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", marginBottom:6 }}>{order.description}</div>
             )}
             {total > 0 && (
               <div style={{ display:"flex", justifyContent:"space-between", paddingTop:8, borderTop:"0.5px solid #E8E4DC", marginTop:4 }}>
-                <span style={{ fontSize:12, fontWeight:700, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("totalLabel")}</span>
-                <span style={{ fontSize:12, fontWeight:800, color:"#C9933A", fontFamily:"'IBM Plex Sans', sans-serif" }}>{C.currency} {fmt(total)}</span>
+                <span style={{ fontSize:12, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("totalLabel")}</span>
+                <span style={{ fontSize:12, fontWeight:800, color:"#C9933A", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{C.currency} {fmt(total)}</span>
               </div>
             )}
           </div>
@@ -3496,18 +3498,18 @@ export default function App() {
             <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
-              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("markCompletedBtn")}</div>
-              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("workCompletedSub")}</div>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("markCompletedBtn")}</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("workCompletedSub")}</div>
               <OrderSummary/>
               <button onClick={()=>{
                 close();
                 setOrders(orders.map(o=>o.id===order.id?{...o,status:"done"}:o));
                 showToast(t("markedAsDone"),"#198038");
                 setDoneModal(order.id);
-              }} style={{ width:"100%", padding:"15px", background:"#1B3F45", color:"white", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
+              }} style={{ width:"100%", padding:"15px", background:"#1B3F45", color:"white", border:"none", borderRadius:10, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
                 <Icon name="check" size={16} color="#C9933A"/> {t("donePromptBtn")}
               </button>
-              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("cancelBtn")}</button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("cancelBtn")}</button>
             </div>
           </div>
         );
@@ -3519,16 +3521,16 @@ export default function App() {
             <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
-              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("createInvoiceForOrder")}</div>
-              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("invoiceSheetSubtitle")}</div>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("createInvoiceForOrder")}</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("invoiceSheetSubtitle")}</div>
               <OrderSummary/>
               <button onClick={()=>{
                 close();
                 loadOrderIntoInvoice(order);
-              }} style={{ width:"100%", padding:"15px", background:"#C9933A", color:"white", border:"none", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
+              }} style={{ width:"100%", padding:"15px", background:"#C9933A", color:"white", border:"none", borderRadius:10, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
                 <Icon name="invoice" size={16} color="white"/> {t("confirmCreateInvoiceBtn")}
               </button>
-              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("cancelBtn")}</button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("cancelBtn")}</button>
             </div>
           </div>
         );
@@ -3540,12 +3542,12 @@ export default function App() {
             <div style={{ background:"white", borderRadius:"14px 14px 0 0", padding:"16px 20px max(28px, env(safe-area-inset-bottom, 28px))", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease" }}
                  onClick={e=>e.stopPropagation()}>
               <div style={{ width:28, height:3, background:"#E8E4DC", borderRadius:2, margin:"0 auto 16px" }}/>
-              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("deleteOrderBtn")}</div>
-              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:14, fontFamily:"'IBM Plex Sans', sans-serif" }}>{t("areYouSure")}</div>
+              <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", marginBottom:4, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("deleteOrderBtn")}</div>
+              <div style={{ fontSize:10, color:"#9DB5B9", lineHeight:1.4, marginBottom:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("areYouSure")}</div>
               {/* Advertencia */}
               <div style={{ display:"flex", alignItems:"flex-start", gap:10, background:"#FCEBEB", borderRadius:8, padding:"8px 10px", marginBottom:14 }}>
                 <Icon name="alert" size={16} color="#A32D2D"/>
-                <span style={{ fontSize:10, color:"#A32D2D", lineHeight:1.4, fontFamily:"'IBM Plex Sans', sans-serif" }}>
+                <span style={{ fontSize:10, color:"#A32D2D", lineHeight:1.4, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                   {t("deleteOrderWarning")}{order.id} — {t("deleteOrderWarning2")}
                 </span>
               </div>
@@ -3555,10 +3557,10 @@ export default function App() {
                 setOrders(orders.filter(o=>o.id!==order.id));
                 if(selectedId===order.id) setView("list");
                 showToast(t("orderDeletedToast"),"#da1e28");
-              }} style={{ width:"100%", padding:"15px", background:"#FCEBEB", color:"#A32D2D", border:"1px solid #F7C1C1", borderRadius:10, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", marginBottom:10 }}>
+              }} style={{ width:"100%", padding:"15px", background:"#FCEBEB", color:"#A32D2D", border:"1px solid #F7C1C1", borderRadius:10, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", marginBottom:10 }}>
                 {t("yesDeleteOrder")}
               </button>
-              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"'IBM Plex Sans', sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("cancelBtn")}</button>
+              <button onClick={close} style={{ width:"100%", padding:"13px", background:"none", border:"none", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("cancelBtn")}</button>
             </div>
           </div>
         );
@@ -3568,7 +3570,7 @@ export default function App() {
 
       {/* ── TOAST ── */}
       {toast && (
-        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"'IBM Plex Sans', sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
           <Icon name="check" size={15} color="white"/> {toast.msg}
         </div>
       )}
@@ -3591,16 +3593,16 @@ export default function App() {
               <div style={{ marginBottom:12 }}>
                 <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>{t("newPasswordLabel")}</div>
                 <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder={t("pwMinChars")}
-                  style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
+                  style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", outline:"none", boxSizing:"border-box" }}/>
               </div>
               <div style={{ marginBottom:16 }}>
                 <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>{t("confirmPwLabel")}</div>
                 <input type="password" value={newPwConfirm} onChange={e=>setNewPwConfirm(e.target.value)} placeholder={t("repeatPw")}
-                  style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"'IBM Plex Sans', sans-serif", outline:"none", boxSizing:"border-box" }}/>
+                  style={{ width:"100%", padding:"13px 14px", border:"1.5px solid #E8E4DC", borderRadius:12, fontSize:15, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", outline:"none", boxSizing:"border-box" }}/>
               </div>
               {pwError && <div style={{ fontSize:13, color:"#da1e28", background:"#FFF0F0", border:"1px solid #F7C1C1", borderRadius:10, padding:"10px 12px", marginBottom:14 }}>{pwError}</div>}
               <button onClick={changePassword} disabled={pwLoading}
-                style={{ width:"100%", padding:"15px", background: pwLoading?"#E8E4DC":"#1B3F45", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor: pwLoading?"default":"pointer", fontFamily:"'IBM Plex Sans', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                style={{ width:"100%", padding:"15px", background: pwLoading?"#E8E4DC":"#1B3F45", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor: pwLoading?"default":"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                 {pwLoading ? <><div style={{ width:16, height:16, border:"2px solid white", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/> {t("savingLabel")}</> : t("updatePwBtn")}
               </button>
             </div>
@@ -3614,10 +3616,10 @@ export default function App() {
           <div style={{ background:"white", borderRadius:24, padding:"24px 24px 20px", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease", textAlign:"left" }}>
             <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", marginBottom:8, textAlign:"center", letterSpacing:"-0.01em" }}>{t("areYouSure")}</div>
             <div style={{ fontSize:14, color:"#5A7A80", textAlign:"center", lineHeight:1.5, marginBottom:24 }}>{confirmModal.message}</div>
-            <button onClick={()=>{ confirmModal.onConfirm(); setConfirmModal(null); }} style={{ width:"100%", padding:"16px", background:"#da1e28", color:"white", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:10 }}>
+            <button onClick={()=>{ confirmModal.onConfirm(); setConfirmModal(null); }} style={{ width:"100%", padding:"16px", background:"#da1e28", color:"white", border:"none", borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:10 }}>
               {t("deleteBtn")}
             </button>
-            <button onClick={()=>setConfirmModal(null)} style={{ width:"100%", padding:"15px", background:"#F0F6F7", color:"#1B3F45", border:"none", borderRadius:16, fontFamily:"'IBM Plex Sans', sans-serif", fontSize:15, fontWeight:600, cursor:"pointer" }}>
+            <button onClick={()=>setConfirmModal(null)} style={{ width:"100%", padding:"15px", background:"#F0F6F7", color:"#1B3F45", border:"none", borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:600, cursor:"pointer" }}>
               {t("cancelBtn")}
             </button>
           </div>
@@ -3642,8 +3644,8 @@ export default function App() {
             {/* top bar */}
             <div style={{ position:"sticky", top:0, background:"white", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px", borderBottom:"1px solid #E8E4DC", zIndex:10, flexShrink:0 }}>
               <button onClick={()=>setRechnungData(null)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"#1B3F45", padding:"0 4px" }}>×</button>
-              <span style={{ fontWeight:700, fontSize:15, fontFamily:"'IBM Plex Sans', sans-serif" }}>Rechnung Vorschau</span>
-              <button onClick={()=>printRechnung(order, unitPrice, porto)} style={{ background:ACCENT, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'IBM Plex Sans', sans-serif" }}>⎙ Drucken / PDF</button>
+              <span style={{ fontWeight:700, fontSize:15, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>Rechnung Vorschau</span>
+              <button onClick={()=>printRechnung(order, unitPrice, porto)} style={{ background:ACCENT, color:"white", border:"none", borderRadius:10, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>⎙ Drucken / PDF</button>
             </div>
 
             {/* invoice paper */}
