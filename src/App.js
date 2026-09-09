@@ -68,7 +68,7 @@ const TRANS = {
     overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
     workOrderBtn:"Work order", createInvoiceBtn:"Create invoice", printInvoiceBtn:"Print invoice",
     swipeHint:"\u2190 Swipe to mark done \u00a0\u00b7\u00a0 Swipe to delete \u2192",
-    selectBtn:"Select", cancelBtn:"Cancel",
+    selectBtn:"Select", cancelBtn:"Cancel", selectMultiple:"Select multiple", selectAllBtn:"Select all", selectedCount:"selected",
     newOrderTitle:"New order", editOrderTitle:"Edit order",
     chooseClientSection:"Choose a client", chooseClientSub:"Who is this order for? Select an existing client or create a new one.",
     addPiecesSection:"Add the pieces", addPiecesSub:"Describe each piece. Use the quantity field for the amount. Add as many pieces as needed.",
@@ -211,7 +211,7 @@ const TRANS = {
     overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
     workOrderBtn:"Arbeitsauftrag", createInvoiceBtn:"Rechnung erstellen", printInvoiceBtn:"Rechnung drucken",
     swipeHint:"\u2190 Wischen = Fertig \u00a0\u00b7\u00a0 \u2192 Wischen = L\u00f6schen",
-    selectBtn:"Ausw\u00e4hlen", cancelBtn:"Abbrechen",
+    selectBtn:"Ausw\u00e4hlen", cancelBtn:"Abbrechen", selectMultiple:"Mehrere ausw\u00e4hlen", selectAllBtn:"Alle ausw\u00e4hlen", selectedCount:"ausgew\u00e4hlt",
     newOrderTitle:"Neuer Auftrag", editOrderTitle:"Auftrag bearbeiten",
     chooseClientSection:"Kunden w\u00e4hlen", chooseClientSub:"F\u00fcr wen ist dieser Auftrag? Bestehenden Kunden w\u00e4hlen oder neu anlegen.",
     addPiecesSection:"St\u00fccke hinzuf\u00fcgen", addPiecesSub:"Jedes St\u00fcck beschreiben. Menge im Mengenfeld angeben. Beliebig viele hinzuf\u00fcgen.",
@@ -1853,19 +1853,9 @@ export default function App() {
                 <div style={{ fontSize:12, fontWeight:600, color:"#9DB5B9" }}>{newOrderStep} of 3</div>
               )}
               {view==="list" && (
-                <div style={{ display:"flex", gap:8, flexShrink:0 }}>
-                  {selectMode
-                    ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:100, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("cancelBtn")}</button>
-                    : <>
-                        <button onClick={()=>setSelectMode(true)} style={{ width:38, height:38, borderRadius:100, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }} aria-label={t("selectBtn")}>
-                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-                        </button>
-                        <button onClick={()=>{ setView("new"); setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); }} style={{ display:"flex", alignItems:"center", gap:5, padding:"9px 15px", borderRadius:100, background:"#C9933A", border:"none", cursor:"pointer", fontSize:13, fontWeight:800, color:"white", whiteSpace:"nowrap", flexShrink:0 }}>
-                          <Icon name="plus" size={14} color="white"/> {t("newOrderBtn")}
-                        </button>
-                      </>
-                  }
-                </div>
+                <button onClick={()=>{ setView("new"); setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); }} style={{ display:"flex", alignItems:"center", gap:5, padding:"9px 15px", borderRadius:100, background:"#C9933A", border:"none", cursor:"pointer", fontSize:13, fontWeight:800, color:"white", whiteSpace:"nowrap", flexShrink:0 }}>
+                  <Icon name="plus" size={14} color="white"/> {t("newOrderBtn")}
+                </button>
               )}
               {view==="detail" && selectedOrder && (
                 <div style={{ display:"flex", gap:8 }}>
@@ -1936,6 +1926,29 @@ export default function App() {
                     </div>
                   );
                 })()}
+
+                {/* Barra de selección múltiple */}
+                {filteredOrders.length > 0 && (
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, padding:"0 2px", minHeight:34 }}>
+                    {selectMode ? (
+                      <>
+                        <span style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{selectedOrderIds.size} {t("selectedCount")}</span>
+                        <div style={{ display:"flex", gap:16 }}>
+                          <button onClick={()=>setSelectedOrderIds(new Set(filteredOrders.map(o=>o.id)))} style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, fontWeight:700, color:"#C9933A" }}>{t("selectAllBtn")}</button>
+                          <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, fontWeight:700, color:"#5A7A80" }}>{t("cancelBtn")}</button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize:12, color:"#9DB5B9", fontWeight:500 }}>{filteredOrders.length} {lang==="de"?(filteredOrders.length===1?"Auftrag":"Aufträge"):(filteredOrders.length===1?"order":"orders")}</span>
+                        <button onClick={()=>setSelectMode(true)} style={{ display:"flex", alignItems:"center", gap:7, padding:"7px 13px", borderRadius:100, background:"#F0F6F7", border:"none", cursor:"pointer", fontSize:12.5, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                          {t("selectMultiple")}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
                 {/* Swipe hint — desaparece tras primera interacción */}
                 {!swipeHintSeen && !selectMode && filteredOrders.length > 0 && (
                   <div style={{ textAlign:"center", fontSize:9, color:"#9DB5B9", fontWeight:500, letterSpacing:"0.04em", marginBottom:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
