@@ -1248,7 +1248,7 @@ export default function App() {
         <div style={{ animation:"fadeUp 0.3s ease" }}>
 
           {/* ── S1: HEADER ── */}
-          <div style={{ padding: isDesktop ? "36px 40px 20px" : isTablet ? "max(32px, env(safe-area-inset-top, 32px)) 32px 18px" : "max(56px, env(safe-area-inset-top, 56px)) 22px 18px", background:"white" }}>
+          <div style={{ padding: isDesktop ? "36px 40px 20px" : isTablet ? "max(32px, env(safe-area-inset-top, 32px)) 32px 18px" : "max(56px, env(safe-area-inset-top, 56px)) 22px 18px" }}>
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{greeting},</div>
@@ -1348,7 +1348,7 @@ export default function App() {
           </div>
 
           {/* ── S2: CTA PRINCIPAL ── */}
-          <div style={{ padding: isDesktop ? "0 40px 20px" : isTablet ? "0 32px 18px" : "0 22px 18px", background:"white" }}>
+          <div style={{ padding: isDesktop ? "0 40px 20px" : isTablet ? "0 32px 18px" : "0 22px 18px" }}>
             <button className="ssp-sq" onClick={()=>{ setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); setTab("orders"); setView("new"); }} style={{ width:"100%", background:PASTELS.orders, border:"none", borderRadius:20, padding:"20px 20px 22px", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
               <div style={{ display:"flex", alignItems:"center", gap:16 }}>
                 <div style={{ width:60, height:60, borderRadius:18, background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
