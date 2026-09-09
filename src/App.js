@@ -61,6 +61,7 @@ const TRANS = {
     savingLabel:"Saving\u2026", updatePwBtn:"Update password",
     goodMorning:"Good morning", goodAfternoon:"Good afternoon", goodEvening:"Good evening",
     newOrderBtn:"New order", createWorkOrderSub:"Create work order",
+    newInvoiceBtn:"New invoice", newClientBtn:"New client",
     needsAttention:"Needs attention",
     statusReceived:"Pending", statusInprogress:"In Review", statusDone:"Approved", statusInvoiced:"Invoiced",
     allFilter:"All", allClients:"All clients",
@@ -203,6 +204,7 @@ const TRANS = {
     savingLabel:"Speichern\u2026", updatePwBtn:"Passwort aktualisieren",
     goodMorning:"Guten Morgen", goodAfternoon:"Guten Tag", goodEvening:"Guten Abend",
     newOrderBtn:"Neuer Auftrag", createWorkOrderSub:"Arbeitsauftrag erstellen",
+    newInvoiceBtn:"Neue Rechnung", newClientBtn:"Neuer Kunde",
     needsAttention:"Dringend",
     statusReceived:"Ausstehend", statusInprogress:"In Bearbeitung", statusDone:"Abgeschlossen", statusInvoiced:"Verrechnet",
     allFilter:"Alle", allClients:"Alle Kunden",
@@ -1851,13 +1853,15 @@ export default function App() {
                 <div style={{ fontSize:12, fontWeight:600, color:"#9DB5B9" }}>{newOrderStep} of 3</div>
               )}
               {view==="list" && (
-                <div style={{ display:"flex", gap:8 }}>
+                <div style={{ display:"flex", gap:8, flexShrink:0 }}>
                   {selectMode
-                    ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("cancelBtn")}</button>
+                    ? <button onClick={()=>{ setSelectMode(false); setSelectedOrderIds(new Set()); }} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:100, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("cancelBtn")}</button>
                     : <>
-                        <button onClick={()=>setSelectMode(true)} style={{ padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("selectBtn")}</button>
-                        <button onClick={()=>{ setView("new"); setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); }} style={{ width:38, height:38, borderRadius:14, background:"#C9933A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                          <Icon name="plus" size={18} color="white"/>
+                        <button onClick={()=>setSelectMode(true)} style={{ width:38, height:38, borderRadius:100, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }} aria-label={t("selectBtn")}>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                        </button>
+                        <button onClick={()=>{ setView("new"); setNewOrderStep(1); setDraft(newOrder()); setClientSearch(""); }} style={{ display:"flex", alignItems:"center", gap:5, padding:"9px 15px", borderRadius:100, background:"#C9933A", border:"none", cursor:"pointer", fontSize:13, fontWeight:800, color:"white", whiteSpace:"nowrap", flexShrink:0 }}>
+                          <Icon name="plus" size={14} color="white"/> {t("newOrderBtn")}
                         </button>
                       </>
                   }
@@ -2673,8 +2677,8 @@ export default function App() {
                       {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
                     </div>
                     <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
-                      style={{ background:"#C9933A", color:"white", border:"none", borderRadius:14, padding:"10px 18px", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", letterSpacing:"-0.01em" }}>
-                      {t("newBtn")}
+                      style={{ display:"flex", alignItems:"center", gap:5, background:"#C9933A", color:"white", border:"none", borderRadius:100, padding:"9px 15px", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", flexShrink:0 }}>
+                      <Icon name="plus" size={14} color="white"/> {t("newInvoiceBtn")}
                     </button>
                   </div>
                 </div>
@@ -3120,8 +3124,8 @@ export default function App() {
                 </div>
               </div>
               {clientView==="list" && (
-                <button onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ width:40, height:40, borderRadius:12, background:"#C9933A", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <Icon name="plus" size={18} color="white"/>
+                <button onClick={()=>{ setClientDraft(newClient()); setClientView("new"); }} style={{ display:"flex", alignItems:"center", gap:5, padding:"9px 15px", borderRadius:100, background:"#C9933A", border:"none", cursor:"pointer", fontSize:13, fontWeight:800, color:"white", whiteSpace:"nowrap", flexShrink:0 }}>
+                  <Icon name="plus" size={14} color="white"/> {t("newClientBtn")}
                 </button>
               )}
               {clientView==="detail" && (
