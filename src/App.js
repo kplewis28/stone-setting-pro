@@ -1372,40 +1372,36 @@ export default function App() {
                 .filter(o => orderPriority(o) === p)
                 .sort((a,b) => (a.received||"").localeCompare(b.received||"")),
             }));
-            const current = groups.find(g => g.p === homePrio) || groups[0];
-            const shownMeta = current.meta;
+            const shownItems = homePrio === "all"
+              ? active.slice().sort((a,b) => PRIORITY_ORDER.indexOf(orderPriority(a)) - PRIORITY_ORDER.indexOf(orderPriority(b)) || (a.received||"").localeCompare(b.received||""))
+              : (groups.find(g => g.p === homePrio)?.items || []);
+            const pills = [["all", lang==="de"?"Alle":"All", active.length, null],
+              ...PRIORITY_ORDER.map(p => [p, lang==="de"?PRIORITY_META[p].de:PRIORITY_META[p].en, (groups.find(g=>g.p===p)?.items.length)||0, PRIORITY_META[p].color])];
             return (
               <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : isTablet ? "0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" : "0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))", display:"flex", flexDirection:"column", gap:12 }}>
 
-                {/* Tabs de prioridad */}
-                <div style={{ display:"flex", gap:8 }}>
-                  {groups.map(g => {
-                    const sel = g.p === homePrio;
+                {/* Filtro de urgencia — mismo estilo que Orders */}
+                <div className="pills-row">
+                  {pills.map(([key,label,cnt,dot])=>{
+                    const sel = homePrio===key;
                     return (
-                      <button key={g.p} className="ssp-sq" onClick={()=>setHomePrio(g.p)}
-                        style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"11px 4px", borderRadius:14, cursor:"pointer",
-                          border: sel ? `2px solid ${g.meta.color}` : "1.5px solid #E8E4DC",
-                          background: sel ? g.meta.bg : "white", transition:"all 0.15s" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <span style={{ width:9, height:9, borderRadius:"50%", background:g.meta.color, flexShrink:0 }}/>
-                          <span style={{ fontSize:13, fontWeight:800, color: sel ? g.meta.color : "#5A7A80" }}>{lang==="de"?g.meta.de:g.meta.en}</span>
-                        </div>
-                        <span style={{ fontSize:18, fontWeight:900, color: sel ? g.meta.color : "#9DB5B9", lineHeight:1 }}>{g.items.length}</span>
+                      <button key={key} onClick={()=>setHomePrio(key)}
+                        style={{ padding:"8px 15px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", flexShrink:0, boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", gap:7 }}>
+                        {dot && <span style={{ width:8, height:8, borderRadius:"50%", background:dot, flexShrink:0 }}/>}
+                        {label}&nbsp;<span style={{ fontWeight:500, opacity:0.6 }}>{cnt}</span>
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Lista de la prioridad seleccionada */}
+                {/* Lista */}
                 <div style={{ background:"white", borderRadius:12, border:"0.5px solid #E8E4DC", overflow:"hidden" }}>
-                  {current.items.length === 0 ? (
+                  {shownItems.length === 0 ? (
                     <div style={{ padding:"40px 20px", textAlign:"center" }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", marginBottom:3 }}>
-                        {lang==="de" ? `Nichts unter „${shownMeta.de}"` : `Nothing under "${shownMeta.en}"`}
-                      </div>
-                      <div style={{ fontSize:12, color:"#9DB5B9" }}>{active.length === 0 ? t("noOrdersDesc") : ""}</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", marginBottom:3 }}>{t("noPendingOrders")}</div>
+                      <div style={{ fontSize:12, color:"#9DB5B9" }}>{t("noOrdersDesc")}</div>
                     </div>
-                  ) : current.items.map((o, idx) => {
+                  ) : shownItems.map((o, idx) => {
                     const borderColor = PRIORITY_META[orderPriority(o)].color;
                     const s = orderSummary(o);
                     return (
