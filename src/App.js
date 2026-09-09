@@ -514,6 +514,95 @@ const SectionTitle = ({ children }) => (
   </div>
 );
 
+// ─── MODERN PICKERS (bottom sheets, styled to match the app) ─────────────
+const SheetShell = ({ maxW = 500, onClose, children }) => (
+  <>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(20,25,25,0.45)", zIndex:3000 }}/>
+    <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:maxW, background:"#fff", borderRadius:"26px 26px 0 0", zIndex:3001, maxHeight:"78vh", display:"flex", flexDirection:"column", paddingBottom:"max(20px, env(safe-area-inset-bottom, 20px))", animation:"fadeUp 0.22s ease" }}>
+      <div style={{ padding:"12px 0 4px", display:"flex", justifyContent:"center", flexShrink:0 }}>
+        <div style={{ width:38, height:4, borderRadius:2, background:"#E3DED4" }}/>
+      </div>
+      {children}
+    </div>
+  </>
+);
+
+const SelectSheet = ({ open, title, options, value, onSelect, onClose, maxW }) => {
+  if (!open) return null;
+  return (
+    <SheetShell maxW={maxW} onClose={onClose}>
+      <div style={{ padding:"8px 24px 12px", fontSize:17, fontWeight:800, color:"#1B3F45", flexShrink:0 }}>{title}</div>
+      <div style={{ overflowY:"auto", padding:"0 14px 6px" }}>
+        {options.map(opt => {
+          const sel = String(opt.value) === String(value);
+          return (
+            <button key={opt.value} onClick={()=>{ onSelect(opt.value); onClose(); }}
+              style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, padding:"15px 14px", background: sel ? "#F0F6F7" : "transparent", border:"none", borderRadius:14, cursor:"pointer", textAlign:"left", marginBottom:2 }}>
+              <span style={{ fontSize:15, fontWeight: sel ? 700 : 500, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{opt.label}</span>
+              {sel && <Icon name="check" size={18} color="#198038"/>}
+            </button>
+          );
+        })}
+      </div>
+    </SheetShell>
+  );
+};
+
+const DateSheet = ({ open, value, onSelect, onClose, maxW, lang }) => {
+  const base = value ? new Date(value + "T12:00:00") : new Date();
+  const [ym, setYm] = React.useState({ y: base.getFullYear(), m: base.getMonth() });
+  React.useEffect(() => { if (open) setYm({ y: base.getFullYear(), m: base.getMonth() }); // eslint-disable-next-line
+  }, [open]);
+  if (!open) return null;
+  const iso = (y,m,d) => `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  const todayIso = new Date().toISOString().split("T")[0];
+  const monthNames = lang === "de"
+    ? ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"]
+    : ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const dow = lang === "de" ? ["Mo","Di","Mi","Do","Fr","Sa","So"] : ["Mo","Tu","We","Th","Fr","Sa","Su"];
+  const first = new Date(ym.y, ym.m, 1);
+  const startDow = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(ym.y, ym.m + 1, 0).getDate();
+  const cells = [...Array(startDow).fill(null), ...Array.from({length: daysInMonth}, (_,i)=>i+1)];
+  const shift = (delta) => setYm(({y,m}) => { const nm = m + delta; return { y: y + Math.floor(nm/12), m: ((nm%12)+12)%12 }; });
+  const navBtn = { width:38, height:38, borderRadius:"50%", background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 };
+  return (
+    <SheetShell maxW={maxW} onClose={onClose}>
+      <div style={{ padding:"8px 22px 10px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+        <button style={navBtn} onClick={()=>shift(-1)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <span style={{ fontSize:16, fontWeight:800, color:"#1B3F45" }}>{monthNames[ym.m]} {ym.y}</span>
+        <button style={navBtn} onClick={()=>shift(1)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+      <div style={{ padding:"0 18px", flexShrink:0 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:4 }}>
+          {dow.map(d => <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:"#9DB5B9", padding:"4px 0" }}>{d}</div>)}
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2 }}>
+          {cells.map((d,i) => {
+            if (d === null) return <div key={`e${i}`}/>;
+            const cellIso = iso(ym.y, ym.m, d);
+            const sel = cellIso === value;
+            const isToday = cellIso === todayIso;
+            return (
+              <button key={d} onClick={()=>{ onSelect(cellIso); onClose(); }}
+                style={{ aspectRatio:"1", border:"none", borderRadius:"50%", cursor:"pointer",
+                  background: sel ? "#1B3F45" : "transparent",
+                  color: sel ? "#fff" : isToday ? "#C9933A" : "#1B3F45",
+                  fontSize:15, fontWeight: sel || isToday ? 800 : 500, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {d}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ display:"flex", gap:8, padding:"14px 18px 4px", flexShrink:0 }}>
+        <button onClick={()=>{ onSelect(todayIso); onClose(); }} style={{ flex:1, padding:"12px", borderRadius:100, border:"1.5px solid #E8E4DC", background:"#fff", fontSize:14, fontWeight:700, color:"#1B3F45", cursor:"pointer" }}>{lang==="de"?"Heute":"Today"}</button>
+        {value && <button onClick={()=>{ onSelect(""); onClose(); }} style={{ flex:1, padding:"12px", borderRadius:100, border:"none", background:"#FFF0F0", fontSize:14, fontWeight:700, color:"#da1e28", cursor:"pointer" }}>{lang==="de"?"Löschen":"Clear"}</button>}
+      </div>
+    </SheetShell>
+  );
+};
+
 // ─── MAIN APP ────────────────────────────────────────────
 export default function App() {
   const [tab, setTab]           = useState("home");
@@ -548,6 +637,8 @@ export default function App() {
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [clientDraft, setClientDraft] = useState(newClient());
   const [filterClient, setFilterClient] = useState("all");
+  const [clientPickerOpen, setClientPickerOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
   const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
@@ -1769,22 +1860,32 @@ export default function App() {
                   })}
                 </div>
 
-                {/* Cliente + Fecha, uno al lado del otro */}
-                <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
-                  {[...new Set(orders.map(o=>o.client).filter(Boolean))].length > 1 && (
-                    <Select value={filterClient} onChange={e=>setFilterClient(e.target.value)} style={{ flex:1, minWidth:0, fontSize:13, padding:"10px 30px 10px 12px", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>
-                      <option value="all">{t("allClients")}</option>
-                      {[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
-                    </Select>
-                  )}
-                  <div style={{ flex:1, minWidth:0, position:"relative" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", zIndex:1 }}>
-                      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                    </svg>
-                    <Input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{ width:"100%", fontSize:13, padding:"10px 12px 10px 36px", color: filterDate?"#1B3F45":"#9DB5B9" }}/>
-                  </div>
-                  {filterDate && <button onClick={()=>setFilterDate("")} style={{ padding:"10px 12px", border:"none", borderRadius:100, background:"#F0F6F7", fontSize:12, fontWeight:700, color:"#5A7A80", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>✕</button>}
-                </div>
+                {/* Cliente + Fecha, uno al lado del otro — pickers propios */}
+                {(() => {
+                  const clientList = [...new Set(orders.map(o=>o.client).filter(Boolean))].sort();
+                  const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
+                  const chev = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>;
+                  const dLabel = filterDate ? new Date(filterDate+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short",year:"numeric"}) : (lang==="de"?"Datum":"Date");
+                  return (
+                    <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
+                      {clientList.length > 1 && (
+                        <button className="ssp-sq" onClick={()=>setClientPickerOpen(true)} style={fieldStyle}>
+                          <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>{filterClient==="all" ? t("allClients") : filterClient}</span>
+                          {chev}
+                        </button>
+                      )}
+                      <button className="ssp-sq" onClick={()=>setDatePickerOpen(true)} style={fieldStyle}>
+                        <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color: filterDate?"#1B3F45":"#5A7A80" }}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={filterDate?"#C9933A":"#9DB5B9"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dLabel}</span>
+                        </span>
+                        {filterDate
+                          ? <span onClick={e=>{ e.stopPropagation(); setFilterDate(""); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>
+                          : chev}
+                      </button>
+                    </div>
+                  );
+                })()}
                 {/* Swipe hint — desaparece tras primera interacción */}
                 {!swipeHintSeen && !selectMode && filteredOrders.length > 0 && (
                   <div style={{ textAlign:"center", fontSize:9, color:"#9DB5B9", fontWeight:500, letterSpacing:"0.04em", marginBottom:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
@@ -3298,6 +3399,25 @@ export default function App() {
         );
       })()}
 
+
+      {/* ── ORDERS FILTER PICKERS ── */}
+      <SelectSheet
+        open={clientPickerOpen}
+        title={lang==="de" ? "Kunde" : "Client"}
+        maxW={SHEET_MAX}
+        value={filterClient}
+        onSelect={setFilterClient}
+        onClose={()=>setClientPickerOpen(false)}
+        options={[{ value:"all", label:t("allClients") }, ...[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=>({ value:c, label:c }))]}
+      />
+      <DateSheet
+        open={datePickerOpen}
+        value={filterDate}
+        lang={lang}
+        maxW={SHEET_MAX}
+        onSelect={setFilterDate}
+        onClose={()=>setDatePickerOpen(false)}
+      />
 
       {/* ── DONE MODAL ── */}
       {doneModal && (
