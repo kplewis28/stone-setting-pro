@@ -1378,7 +1378,7 @@ export default function App() {
             const pills = [["all", lang==="de"?"Alle":"All", active.length, null],
               ...PRIORITY_ORDER.map(p => [p, lang==="de"?PRIORITY_META[p].de:PRIORITY_META[p].en, (groups.find(g=>g.p===p)?.items.length)||0, PRIORITY_META[p].color])];
             return (
-              <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : isTablet ? "0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" : "0 16px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))", display:"flex", flexDirection:"column", gap:12 }}>
+              <div style={{ padding: isDesktop ? "0 40px max(40px,60px)" : isTablet ? "0 32px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))" : "0 22px max(100px, calc(72px + env(safe-area-inset-bottom, 0px)))", display:"flex", flexDirection:"column", gap:12 }}>
 
                 {/* Filtro de urgencia — a lo ancho de la pantalla */}
                 <div style={{ display:"flex", gap:6 }}>
