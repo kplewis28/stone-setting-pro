@@ -1412,7 +1412,7 @@ export default function App() {
                     const s = orderSummary(o);
                     return (
                       <button key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`4px solid ${borderColor}`, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:13 }}>
+                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`5px solid ${borderColor}`, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:13 }}>
                         {/* Contador de piezas */}
                         <div style={{ minWidth:46, height:46, borderRadius:12, background:"#F2EDE4", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flexShrink:0, padding:"0 6px" }}>
                           <span style={{ fontSize:17, fontWeight:900, color:"#1B3F45", lineHeight:1 }}>{s.pieces || "—"}</span>
@@ -1878,6 +1878,7 @@ export default function App() {
                         }}
                         style={{ position:"relative", transform:`translateX(${swipeDx}px)`, transition: isMoving?"none":"transform 0.3s ease",
                           background: isChecked?"#FFF3F0":"white", border: isChecked?"2px solid #da1e2840":"1.5px solid #F0EDE8",
+                          borderLeft: `5px solid ${(C.statuses[o.status]||{}).color || "#E8E4DC"}`,
                           borderRadius:20, padding:"18px 16px", display:"flex", alignItems:"stretch", gap:14,
                           cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", userSelect:"none" }}>
 
