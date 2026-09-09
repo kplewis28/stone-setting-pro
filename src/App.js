@@ -516,15 +516,15 @@ const SectionTitle = ({ children }) => (
 
 // ─── MODERN PICKERS (bottom sheets, styled to match the app) ─────────────
 const SheetShell = ({ maxW = 500, onClose, children }) => (
-  <>
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(20,25,25,0.45)", zIndex:3000 }}/>
-    <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:maxW, background:"#fff", borderRadius:"26px 26px 0 0", zIndex:3001, maxHeight:"78vh", display:"flex", flexDirection:"column", paddingBottom:"max(20px, env(safe-area-inset-bottom, 20px))", animation:"fadeUp 0.22s ease" }}>
+  <div style={{ position:"fixed", inset:0, zIndex:3000, display:"flex", justifyContent:"center", alignItems:"flex-end" }}>
+    <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(20,25,25,0.45)" }}/>
+    <div style={{ position:"relative", width:"100%", maxWidth:maxW, background:"#fff", borderRadius:"26px 26px 0 0", maxHeight:"80vh", display:"flex", flexDirection:"column", paddingBottom:"max(20px, env(safe-area-inset-bottom, 20px))", animation:"fadeUp 0.22s ease" }}>
       <div style={{ padding:"12px 0 4px", display:"flex", justifyContent:"center", flexShrink:0 }}>
         <div style={{ width:38, height:4, borderRadius:2, background:"#E3DED4" }}/>
       </div>
       {children}
     </div>
-  </>
+  </div>
 );
 
 const SelectSheet = ({ open, title, options, value, onSelect, onClose, maxW }) => {
@@ -603,6 +603,46 @@ const DateSheet = ({ open, value, onSelect, onClose, maxW, lang }) => {
   );
 };
 
+// Month/year picker — value is "YYYY-MM"
+const MonthSheet = ({ open, value, onSelect, onClose, maxW, lang }) => {
+  const nowY = new Date().getFullYear();
+  const nowM = new Date().getMonth();
+  const [year, setYear] = React.useState(() => value ? parseInt(value.split("-")[0]) : nowY);
+  React.useEffect(() => { if (open) setYear(value ? parseInt(value.split("-")[0]) : nowY); // eslint-disable-next-line
+  }, [open]);
+  if (!open) return null;
+  const mShort = lang === "de"
+    ? ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"]
+    : ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const [selY, selM] = value ? value.split("-").map(Number) : [null, null];
+  const navBtn = { width:38, height:38, borderRadius:"50%", background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 };
+  return (
+    <SheetShell maxW={maxW} onClose={onClose}>
+      <div style={{ padding:"8px 22px 12px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+        <button style={navBtn} onClick={()=>setYear(y=>y-1)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <span style={{ fontSize:17, fontWeight:800, color:"#1B3F45" }}>{year}</span>
+        <button style={{ ...navBtn, opacity: year >= nowY ? 0.35 : 1 }} disabled={year >= nowY} onClick={()=>setYear(y=>Math.min(nowY, y+1))}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, padding:"0 18px 6px" }}>
+        {mShort.map((name, m) => {
+          const future = year > nowY || (year === nowY && m > nowM);
+          const sel = selY === year && (selM - 1) === m;
+          const isCur = year === nowY && m === nowM;
+          return (
+            <button key={m} disabled={future} onClick={()=>{ onSelect(`${year}-${String(m+1).padStart(2,"0")}`); onClose(); }}
+              style={{ padding:"14px 0", borderRadius:14, border: sel ? "none" : "1.5px solid #E8E4DC", cursor: future ? "default" : "pointer",
+                background: sel ? "#1B3F45" : "#fff",
+                color: future ? "#C6C6C6" : sel ? "#fff" : isCur ? "#C9933A" : "#1B3F45",
+                fontSize:14, fontWeight: sel || isCur ? 800 : 600 }}>
+              {name}
+            </button>
+          );
+        })}
+      </div>
+    </SheetShell>
+  );
+};
+
 // ─── MAIN APP ────────────────────────────────────────────
 export default function App() {
   const [tab, setTab]           = useState("home");
@@ -623,6 +663,8 @@ export default function App() {
   const [statsMonth, setStatsMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [statsClientFilter, setStatsClientFilter] = useState("all");
   const [statsStatusFilter, setStatsStatusFilter] = useState("all");
+  const [statsClientPickerOpen, setStatsClientPickerOpen] = useState(false);
+  const [statsMonthPickerOpen, setStatsMonthPickerOpen] = useState(false);
   const [statsMetric, setStatsMetric] = useState("revenue"); // "orders"|"revenue"|"units"|"clients"
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
@@ -1653,23 +1695,29 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Client filter — same Select as Orders/Invoice */}
-              <div style={{ marginBottom:10 }}>
-                <Select value={statsClientFilter} onChange={e=>setStatsClientFilter(e.target.value)} style={{ fontSize:13, padding:"10px 36px 10px 12px", color:statsClientFilter!=="all"?"#1B3F45":"#5A7A80" }}>
-                  <option value="all">{lang==="de"?"Alle Kunden":"All clients"}</option>
-                  {clients.map(c=><option key={c.id} value={c.id}>{c.company||c.name}</option>)}
-                </Select>
-              </div>
-
-              {/* Month picker with calendar icon */}
-              <div style={{ position:"relative", display:"flex", alignItems:"center" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute", left:12, pointerEvents:"none", zIndex:1 }}>
-                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <input type="month" value={statsMonth} max={new Date().toISOString().slice(0,7)}
-                  onChange={e=>{ if(e.target.value) setStatsMonth(e.target.value); }}
-                  style={{ ...selectBase, paddingLeft:36, fontSize:13, color:"#1B3F45" }}/>
-              </div>
+              {/* Cliente + Mes — pickers propios */}
+              {(() => {
+                const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
+                const chev = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>;
+                const cSel = clients.find(c=>c.id===statsClientFilter);
+                const cLabel = statsClientFilter==="all" ? (lang==="de"?"Alle Kunden":"All clients") : (cSel ? (cSel.company||cSel.name) : statsClientFilter);
+                const mLabel = new Date(statsMonth+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"long",year:"numeric"});
+                return (
+                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                    <button className="ssp-sq" onClick={()=>setStatsClientPickerOpen(true)} style={fieldStyle}>
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: statsClientFilter!=="all"?"#1B3F45":"#5A7A80" }}>{cLabel}</span>
+                      {chev}
+                    </button>
+                    <button className="ssp-sq" onClick={()=>setStatsMonthPickerOpen(true)} style={fieldStyle}>
+                      <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color:"#1B3F45" }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{mLabel}</span>
+                      </span>
+                      {chev}
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
 
             <div style={{ padding: pad }}>
@@ -3453,6 +3501,23 @@ export default function App() {
         maxW={SHEET_MAX}
         onSelect={setFilterInvDate}
         onClose={()=>setInvDatePickerOpen(false)}
+      />
+      <SelectSheet
+        open={statsClientPickerOpen}
+        title={lang==="de" ? "Kunde" : "Client"}
+        maxW={SHEET_MAX}
+        value={statsClientFilter}
+        onSelect={setStatsClientFilter}
+        onClose={()=>setStatsClientPickerOpen(false)}
+        options={[{ value:"all", label:lang==="de"?"Alle Kunden":"All clients" }, ...clients.map(c=>({ value:c.id, label:c.company||c.name }))]}
+      />
+      <MonthSheet
+        open={statsMonthPickerOpen}
+        value={statsMonth}
+        lang={lang}
+        maxW={SHEET_MAX}
+        onSelect={(v)=>{ if(v) setStatsMonth(v); }}
+        onClose={()=>setStatsMonthPickerOpen(false)}
       />
 
       {/* ── DONE MODAL ── */}
