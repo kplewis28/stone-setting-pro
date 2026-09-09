@@ -1825,17 +1825,12 @@ export default function App() {
           {/* HEADER */}
           <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              {/* Left: date block (list) or back + title (other views) */}
+              {/* Left: title (list) or back + title (other views) */}
               {view==="list" ? (
-                <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                  {/* Today's date block */}
-                  <div style={{ background:"#1B3F45", borderRadius:16, padding:"8px 14px", textAlign:"center", minWidth:54, flexShrink:0 }}>
-                    <div style={{ fontSize:28, fontWeight:900, color:"white", lineHeight:1 }}>{new Date().getDate()}</div>
-                    <div style={{ fontSize:10, fontWeight:700, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", textTransform:"uppercase", marginTop:1 }}>{new Date().toLocaleDateString("en-US",{month:"short"})}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize:12, color:"#9DB5B9", fontWeight:500, marginBottom:2 }}>{new Date().toLocaleDateString("en-US",{weekday:"long"})}</div>
-                    <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1 }}>Orders</div>
+                <div>
+                  <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("ordersHeader")}</div>
+                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>
+                    {orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}
                   </div>
                 </div>
               ) : (
