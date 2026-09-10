@@ -22,6 +22,33 @@ const CONFIG = {
   accentColor: "#C9933A",
   serviceTypes: ["Pavé", "Bezel", "Prong", "Channel", "Flush", "Invisible"],
   itemCategories: ["Diamond", "Ruby", "Emerald", "Sapphire", "Amethyst", "Other"],
+  // Per-stone setting price (CHF) — Preisliste 2026. Keyword-matched against
+  // what David types in the "Stone" field, then by size bracket [maxMM, price].
+  // Diamonds are the cheap grain/covered rates; colour stones cost more.
+  // Pre-filled on the invoice, always editable.
+  stoneRates: {
+    brackets: {
+      "abgedeckt":  [[2.0, 13], [4.0, 22]],
+      "eingerieb":  [[2.5, 17], [4.0, 30], [5.5, 45]],
+      "carré":      [[999, 23]], "carre": [[999, 23]],
+      "korn":       [[2.0, 14], [4.0, 17]],
+      "verschnitt": [[2.0, 14], [4.0, 17]],
+      "brill":      [[2.0, 14], [4.0, 17]],
+      "diamant":    [[2.0, 14], [4.0, 17]],
+      "pavé":       [[2.0, 14], [4.0, 17]], "pave": [[2.0, 14], [4.0, 17]],
+      "smaragd":  [[999, 25]], "emerald": [[999, 25]],
+      "rubin":    [[999, 22]], "ruby": [[999, 22]],
+      "saphir":   [[999, 22]], "sapphire": [[999, 22]],
+      "farbstein":[[999, 25]],
+      "zargen":   [[999, 70]], "rechteck": [[999, 90]],
+      "griff":    [[999, 25]],
+    },
+    default: 15,
+    // exact client (company or name) → per-stone adjustment on top of the base
+    clientRates: {
+      "Lohri AG": { add: 1 },   // special client: pays 15 where base is 14, etc.
+    },
+  },
   fieldLabel: "Stone",
   subFieldLabel: "Setting",
   piecesLabel: "Pieces",
@@ -158,6 +185,10 @@ const TRANS = {
     descriptionLabel:"Description",
     pieceLabel:"Piece",
     unitsLabel:"Units",
+    stonesLabel:"Stones to set", stoneTypePh:"e.g. Diamond", stoneSizePh:"Size", addStoneBtn:"Add stone",
+    stoneTypeCol:"Stone", stoneSizeCol:"Size", stoneQtyCol:"Qty", stonePriceCol:"Price / stone",
+    stonesInvoiceHint:"Enter how many you set \u2014 price is pre-filled, adjust if needed", noStonesYet:"No stones yet \u2014 add the stones you'll set into this piece",
+    pieceDescLabel:"Piece", pieceCountLabel:"Identical pieces", photoOptional:"Add photo (optional)", duplicateBtn:"Duplicate",
     descPiecePlaceholder:"Describe the work to be done\u2026",
     itemsForInvoice:"Items for invoice",
     addItemBtn:"+ Add item",
@@ -301,6 +332,10 @@ const TRANS = {
     descriptionLabel:"Beschreibung",
     pieceLabel:"St\u00fcck",
     unitsLabel:"Einheiten",
+    stonesLabel:"Zu fassende Steine", stoneTypePh:"z.B. Brillant", stoneSizePh:"Gr\u00f6sse", addStoneBtn:"Stein hinzuf\u00fcgen",
+    stoneTypeCol:"Stein", stoneSizeCol:"Grösse", stoneQtyCol:"Anz.", stonePriceCol:"Preis / Stein",
+    stonesInvoiceHint:"Anzahl eingeben \u2014 Preis ist vorausgef\u00fcllt, bei Bedarf anpassen", noStonesYet:"Noch keine Steine \u2014 f\u00fcge die Steine hinzu, die du in dieses St\u00fcck fasst",
+    pieceDescLabel:"St\u00fcck", pieceCountLabel:"Gleiche St\u00fccke", photoOptional:"Foto hinzuf\u00fcgen (optional)", duplicateBtn:"Duplizieren",
     descPiecePlaceholder:"Zu erledigende Arbeit beschreiben\u2026",
     itemsForInvoice:"Artikel f\u00fcr Rechnung",
     addItemBtn:"+ Artikel hinzuf\u00fcgen",
@@ -354,7 +389,63 @@ const orderPriority = o => (o && PRIORITY_META[o.priority]) ? o.priority : "norm
 
 const newOrder     = () => ({ id: String(Date.now()).slice(-4), client:"", clientId:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", description:"", deadline:"", priority:"normal", pieces:"", status:"received", notes:"", amount:0, lineItems:[] });
 const newClient    = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
-const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", qty:"1", unitPrice:"", price:"", stones:[] });
+const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", count:"1", qty:"1", unitPrice:"", price:"", stones:[] });
+const newStone     = () => ({ id: Date.now()+Math.random(), type:"", size:"", qty:"", price:"" });
+const cloneStones  = (arr) => (arr||[]).map(s => ({ ...s, id: Date.now()+Math.random() }));
+// Default price to set one stone of a given type (CHF), pre-filled on invoices.
+const parseMM      = (s) => { const m = String(s || "").match(/(\d+(?:[.,]\d+)?)\s*mm|(\d+(?:[.,]\d+)?)/i); const v = m && (m[1] || m[2]); return v ? parseFloat(v.replace(",", ".")) : null; };
+const stoneRate    = (type, size, client) => {
+  const R = C.stoneRates;
+  const hay = `${type || ""} ${size || ""}`.toLowerCase();          // match keyword in either field
+  const mm  = parseMM(size) ?? parseMM(type);                        // size may be typed into the type field
+  let base = R.default;
+  for (const [k, brackets] of Object.entries(R.brackets)) {
+    if (hay.includes(k)) {
+      const b = brackets.find(([max]) => mm == null || mm <= max) || brackets[brackets.length - 1];
+      base = b[1];
+      break;
+    }
+  }
+  const ov = client && R.clientRates[client];
+  if (ov) {
+    if (ov.factor) base = Math.round(base * ov.factor * 100) / 100;
+    if (ov.add) base = base + ov.add;
+  }
+  return base;
+};
+const fmtMM = n => String(n).replace(/\.0$/, "");
+// Collapse a piece's stones into price groups so the invoice shows
+// "3× bis 2.0 mm à CHF 14 = CHF 42" instead of a line per stone.
+const stoneGroups = (stones) => {
+  const g = [];
+  (stones || []).forEach(s => {
+    const qty = parseFloat(s.qty) || 0, u = parseFloat(s.price) || 0;
+    const mm  = parseMM(s.size) ?? parseMM(s.type);
+    const type = (s.type || "").trim();
+    let hit = g.find(x => x.u === u);
+    if (!hit) { hit = { u, qty: 0, mm: [], types: new Set() }; g.push(hit); }
+    hit.qty += qty;
+    if (mm != null) hit.mm.push(mm);
+    if (type) hit.types.add(type);
+  });
+  return g
+    .map(x => {
+      const mn = x.mm.length ? Math.min(...x.mm) : null;
+      const mx = x.mm.length ? Math.max(...x.mm) : null;
+      let range = "";
+      if (mn != null) {
+        if (mn === mx) range = `${fmtMM(mn)} mm`;
+        else if (mx <= 2) range = "bis 2.0 mm";
+        else if (mn > 2) range = "über 2.0 mm";
+        else range = `${fmtMM(mn)}–${fmtMM(mx)} mm`;
+      }
+      const type = x.types.size === 1 ? [...x.types][0] : "";
+      return { label: [type, range].filter(Boolean).join(" ") || "Steine", u: x.u, qty: x.qty, sort: mn == null ? 1e9 : mn };
+    })
+    .sort((a, b) => a.sort - b.sort);
+};
+// A piece total: (identical count) × sum of its stones (qty × price) when it has
+// any; otherwise (count ×) the legacy qty × unit-price.
 const lineTotal    = it => {
   const count = parseFloat(it.count) || 1;
   if (Array.isArray(it.stones) && it.stones.length)
@@ -520,6 +611,78 @@ const SectionTitle = ({ children }) => (
     {children}
   </div>
 );
+
+// ─── STONES EDITOR ──────────────────────────────────────────────────────
+// Order phase: type + size only. Invoice phase (showPrice): + qty × price.
+const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList = [], priceFor }) => {
+  const upd = (id, patch) => onChange(stones.map(s => s.id === id ? { ...s, ...patch } : s));
+  const setTypeSize = (s, patch) => upd(s.id, priceFor ? { ...patch, price: String(priceFor({ ...s, ...patch }.type, { ...s, ...patch }.size)) } : patch);
+  const del = (id) => onChange(stones.filter(x => x.id !== id));
+  const dup = (s) => { const i = stones.findIndex(x => x.id === s.id); const arr = [...stones]; arr.splice(i+1, 0, { ...s, id: Date.now()+Math.random() }); onChange(arr); };
+  const inp = { padding:"10px 11px", border:"1.5px solid #E8E4DC", borderRadius:11, fontSize:14, color:"#1B3F45", outline:"none", background:"#fff", minWidth:0, boxSizing:"border-box", fontFamily:"inherit" };
+  const iconBtn = { background:"none", border:"none", cursor:"pointer", padding:5, flexShrink:0, display:"flex" };
+  const copyIcon = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>;
+  const delIcon = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C8C4BC" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>;
+  return (
+    <div>
+      <div style={{ fontSize:12, fontWeight:800, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:8 }}>{t("stonesLabel")}</div>
+      {stones.length === 0 && <div style={{ fontSize:13, color:"#9DB5B9", marginBottom:10 }}>{t("noStonesYet")}</div>}
+      <datalist id="ssp-stonetypes">{typeList.map(x => <option key={x} value={x}/>)}</datalist>
+
+      {showPrice ? stones.map(s => {
+        const line = (parseFloat(s.qty)||0) * (parseFloat(s.price)||0);
+        const miniLbl = { fontSize:10, fontWeight:800, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:5, display:"block" };
+        return (
+          <div key={s.id} style={{ background:"#fff", border:"1px solid #E8E4DC", borderRadius:14, padding:"12px 12px 13px", marginBottom:9 }}>
+            {/* Stone + size + actions */}
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:11 }}>
+              <input list="ssp-stonetypes" value={s.type} onChange={e=>setTypeSize(s,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1, fontWeight:600 }}/>
+              <input value={s.size} onChange={e=>setTypeSize(s,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:72, textAlign:"center", padding:"10px 4px" }}/>
+              <button onClick={()=>dup(s)} style={iconBtn} aria-label="duplicate">{copyIcon}</button>
+              <button onClick={()=>del(s.id)} style={iconBtn} aria-label="delete">{delIcon}</button>
+            </div>
+            {/* Qty · price · total — aligned columns */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:10, alignItems:"end" }}>
+              <div>
+                <span style={miniLbl}>{t("stoneQtyCol")}</span>
+                <input value={s.qty} onChange={e=>upd(s.id,{qty:e.target.value})} type="number" inputMode="numeric" placeholder="0" style={{ ...inp, width:"100%", textAlign:"center", fontWeight:800 }}/>
+              </div>
+              <div>
+                <span style={miniLbl}>{t("stonePriceCol")}</span>
+                <input value={s.price} onChange={e=>upd(s.id,{price:e.target.value})} type="number" inputMode="decimal" placeholder="—" style={{ ...inp, width:"100%", textAlign:"center" }}/>
+              </div>
+              <div style={{ textAlign:"right", paddingBottom:10, minWidth:72 }}>
+                <span style={{ ...miniLbl, marginBottom:3 }}>{t("totalLabel")}</span>
+                <span style={{ fontSize:15, fontWeight:900, color: line>0 ? "#1B3F45" : "#C8C4BC", letterSpacing:"-0.01em" }}>{line>0 ? line.toFixed(2) : "—"}</span>
+              </div>
+            </div>
+          </div>
+        );
+      }) : (<>
+        {stones.length > 0 && (
+          <div style={{ display:"flex", gap:6, marginBottom:4, padding:"0 2px" }}>
+            <span style={{ flex:1, fontSize:10, fontWeight:800, color:"#C8C4BC", textTransform:"uppercase", letterSpacing:"0.05em" }}>{t("stoneTypeCol")}</span>
+            <span style={{ width:64, fontSize:10, fontWeight:800, color:"#C8C4BC", textTransform:"uppercase", letterSpacing:"0.05em" }}>{t("stoneSizeCol")}</span>
+            <span style={{ width:52 }}/>
+          </div>
+        )}
+        {stones.map(s => (
+          <div key={s.id} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+            <input list="ssp-stonetypes" value={s.type} onChange={e=>upd(s.id,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1 }}/>
+            <input value={s.size} onChange={e=>upd(s.id,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:64, textAlign:"center", padding:"10px 4px" }}/>
+            <button onClick={()=>dup(s)} style={iconBtn}>{copyIcon}</button>
+            <button onClick={()=>del(s.id)} style={iconBtn}>{delIcon}</button>
+          </div>
+        ))}
+      </>)}
+
+      <button onClick={()=>onChange([...stones, newStone()])} style={{ display:"flex", alignItems:"center", gap:7, padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:100, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", marginTop:4 }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        {t("addStoneBtn")}
+      </button>
+    </div>
+  );
+};
 
 // ─── MODERN PICKERS (bottom sheets, styled to match the app) ─────────────
 const SheetShell = ({ maxW = 500, onClose, children }) => (
@@ -855,8 +1018,12 @@ export default function App() {
 
   // "what is this order" — piece count + first-piece description (fallbacks: instructions, stone·setting)
   const orderSummary = (o) => {
-    const li = (o.lineItems || []).filter(x => x.desc);
-    const pieces = li.reduce((s,x)=>s+(parseInt(x.qty)||0),0) || parseInt(o.pieces) || 0;
+    const li = (o.lineItems || []).filter(x => x.desc || (x.stones||[]).length);
+    const hasStones = li.some(x => (x.stones||[]).length);
+    const stoneQty = li.reduce((s,x)=>s + (x.stones||[]).reduce((a,st)=>a+(parseInt(st.qty)||0),0), 0);
+    const pieces = hasStones
+      ? (stoneQty || li.reduce((s,x)=>s+(parseInt(x.count)||1),0))
+      : (li.reduce((s,x)=>s+(parseInt(x.qty)||0),0) || parseInt(o.pieces) || 0);
     let what = li[0]?.desc || o.description || [o.field1, o.field2].filter(Boolean).join(" · ") || "";
     if(/handwritten|scanned|extract/i.test(what)) what = lang==="de" ? "Gescannter Auftrag" : "Scanned order";
     if(what.length > 44) what = what.slice(0,44) + "…";
@@ -925,7 +1092,7 @@ export default function App() {
     setInvDate(new Date().toISOString().split("T")[0]);
     setInvPorto("");
     const invoiceItems = (o.lineItems||[]).length > 0
-      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc||"", count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:st.price!=null&&st.price!==""?String(st.price):"" })) }))
+      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc||"", count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:String(stoneRate(st.type, st.size, o.client)) })) }))
       : [{ id:Date.now()+Math.random(), desc: o.description||`Order #${o.id}`, qty:"1", unitPrice:String(o.amount||""), price:String(o.amount||""), orderRef:o.id }];
     setItems(invoiceItems);
     setInvNumber(genClientInvNumber(invoices, o.client));
@@ -941,16 +1108,21 @@ export default function App() {
     const mwst   = sub * C.taxRate;
     const total  = roundCHF(sub + porto + mwst);
     const esc = s => String(s||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    // Every item ALWAYS produces at least one row.
+    // Every item ALWAYS produces at least one row. A piece with priced stones is
+    // ONE row: piece name + a small breakdown grouped by Preisliste tier
+    // (e.g. "3× Brillant bis 2 mm à CHF 14,00 = CHF 42,00"). ANZ. = number of
+    // identical pieces, STÜCKPREIS = price of one piece, BETRAG = ANZ × STÜCKPREIS.
     const rowsHtml = inv.items.map(it => {
       const cnt = parseFloat(it.count) || 1;
       const priced = (it.stones || []).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
       if (priced.length) {
-        return priced.map(s => {
-          const q = (parseFloat(s.qty)||0) * cnt, u = parseFloat(s.price)||0;
-          const label = [it.desc, [s.type, s.size].filter(Boolean).join(" ")].filter(Boolean).join(" — ");
-          return `<tr><td>${esc(label) || "—"}</td><td class="right">${q||""}</td><td class="right">${u ? fmtCHF(u) : ""}</td><td class="right">${(q&&u) ? fmtCHF(q*u) : ""}</td></tr>`;
-        }).join("");
+        const pieceUnit = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0) * (parseFloat(s.price)||0), 0);
+        const betrag = pieceUnit * cnt;
+        const breakdown = stoneGroups(priced).map(g => {
+          const line = `${g.qty}× ${esc(g.label)}`;
+          return g.u ? `${line} à ${fmtCHF(g.u)} = ${fmtCHF(g.qty * g.u)}` : line;
+        }).join("<br>");
+        return `<tbody class="piece-group"><tr class="piece"><td>${esc(it.desc) || "—"}<div class="stone-line">${breakdown}</div></td><td class="right">${cnt}</td><td class="right">${pieceUnit ? fmtCHF(pieceUnit) : ""}</td><td class="right">${betrag ? fmtCHF(betrag) : ""}</td></tr></tbody>`;
       }
       // no priced stones — fall back to one row for the item itself
       const qty  = parseFloat(it.qty) || 1;
@@ -959,7 +1131,7 @@ export default function App() {
       const label = (it.stones || []).length
         ? [it.desc, (it.stones || []).map(s => [s.type, s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
         : (it.desc || "—");
-      return `<tr><td>${esc(label)}</td><td class="right">${qty}</td><td class="right">${unit ? fmtCHF(unit) : "—"}</td><td class="right">${tot ? fmtCHF(tot) : "—"}</td></tr>`;
+      return `<tbody><tr><td>${esc(label)}</td><td class="right">${qty}</td><td class="right">${unit ? fmtCHF(unit) : "—"}</td><td class="right">${tot ? fmtCHF(tot) : "—"}</td></tr></tbody>`;
     }).join("");
 
     // Build recipient block — avoid repeating client name if address already starts with it
@@ -979,7 +1151,7 @@ export default function App() {
   .page { width: 100%; max-width: 176mm; margin: 0 auto; padding: 0; }
   .logo { margin-bottom: 14px; }
   .address { font-size:8.5pt; color:#555; margin-bottom:18px; line-height:1.6; }
-  .rechnung-title { font-size:17pt; font-weight:bold; letter-spacing:3px; color:#8E8E93; border:2.5px solid #C7C7CC; display:inline-block; padding:3px 10px; margin-bottom:4px; text-transform:uppercase; }
+  .rechnung-title { font-size:17pt; font-weight:bold; letter-spacing:3px; color:#1B3F45; border:2.5px solid #1B3F45; display:inline-block; padding:3px 10px; margin-bottom:4px; text-transform:uppercase; }
   .datum { font-size:9.5pt; font-weight:bold; margin-bottom:0; }
   .recipient-block { float:right; text-align:left; font-size:9.5pt; line-height:1.7; margin-top:-64px; margin-bottom:20px; min-width:180px; }
   .clearfix::after { content:""; display:table; clear:both; }
@@ -989,6 +1161,9 @@ export default function App() {
   thead th.right { text-align:right; }
   tbody tr td { padding:5px 8px; border-bottom:1px solid #e8e8e8; font-size:9.5pt; }
   tbody tr td.right { text-align:right; }
+  tbody tr.piece td { font-weight:bold; vertical-align:top; }
+  .stone-line { font-size:8pt; font-weight:normal; color:#4a4a4a; margin-top:3px; line-height:1.55; }
+  .muted { color:#999; font-weight:normal; }
   .totals td { padding:3px 8px; font-size:9.5pt; }
   .totals td.right { text-align:right; }
   .totals .total-row td { font-weight:bold; font-size:11pt; border-top:1.5px solid #222; padding-top:6px; }
@@ -1000,11 +1175,13 @@ export default function App() {
   .back-btn { position:fixed; top:14px; right:14px; z-index:9999; }
   .back-btn button { background:#1B3F45; color:white; border:none; border-radius:10px; padding:10px 18px; font-size:13pt; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; }
   @media print {
-    @page { size: A4 portrait; margin: 12mm 14mm; }
+    /* margin:0 so the browser prints no URL/date header or footer;
+       the page's own padding provides the white border instead. */
+    @page { size: A4 portrait; margin: 0; }
     html, body { margin:0; padding:0; }
-    .page { max-width:100%; }
+    .page { max-width:100%; padding:14mm 14mm 12mm; }
     .back-btn { display:none; }
-    tr, td, tbody, table, .bank-section, .thanks, .totals { page-break-inside: avoid; }
+    tr, td, tbody, table, .bank-section, .thanks, .totals, tbody.piece-group { page-break-inside: avoid; }
   }
 </style></head>
 <body>
@@ -1026,7 +1203,7 @@ export default function App() {
   </div>
   <table>
     <thead><tr><th style="width:50%">BESCHREIBUNG</th><th class="right" style="width:10%">ANZ.</th><th class="right" style="width:20%">STÜCKPREIS</th><th class="right" style="width:20%">BETRAG</th></tr></thead>
-    <tbody>${rowsHtml}</tbody>
+    ${rowsHtml}
   </table>
   <table class="totals" style="margin-top:0;">
     <tbody>
@@ -1052,7 +1229,7 @@ export default function App() {
   </div>
 </div>
 </div>
-  ${["<","script>(function(){function fit(){try{var p=document.querySelector('.page');if(!p)return;var dpi=96;var availH=(297-24)/25.4*dpi;var availW=(210-28)/25.4*dpi;var s=Math.min(1, availH/p.scrollHeight, availW/p.scrollWidth);var f=document.getElementById('fit');if(s<1){p.style.transformOrigin='top center';p.style.transform='scale('+s+')';f.style.height=(p.scrollHeight*s)+'px';f.style.overflow='hidden';}else{p.style.transform='';f.style.height='';}}catch(e){}}",
+  ${["<","script>(function(){function fit(){try{var p=document.querySelector('.page');if(!p)return;var dpi=96;var availH=297/25.4*dpi;var availW=210/25.4*dpi;var s=Math.min(1, availH/p.scrollHeight, availW/p.scrollWidth);var f=document.getElementById('fit');if(s<1){p.style.transformOrigin='top center';p.style.transform='scale('+s+')';f.style.height=(p.scrollHeight*s)+'px';f.style.overflow='hidden';}else{p.style.transform='';f.style.height='';}}catch(e){}}",
      (withPrintScript ? "window.onload=function(){fit();setTimeout(function(){window.print();},60);};" : "window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);"),
      "})();</","script>"].join("")}
 </body></html>`;
@@ -1130,6 +1307,12 @@ export default function App() {
   const printWorkOrder = (order) => {
     const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("de-CH") : "";
     const GOLD = "#B8960C";
+    const escW = s => String(s||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const piecesHtml = (order.lineItems||[]).filter(li=>li.desc||(li.stones||[]).length).map(li=>{
+      const stones = (li.stones||[]).map(s=>`<li>${escW([s.type, s.size].filter(Boolean).join(" ")) || "—"}</li>`).join("");
+      const cnt = (parseInt(li.count)||1) > 1 ? ` &nbsp;×${li.count}` : "";
+      return `<div style="margin-bottom:8px;"><div style="font-weight:600;font-size:10.5pt;">${escW(li.desc||"—")}${cnt}</div>${stones ? `<ul style="margin:3px 0 0 16px;padding:0;font-size:10pt;">${stones}</ul>` : ""}</div>`;
+    }).join("");
     const photoHtml = order.photo
       ? `<img src="${order.photo}" alt="Schmuckstück" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
       : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#C9A84C;font-size:13pt;letter-spacing:0.05em;">[ FOTO DES SCHMUCKSTÜCKS EINFÜGEN ]</div>`;
@@ -1188,6 +1371,8 @@ export default function App() {
   </div>
 
   <div class="photo-box">${photoHtml}</div>
+
+  ${piecesHtml ? `<div class="desc-box" style="margin-bottom:10px;"><div class="desc-label">Stücke &amp; Steine</div>${piecesHtml}</div>` : ""}
 
   <div class="desc-box">
     <div class="desc-label">Arbeitsbeschreibung</div>
@@ -1766,9 +1951,9 @@ export default function App() {
         return (
           <div style={{ animation:"fadeUp 0.3s ease" }}>
             {/* Header — same structure as Orders/Invoice */}
-            <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+            <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
               <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
-              <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{monthLabel}</div>
+              <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{monthLabel}</div>
             </div>
 
             <div style={{ padding: isDesktop?"16px 40px 0":isTablet?"16px 32px 0":"14px 22px 0" }}>
@@ -1985,13 +2170,13 @@ export default function App() {
       {tab==="orders" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* HEADER */}
-          <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+          <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               {/* Left: title (list) or back + title (other views) */}
               {view==="list" ? (
                 <div>
                   <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("ordersHeader")}</div>
-                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>
+                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>
                     {orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}
                   </div>
                 </div>
@@ -2003,7 +2188,7 @@ export default function App() {
                       {view==="new" ? t("newOrderTitle") : view==="edit" ? t("editOrderTitle") : view==="detail" ? selectedOrder?.client : t("ordersHeader")}
                     </div>
                     {view==="detail" && selectedOrder?.orderNumber && (
-                      <div style={{ fontSize:11, fontWeight:600, color:"#9DB5B9", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>Order #{selectedOrder.orderNumber}</div>
+                      <div style={{ fontSize:13, fontWeight:500, color:"#5A7A80", marginTop:6 }}>Order #{selectedOrder.orderNumber}</div>
                     )}
                   </div>
                 </div>
@@ -2266,7 +2451,7 @@ export default function App() {
               const items = draft.lineItems||[];
 
               const dupItem = (li) => {
-                const copy = {...li, id:Date.now()+Math.random()};
+                const copy = {...li, id:Date.now()+Math.random(), stones:cloneStones(li.stones), photo:null};
                 const idx = items.findIndex(i=>i.id===li.id);
                 const arr = [...items]; arr.splice(idx+1,0,copy);
                 setDraft(d=>({...d,lineItems:arr}));
@@ -2361,7 +2546,7 @@ export default function App() {
                         const orderCount = orders.filter(o=>o.clientId===c.id||o.client===name).length;
                         const isSelected = draft.clientId===c.id;
                         return (
-                          <button className="ssp-sq" key={c.id} onClick={()=>{ setDraft(d=>({...d,clientId:c.id,client:name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]})); setTimeout(()=>setNewOrderStep(2), 160); }}
+                          <button className="ssp-sq" key={c.id} onClick={()=>{ setDraft(d=>({...d,clientId:c.id,client:name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",count:"1",qty:"1",unitPrice:"",photo:null,stones:[]}]})); setTimeout(()=>setNewOrderStep(2), 160); }}
                             style={{ width:"100%", background: isSelected?"#F0F6F7":"white", border:"none", borderTop: idx>0?"0.5px solid #E8E4DC":"none", padding:"14px", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
                             <div style={{ width:40, height:40, borderRadius:"50%", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                               <span style={{ fontSize:14, fontWeight:700, color:"#C9933A" }}>{initials}</span>
@@ -2390,7 +2575,7 @@ export default function App() {
                   {/* ── PASO 2: PIEZAS ── */}
                   {newOrderStep === 2 && (
                   <div style={{ padding:"20px 16px 0" }}>
-                    <SectionLabel num="2" text={`${t("addPiecesSection")}${items.length > 0 ? ` · ${items.reduce((s,li)=>s+(parseInt(li.qty)||1),0)} pcs` : ""}`} subtitle={t("addPiecesSub")}/>
+                    <SectionLabel num="2" text={`${t("addPiecesSection")}${items.length > 0 ? ` · ${items.reduce((s,li)=>s+(parseInt(li.count)||1),0)} pcs` : ""}`} subtitle={t("addPiecesSub")}/>
                     <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                       {items.map((li,idx)=>{
                         const isDragging = dragIdx===idx;
@@ -2402,67 +2587,61 @@ export default function App() {
                               border: isOver?"1.5px solid #C9933A":"1px solid #E8E4DC",
                               opacity: isDragging?0.45:1, transition:"opacity 0.15s, border 0.1s" }}>
                             {/* Cabecera */}
-                            <div style={{ display:"flex", alignItems:"center", padding:"10px 12px 10px 0", borderBottom:"0.5px solid #F0F6F7" }}>
+                            <div style={{ display:"flex", alignItems:"center", padding:"10px 10px 10px 0", borderBottom:"0.5px solid #F0F6F7" }}>
                               <div onTouchStart={e=>onHandleTouchStart(e,idx)} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd}
-                                style={{ padding:"6px 12px", cursor:"grab", touchAction:"none", display:"flex", flexDirection:"column", gap:3, opacity:0.35, flexShrink:0 }}>
+                                style={{ padding:"6px 12px", cursor:"grab", touchAction:"none", display:"flex", flexDirection:"column", gap:3, opacity:0.3, flexShrink:0 }}>
                                 {[0,1,2].map(r=><div key={r} style={{ width:16, height:1.5, background:"#1B3F45", borderRadius:1 }}/>)}
                               </div>
                               <span style={{ fontSize:12, fontWeight:800, color:"#1B3F45", letterSpacing:"0.07em", textTransform:"uppercase", flex:1 }}>{t("pieceLabel")} {idx+1}</span>
-                              <div style={{ display:"flex", alignItems:"center" }}>
-                                <button onClick={()=>dupItem(li)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 8px", display:"flex", alignItems:"center" }}>
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A7A80" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                              <button onClick={()=>dupItem(li)} style={{ display:"flex", alignItems:"center", gap:5, background:"#F0F6F7", border:"none", borderRadius:100, cursor:"pointer", padding:"6px 11px", fontSize:12, fontWeight:700, color:"#1B3F45", flexShrink:0 }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                {t("duplicateBtn")}
+                              </button>
+                              {items.length>1 && (
+                                <button onClick={()=>delItem(li.id)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 8px", display:"flex", alignItems:"center", flexShrink:0 }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C8C4BC" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                                 </button>
-                                {items.length>1 && (
-                                  <button onClick={()=>delItem(li.id)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 8px", display:"flex", alignItems:"center" }}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#da1e28" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                                  </button>
-                                )}
-                              </div>
+                              )}
                             </div>
                             {/* Cuerpo */}
-                            <div style={{ padding:"12px 14px 14px" }}>
-                              <textarea placeholder={t("descPiecePlaceholder")} value={li.desc||""}
-                                onChange={e=>updItem(li.id,{desc:e.target.value})}
-                                style={{ width:"100%", minHeight:56, border:"none", outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", lineHeight:1.5, background:"transparent", boxSizing:"border-box", padding:0 }}/>
-                              {/* Qty row */}
-                              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10, paddingTop:10, borderTop:"0.5px solid #F0F6F7" }}>
-                                <span style={{ fontSize:12, fontWeight:700, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", flexShrink:0 }}>{t("unitsLabel")}</span>
-                                <div style={{ display:"flex", alignItems:"center", gap:0, background:"#F7F5F0", borderRadius:10, overflow:"hidden", flex:1 }}>
-                                  <button onClick={()=>{ const cur=Math.max(1,(parseInt(li.qty)||1)-1); updItem(li.id,{qty:String(cur)}); }}
-                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"10px 14px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", flexShrink:0 }}>−</button>
-                                  <input
-                                    type="number" min="1" value={li.qty||""}
-                                    onChange={e=>updItem(li.id,{qty:e.target.value})}
-                                    onBlur={e=>{ if(!e.target.value||parseInt(e.target.value)<1) updItem(li.id,{qty:"1"}); }}
-                                    placeholder="1"
-                                    style={{ flex:1, textAlign:"center", border:"none", outline:"none", background:"transparent", fontSize:16, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", padding:"10px 0", minWidth:0 }}/>
-                                  <button onClick={()=>{ const cur=(parseInt(li.qty)||1)+1; updItem(li.id,{qty:String(cur)}); }}
-                                    style={{ background:"none", border:"none", cursor:"pointer", padding:"10px 14px", fontSize:18, color:"#1B3F45", lineHeight:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", flexShrink:0 }}>+</button>
+                            <div style={{ padding:"14px 14px 14px", display:"flex", flexDirection:"column", gap:14 }}>
+                              {/* 1 · Descripción */}
+                              <div>
+                                <div style={{ fontSize:12, fontWeight:800, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:8 }}>{t("pieceDescLabel")}</div>
+                                <textarea placeholder={t("descPiecePlaceholder")} value={li.desc||""}
+                                  onChange={e=>updItem(li.id,{desc:e.target.value})}
+                                  style={{ width:"100%", minHeight:48, border:"1.5px solid #E8E4DC", borderRadius:11, outline:"none", resize:"none", fontSize:15, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", lineHeight:1.5, background:"#fff", boxSizing:"border-box", padding:"10px 12px" }}/>
+                              </div>
+                              {/* 2 · Cuántas piezas iguales */}
+                              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+                                <span style={{ fontSize:13, fontWeight:700, color:"#5A7A80" }}>{t("pieceCountLabel")}</span>
+                                <div style={{ display:"flex", alignItems:"center", background:"#F7F5F0", borderRadius:100, overflow:"hidden" }}>
+                                  <button onClick={()=>updItem(li.id,{count:String(Math.max(1,(parseInt(li.count)||1)-1))})} style={{ background:"none", border:"none", cursor:"pointer", padding:"8px 16px", fontSize:18, color:"#1B3F45", lineHeight:1 }}>−</button>
+                                  <input type="number" min="1" value={li.count||"1"} onChange={e=>updItem(li.id,{count:e.target.value})} onBlur={e=>{ if(!e.target.value||parseInt(e.target.value)<1) updItem(li.id,{count:"1"}); }}
+                                    style={{ width:36, textAlign:"center", border:"none", outline:"none", background:"transparent", fontSize:16, fontWeight:800, color:"#1B3F45", padding:"8px 0" }}/>
+                                  <button onClick={()=>updItem(li.id,{count:String((parseInt(li.count)||1)+1)})} style={{ background:"none", border:"none", cursor:"pointer", padding:"8px 16px", fontSize:18, color:"#1B3F45", lineHeight:1 }}>+</button>
                                 </div>
                               </div>
-                              {/* Photo section */}
-                              <div style={{ marginTop:10 }}>
-                                {li.photo ? (
-                                  <div style={{ position:"relative", display:"inline-block" }}>
-                                    <img src={li.photo} alt="piece" style={{ width:80, height:80, objectFit:"cover", borderRadius:10, display:"block", border:"1.5px solid #C9933A" }}/>
-                                    <button onClick={()=>updItem(li.id,{photo:null})}
-                                      style={{ position:"absolute", top:-6, right:-6, width:20, height:20, borderRadius:"50%", background:"#da1e28", border:"2px solid white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>
-                                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
-                                    style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 14px", background:"#FBF5E8", border:"1.5px dashed #C9933A", borderRadius:10, cursor:"pointer", width:"100%", justifyContent:"center" }}>
-                                    <Icon name="camera" size={16} color="#C9933A"/>
-                                    <span style={{ fontSize:13, fontWeight:700, color:"#C9933A", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("addPhotoBtn")}</span>
-                                  </button>
-                                )}
-                              </div>
+                              {/* 3 · Piedras */}
+                              <StonesEditor stones={li.stones||[]} onChange={s=>updItem(li.id,{stones:s})} showPrice={false} t={t} currency={C.currency} typeList={C.itemCategories}/>
+                              {/* 4 · Foto (opcional, discreto) */}
+                              {li.photo ? (
+                                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                                  <img src={li.photo} alt="piece" style={{ width:44, height:44, objectFit:"cover", borderRadius:9, display:"block" }}/>
+                                  <button onClick={()=>updItem(li.id,{photo:null})} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, color:"#da1e28", padding:0 }}>{t("cancelBtn")}</button>
+                                </div>
+                              ) : (
+                                <button onClick={()=>{ setEditingPieceId(li.id); piecePhotoRef.current.click(); }}
+                                  style={{ display:"flex", alignItems:"center", gap:7, background:"none", border:"none", cursor:"pointer", padding:0, fontSize:12.5, fontWeight:600, color:"#9DB5B9" }}>
+                                  <Icon name="camera" size={15} color="#9DB5B9"/>
+                                  {t("photoOptional")}
+                                </button>
+                              )}
                             </div>
                           </div>
                         );
                       })}
-                      <button onClick={()=>setDraft(d=>({...d,lineItems:[...(d.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:"",photo:null}]}))}
+                      <button onClick={()=>setDraft(d=>({...d,lineItems:[...(d.lineItems||[]),{id:Date.now()+Math.random(),desc:"",count:"1",qty:"1",unitPrice:"",photo:null,stones:[]}]}))}
                         style={{ width:"100%", border:"1.5px dashed #C9933A", borderRadius:14, background:"none", padding:"15px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:4 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
                         <span style={{ fontSize:14, fontWeight:700, color:"#C9933A", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("addAnotherPieceBtn")}</span>
@@ -2565,7 +2744,7 @@ export default function App() {
                         <button disabled={!sheetClient.name.trim()} onClick={()=>{
                           const nc={...newClient(),name:sheetClient.name.trim(),address:sheetClient.address,phone:sheetClient.phone,email:sheetClient.email};
                           setClients(prev=>[...prev,nc]);
-                          setDraft(d=>({...d,clientId:nc.id,client:nc.name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]}));
+                          setDraft(d=>({...d,clientId:nc.id,client:nc.name,lineItems:d.lineItems?.length?d.lineItems:[{id:Date.now(),desc:"",count:"1",qty:"1",unitPrice:"",photo:null,stones:[]}]}));
                           setNewClientSheet(false);
                           setNewOrderStep(2);
                         }} style={{ width:"100%", padding:"17px", background:sheetClient.name.trim()?"#C9933A":"#E8E4DC",
@@ -2630,15 +2809,11 @@ export default function App() {
                           <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setDraft({...draft,lineItems:draft.lineItems.filter(i=>i.id!==li.id)}))} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}><Icon name="trash" size={14} color="#da1e28"/></button>
                         </div>
                       </div>
-                      <Input placeholder="Description" value={li.desc} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:8 }}/>
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                        <Input type="number" placeholder="Qty" value={li.qty||""} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,qty:e.target.value}:i)})}/>
-                        <Input type="number" placeholder={`Unit price (${C.currency})`} value={li.unitPrice||""} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,unitPrice:e.target.value}:i)})}/>
-                      </div>
-                      {lineTotal(li)>0 && <div style={{ fontSize:11, color:"#5A7A80", marginTop:6 }}>Total: <strong style={{color:"#1B3F45"}}>{C.currency} {fmt(lineTotal(li))}</strong></div>}
+                      <Input placeholder="Description" value={li.desc} onChange={e=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,desc:e.target.value}:i)})} style={{ marginBottom:10 }}/>
+                      <StonesEditor stones={li.stones||[]} onChange={s=>setDraft({...draft,lineItems:draft.lineItems.map(i=>i.id===li.id?{...i,stones:s}:i)})} showPrice={false} t={t} currency={C.currency}/>
                     </div>
                   );})}
-                  <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",qty:"1",unitPrice:""}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E8E4DC", borderRadius:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("addItemBtn")}</button>
+                  <button onClick={()=>setDraft({...draft,lineItems:[...(draft.lineItems||[]),{id:Date.now()+Math.random(),desc:"",count:"1",qty:"1",unitPrice:"",stones:[]}]})} style={{ width:"100%", padding:"11px", background:"none", border:"1.5px dashed #E8E4DC", borderRadius:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:600, color:"#5A7A80", cursor:"pointer" }}>{t("addAnotherPieceBtn")}</button>
                 </div>
                 <BtnPrimary disabled={!draft.client} onClick={()=>{ setOrders(orders.map(o=>o.id===draft.id?{...draft}:o)); setView("detail"); showToast(t("orderUpdated")); }}>
                   {t("saveChangesBtn")}
@@ -2765,17 +2940,25 @@ export default function App() {
                     )}
 
                     {/* Filas C — Items */}
-                    {(selectedOrder.lineItems||[]).filter(li=>li.desc).map((li, idx, arr) => (
-                      <div key={li.id} style={{ padding:"13px 16px", borderBottom: idx<arr.length-1||orderTotal>0?"0.5px solid #F5F3EF":"none", display:"flex", alignItems:"center", gap:12 }}>
+                    {(selectedOrder.lineItems||[]).filter(li=>li.desc||(li.stones||[]).length).map((li, idx, arr) => (
+                      <div key={li.id} style={{ padding:"13px 16px", borderBottom: idx<arr.length-1||orderTotal>0?"0.5px solid #F5F3EF":"none", display:"flex", alignItems:"flex-start", gap:12 }}>
                         <div style={{ width:40, height:40, borderRadius:10, background:"#E0ECED", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                           <Icon name="gem" size={18} color="#5A7A80"/>
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{li.desc||"—"}</div>
-                          {(li.qty&&li.qty!=="1") && <div style={{ fontSize:11, color:"#9DB5B9", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", marginTop:2 }}>×{li.qty}</div>}
+                          <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{li.desc||"—"}{(parseInt(li.count)||1) > 1 ? `  ×${li.count}` : ""}</div>
+                          {(li.stones||[]).length > 0 ? (
+                            <div style={{ marginTop:4, display:"flex", flexDirection:"column", gap:2 }}>
+                              {li.stones.map(s => (
+                                <div key={s.id} style={{ fontSize:12, color:"#5A7A80" }}>
+                                  <span style={{ color:"#C9933A" }}>◆</span> {[s.qty && `${s.qty}×`, s.type, s.size].filter(Boolean).join(" ") || "—"}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (li.qty&&li.qty!=="1") && <div style={{ fontSize:11, color:"#9DB5B9", marginTop:2 }}>×{li.qty}</div>}
                         </div>
                         {lineTotal(li)>0 && (
-                          <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", flexShrink:0 }}>{C.currency} {fmt(lineTotal(li))}</div>
+                          <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", flexShrink:0 }}>{C.currency} {fmt(lineTotal(li))}</div>
                         )}
                       </div>
                     ))}
@@ -2844,11 +3027,11 @@ export default function App() {
             return (
               <>
                 {/* Header */}
-                <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+                <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
-                      {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
+                      {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
                     </div>
                     <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
                       style={{ display:"flex", alignItems:"center", gap:5, background:"#C9933A", color:"white", border:"none", borderRadius:100, padding:"9px 15px", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", flexShrink:0 }}>
@@ -2969,12 +3152,21 @@ export default function App() {
                 date: inv.date,
                 client: inv.client,
                 clientAddress: inv.clientAddress || "",
-                items: inv.items.map(it => ({
-                  desc: it.desc||"",
-                  qty: parseFloat(it.qty) || 1,
-                  unitPrice: parseFloat(it.unitPrice) || parseFloat(it.price) || 0,
-                  total: lineTotal(it),
-                })),
+                items: inv.items.map(it => {
+                  const st = it.stones || [];
+                  if (st.length) return {
+                    desc: [it.desc, st.map(s => `${s.qty||0}× ${s.type||""} ${s.size||""}`.trim()).join(", ")].filter(Boolean).join(" — "),
+                    qty: st.reduce((a,s)=>a+(parseFloat(s.qty)||0),0),
+                    unitPrice: 0,
+                    total: lineTotal(it),
+                  };
+                  return {
+                    desc: it.desc||"",
+                    qty: parseFloat(it.qty) || 1,
+                    unitPrice: parseFloat(it.unitPrice) || parseFloat(it.price) || 0,
+                    total: lineTotal(it),
+                  };
+                }),
                 subtotal: sub,
                 mwst: mwst,
                 porto: porto,
@@ -3015,12 +3207,12 @@ export default function App() {
             return (
               <>
                 {/* Header with live total */}
-                <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+                <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>New Invoice</div>
-                      {invClient && <div style={{ fontSize:13, color:"#5A7A80", marginTop:2, fontWeight:500 }}>{invClient}</div>}
+                      {invClient && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{invClient}</div>}
                     </div>
                     {draftTotal > 0 && (
                       <div style={{ background:"#1B3F45", borderRadius:14, padding:"8px 14px", textAlign:"right" }}>
@@ -3100,12 +3292,27 @@ export default function App() {
                           <button onClick={()=>showConfirm("This item will be permanently deleted.",()=>setItems(items.filter(i=>i.id!==it.id)))} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}><Icon name="trash" size={16} color="#da1e28"/></button>
                         </div>
                       </div>
-                      <Field label="Description"><Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></Field>
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                        <Field label="Qty"><Input type="number" placeholder="1" value={it.qty||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,qty:e.target.value}:i))}/></Field>
-                        <Field label={`Unit price (${C.currency})`}><Input type="number" placeholder="0.00" value={it.unitPrice||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,unitPrice:e.target.value}:i))}/></Field>
-                      </div>
-                      {lineTotal(it) > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:4 }}>Total: <strong style={{color:"#1B3F45"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
+                      <Field label="Description">
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/>
+                          {(parseFloat(it.count)||1) > 1 && <span style={{ flexShrink:0, background:"#1B3F45", color:"white", borderRadius:100, padding:"5px 11px", fontSize:12, fontWeight:800 }}>× {it.count}</span>}
+                        </div>
+                      </Field>
+                      {(it.stones||[]).length > 0 ? (
+                        <>
+                          <StonesEditor stones={it.stones} onChange={s=>setItems(items.map(i=>i.id===it.id?{...i,stones:s}:i))} showPrice t={t} currency={C.currency} typeList={C.itemCategories} priceFor={(ty,sz)=>stoneRate(ty,sz,invClient)}/>
+                          <div style={{ fontSize:11, color:"#9DB5B9", marginTop:6 }}>{t("stonesInvoiceHint")}{(parseFloat(it.count)||1) > 1 ? ` · × ${it.count}` : ""}</div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                            <Field label="Qty"><Input type="number" placeholder="1" value={it.qty||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,qty:e.target.value}:i))}/></Field>
+                            <Field label={`Unit price (${C.currency})`}><Input type="number" placeholder="0.00" value={it.unitPrice||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,unitPrice:e.target.value}:i))}/></Field>
+                          </div>
+                          <button onClick={()=>setItems(items.map(i=>i.id===it.id?{...i,stones:[newStone()]}:i))} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, color:"#C9933A", padding:"2px 0", marginTop:2 }}>+ {t("stonesLabel")}</button>
+                        </>
+                      )}
+                      {lineTotal(it) > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:8 }}>Total: <strong style={{color:"#1B3F45"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
                     </Card>
                   );})}
 
@@ -3126,7 +3333,7 @@ export default function App() {
                         <Select value="" onChange={e=>{
                           const o = orders.find(x=>x.id===e.target.value);
                           if(!o) return;
-                          const newItems = (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:st.price!=null&&st.price!==""?String(st.price):"" })) }));
+                          const newItems = (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:String(stoneRate(st.type, st.size, o.client)) })) }));
                           setItems([...items, ...newItems]);
                         }}>
                           <option value="">{t("addFromOrder")}</option>
@@ -3182,12 +3389,12 @@ export default function App() {
             const invTotal = roundCHF(invSub + invPortoVal + invMwst);
             return (
               <>
-                <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+                <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{inv.number}</div>
-                      {inv.client && <div style={{ fontSize:13, color:"#5A7A80", marginTop:2, fontWeight:500 }}>{inv.client}</div>}
+                      {inv.client && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{inv.client}</div>}
                     </div>
                     <button onClick={()=>showConfirm(`${t("deleteOrderConfirm")} ${inv.number}? ${t("cannotUndone")}.`,()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); showToast(t("invoiceDeleted"),"#da1e28"); })} style={{ width:36, height:36, borderRadius:11, background:"#fff1f1", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#da1e28"/></button>
                   </div>
@@ -3234,18 +3441,24 @@ export default function App() {
                         {inv.items.flatMap((it,i)=>{
                           const cnt = parseFloat(it.count)||1;
                           const priced = (it.stones||[]).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
-                          if (priced.length) return priced.map((s,j)=>{
-                            const q = (parseFloat(s.qty)||0) * cnt, u = parseFloat(s.price)||0;
-                            const label = [it.desc, [s.type, s.size].filter(Boolean).join(" ")].filter(Boolean).join(" — ");
-                            return (
-                              <tr key={`${i}-${j}`} style={{ borderBottom:"1px solid #E8E4DC" }}>
-                                <td style={{ padding:"8px 4px 8px 0", verticalAlign:"top" }}><div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{label||"—"}</div></td>
-                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{q||""}</td>
-                                <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{u ? `${C.currency} ${fmt(u)}` : ""}</td>
-                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1B3F45", verticalAlign:"top" }}>{(q&&u) ? `${C.currency} ${fmt(q*u)}` : ""}</td>
+                          if (priced.length) {
+                            const pieceUnit = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0) * (parseFloat(s.price)||0), 0);
+                            const betrag = pieceUnit * cnt;
+                            const stoneLines = stoneGroups(priced).map(g => g.u
+                              ? `${g.qty}× ${g.label} · ${C.currency} ${fmt(g.u)} = ${C.currency} ${fmt(g.qty*g.u)}`
+                              : `${g.qty}× ${g.label}`);
+                            return [(
+                              <tr key={i} style={{ borderBottom:"1px solid #E8E4DC" }}>
+                                <td style={{ padding:"8px 4px 8px 0", verticalAlign:"top" }}>
+                                  <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{it.desc||"—"}</div>
+                                  <div style={{ fontSize:11, color:"#41595E", marginTop:3, lineHeight:1.55, wordBreak:"break-word" }}>{stoneLines.map((l,k)=><div key={k}>{l}</div>)}</div>
+                                </td>
+                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{cnt}</td>
+                                <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{pieceUnit ? `${C.currency} ${fmt(pieceUnit)}` : ""}</td>
+                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1B3F45", verticalAlign:"top" }}>{betrag ? `${C.currency} ${fmt(betrag)}` : ""}</td>
                               </tr>
-                            );
-                          });
+                            )];
+                          }
                           const qty = parseFloat(it.qty)||1;
                           const unit = parseFloat(it.unitPrice)||parseFloat(it.price)||0;
                           const tot = lineTotal(it);
@@ -3302,17 +3515,17 @@ export default function App() {
       {tab==="clients" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* Header */}
-          <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+          <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {clientView!=="list" && (
                   <button onClick={()=>setClientView("list")} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                 )}
                 <div>
-                  <div style={{ fontSize: clientView==="list"?28:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
+                  <div style={{ fontSize: clientView==="list"?24:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
                     {clientView==="list" ? t("clientsTitle") : clientView==="new" ? t("newClientTitle") : clientView==="edit" ? t("editClientTitle") : (clients.find(c=>c.id===selectedClientId)?.company || clients.find(c=>c.id===selectedClientId)?.name || t("clientsTitle"))}
                   </div>
-                  {clientView==="list" && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{clients.length} client{clients.length!==1?"s":""}</div>}
+                  {clientView==="list" && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{clients.length} client{clients.length!==1?"s":""}</div>}
                 </div>
               </div>
               {clientView==="list" && (
@@ -3518,7 +3731,7 @@ export default function App() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8E4DC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                     </button>
                   ))}
-                  <BtnPrimary onClick={()=>{ setView("new"); setNewOrderStep(2); setDraft({...newOrder(), clientId:c.id, client: clientName, lineItems:[{id:Date.now(),desc:"",qty:"1",unitPrice:"",photo:null}]}); setTab("orders"); }} style={{ marginTop:8 }}>
+                  <BtnPrimary onClick={()=>{ setView("new"); setNewOrderStep(2); setDraft({...newOrder(), clientId:c.id, client: clientName, lineItems:[{id:Date.now(),desc:"",count:"1",qty:"1",unitPrice:"",photo:null,stones:[]}]}); setTab("orders"); }} style={{ marginTop:8 }}>
                     {t("newOrderForClient")}
                   </BtnPrimary>
 
@@ -3558,7 +3771,7 @@ export default function App() {
       )}
 
       {/* ── BOTTOM NAV (mobile only, hidden during wizard) ── */}
-      {!isDesktop && !(tab==="orders" && view==="new") && (
+      {!isDesktop && !(tab==="orders" && view==="new") && !(tab==="invoice" && invView==="new") && (
         <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:WRAP_MAX, background:"#ffffff", borderTop:"none", boxShadow:"0 -4px 20px rgba(27,63,69,0.07)", display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
           {[
             { key:"home",    icon:"orders",  label:t("tabHome")    },
@@ -3640,6 +3853,21 @@ export default function App() {
                     : <div style={{ fontSize:11, color:GOLD, letterSpacing:"0.05em", textAlign:"center" }}>[ FOTO DES SCHMUCKSTÜCKS EINFÜGEN ]</div>
                   }
                 </div>
+
+                {/* Pieces & stones */}
+                {(o.lineItems||[]).filter(li=>li.desc||(li.stones||[]).length).length > 0 && (
+                  <div style={{ border:`1.5px solid ${GOLD}`, borderRadius:8, padding:"14px 16px", marginBottom:12 }}>
+                    <div style={labelStyle}>Stücke &amp; Steine</div>
+                    {(o.lineItems||[]).filter(li=>li.desc||(li.stones||[]).length).map(li=>(
+                      <div key={li.id} style={{ marginBottom:8 }}>
+                        <div style={{ fontSize:11, fontWeight:600, color:"#1a1a1a" }}>{li.desc||"—"}{(parseInt(li.count)||1) > 1 ? `  ×${li.count}` : ""}</div>
+                        {(li.stones||[]).map(s=>(
+                          <div key={s.id} style={{ fontSize:10.5, color:"#444", marginLeft:12 }}>◆ {[s.qty && `${s.qty}×`, s.type, s.size].filter(Boolean).join(" ") || "—"}</div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Description box */}
                 <div style={{ border:`1.5px solid ${GOLD}`, borderRadius:8, padding:"14px 16px", minHeight:110 }}>
@@ -4063,7 +4291,7 @@ export default function App() {
                 {/* RECHNUNG title + date + recipient row */}
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:32 }}>
                   <div>
-                    <div style={{ fontFamily:"'Arial Black',Arial,sans-serif", fontSize:21, fontWeight:900, letterSpacing:"0.18em", color:"#555", textTransform:"uppercase", marginBottom:8 }}>RECHNUNG</div>
+                    <div style={{ fontFamily:"'Arial Black',Arial,sans-serif", fontSize:21, fontWeight:900, letterSpacing:"0.18em", color:"#1B3F45", textTransform:"uppercase", marginBottom:8 }}>RECHNUNG</div>
                     <div style={{ fontSize:11, fontWeight:700, color:"#1a1a1a" }}>DATUM: {dateStr}</div>
                   </div>
                   <div style={{ textAlign:"left", fontSize:11, lineHeight:1.9, color:"#1a1a1a", paddingTop:4 }}>
