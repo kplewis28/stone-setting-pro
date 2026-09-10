@@ -1587,7 +1587,6 @@ export default function App() {
         const mNet        = mInvoices.reduce((s,i) => s + roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)), 0);
         const mUnits      = mInvoices.reduce((s,i) => s + i.items.reduce((ss,it) => ss + (parseFloat(it.qty)||0), 0), 0);
         const mClients    = new Set(mOrders.map(o => o.clientId||o.client).filter(Boolean)).size;
-        const mOpen       = mOrders.filter(o => o.status!=="done" && o.status!=="invoiced").length;
 
         // ── 12-month trend
         const months12 = Array.from({length:12}, (_,i) => {
@@ -1733,26 +1732,42 @@ export default function App() {
 
             <div style={{ padding: pad }}>
 
-              {/* KPI cards — value + month-over-month delta */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14, marginTop:16 }}>
+              {/* KPI cards — Revenue + Net */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10, marginTop:16 }}>
                 {[
-                  { key:"revenue", display: mRevenue>0?`${C.currency} ${fmt(mRevenue)}`:"—", big:false },
-                  { key:"net",     display: mNet>0?`${C.currency} ${fmt(mNet)}`:"—",         big:false },
-                  { key:"orders",  display: String(mOrders.length), big:true, sub:`${mOpen} ${lang==="de"?"offen":"open"}` },
-                  { key:"units",   display: mUnits>0?String(mUnits):"—", big:true },
-                  { key:"clients", display: mClients>0?String(mClients):"—", big:true },
-                ].map(({ key, display, big, sub }) => {
+                  { key:"revenue", display: mRevenue>0?`${C.currency} ${fmt(mRevenue)}`:"—" },
+                  { key:"net",     display: mNet>0?`${C.currency} ${fmt(mNet)}`:"—" },
+                ].map(({ key, display }) => {
                   const on = statsMetric===key;
                   return (
                     <button className="ssp-sq" key={key} onClick={()=>setStatsMetric(key)}
                       style={{ background: on?metricCfg[key].color:"white", borderRadius:18, padding:"15px 14px", border: on?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: on?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
                       <div style={{ fontSize:10, fontWeight:700, color: on?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{metricCfg[key].label}</div>
-                      <div style={{ fontSize: big?26:21, fontWeight:900, color: on?"white":(big?"#1B3F45":metricCfg[key].color), letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
+                      <div style={{ fontSize:21, fontWeight:900, color: on?"white":metricCfg[key].color, letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
                       <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6, minHeight:13 }}>
                         <DeltaChip d={deltas[key]} onColor={on}/>
-                        <span style={{ fontSize:10, color: on?"rgba(255,255,255,0.6)":"#9DB5B9" }}>
-                          {deltas[key] ? `vs ${prevShort}` : (sub || "")}
-                        </span>
+                        {deltas[key] && <span style={{ fontSize:10, color: on?"rgba(255,255,255,0.6)":"#9DB5B9" }}>vs {prevShort}</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* KPI cards — Orders + Units + Clients, one row */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:14 }}>
+                {[
+                  { key:"orders",  display: String(mOrders.length) },
+                  { key:"units",   display: mUnits>0?String(mUnits):"—" },
+                  { key:"clients", display: mClients>0?String(mClients):"—" },
+                ].map(({ key, display }) => {
+                  const on = statsMetric===key;
+                  return (
+                    <button className="ssp-sq" key={key} onClick={()=>setStatsMetric(key)}
+                      style={{ background: on?metricCfg[key].color:"white", borderRadius:16, padding:"13px 10px", border: on?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: on?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
+                      <div style={{ fontSize:9, fontWeight:700, color: on?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{metricCfg[key].label}</div>
+                      <div style={{ fontSize:22, fontWeight:900, color: on?"white":"#1B3F45", letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
+                      <div style={{ marginTop:5, minHeight:13 }}>
+                        <DeltaChip d={deltas[key]} onColor={on}/>
                       </div>
                     </button>
                   );
