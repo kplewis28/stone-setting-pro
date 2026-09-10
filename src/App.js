@@ -667,6 +667,7 @@ export default function App() {
   const [statsClientPickerOpen, setStatsClientPickerOpen] = useState(false);
   const [statsMonthPickerOpen, setStatsMonthPickerOpen] = useState(false);
   const [statsMetric, setStatsMetric] = useState("revenue"); // "orders"|"revenue"|"units"|"clients"
+  const [statsWeek, setStatsWeek] = useState(null); // tapped week index within the selected month
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
@@ -1647,6 +1648,25 @@ export default function App() {
           return <span style={{ fontSize:10, fontWeight:800, color:c, whiteSpace:"nowrap" }}>{d.flat?"→":d.up?"↑":"↓"} {d.v}%</span>;
         };
 
+        // ── Weekly breakdown of the selected month (which stretch was busiest)
+        const [sy, sm] = statsMonth.split("-").map(Number);
+        const daysInSel = new Date(sy, sm, 0).getDate();
+        const weekBuckets = [];
+        for (let s = 1; s <= daysInSel; s += 7) weekBuckets.push({ s, e: Math.min(s+6, daysInSel) });
+        const dayOf = ds => (ds && ds.startsWith(statsMonth)) ? parseInt(ds.slice(8,10)) : -1;
+        const weekData = weekBuckets.map(w => {
+          const wInvs   = mInvoices.filter(i => { const d = dayOf(i.date); return d >= w.s && d <= w.e; });
+          const wOrders = mOrders.filter(o => { const d = dayOf(o.received); return d >= w.s && d <= w.e; });
+          return {
+            label: `${w.s}–${w.e}`,
+            revenue: wInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0),
+            net:     wInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)),0),
+            orders:  wOrders.length,
+            units:   wInvs.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0),
+            clients: new Set(wOrders.map(o=>o.clientId||o.client).filter(Boolean)).size,
+          };
+        });
+
         // ── Vertical bar chart, 12 months, tappable
         const BarChart = ({ data, metricKey, color }) => {
           const vals = data.map(d => d[metricKey]);
@@ -1665,7 +1685,7 @@ export default function App() {
                 const x = i * (bw + gap);
                 const sel = d.ym === statsMonth;
                 return (
-                  <g key={d.ym} onClick={() => setStatsMonth(d.ym)} style={{ cursor:"pointer" }}>
+                  <g key={d.ym} onClick={() => { setStatsMonth(d.ym); setStatsWeek(null); }} style={{ cursor:"pointer" }}>
                     {/* full-height tap target incl. the gap on the right */}
                     <rect x={x - gap/2} y={0} width={bw + gap} height={H + LABELS} fill="transparent"/>
                     {bh > 0 && <rect x={x} y={H - bh} width={bw} height={bh} rx={3}
@@ -1787,6 +1807,46 @@ export default function App() {
                 <BarChart data={trend} metricKey={statsMetric} color={mc.color}/>
                 <div style={{ fontSize:10, color:"#9DB5B9", marginTop:10, textAlign:"center" }}>{lang==="de"?"Tippe auf eine Säule, um den Monat zu wählen":"Tap a bar to select that month"}</div>
               </div>
+
+              {/* Within the month — which week was busiest */}
+              {weekData.some(w => w[statsMetric] > 0) && (() => {
+                const wvals = weekData.map(w => w[statsMetric]);
+                const wmax = Math.max(...wvals, 1);
+                const peakIdx = wvals.indexOf(Math.max(...wvals));
+                const activeIdx = (statsWeek != null && statsWeek < weekData.length) ? statsWeek : peakIdx;
+                const aw = weekData[activeIdx];
+                const shortN = v => (statsMetric==="revenue"||statsMetric==="net") ? (v>=1000 ? `${(v/1000).toFixed(v>=10000?0:1)}k` : Math.round(v)) : v;
+                return (
+                  <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"18px 16px 14px", marginBottom:14 }}>
+                    <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:18 }}>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{lang==="de"?"Innerhalb des Monats":"Within the month"}</div>
+                        <div style={{ fontSize:11, color:"#9DB5B9", marginTop:2 }}>
+                          {statsWeek == null
+                            ? `${lang==="de"?"Aktivster Zeitraum":"Busiest stretch"}: ${lang==="de"?"Tag":"day"} ${aw.label}`
+                            : `${lang==="de"?"Tag":"Day"} ${aw.label} · ${monthLabel}`}
+                        </div>
+                      </div>
+                      <div style={{ fontSize:18, fontWeight:900, color:mc.color, letterSpacing:"-0.02em", lineHeight:1 }}>{mc.format(aw[statsMetric])}</div>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"flex-end", gap:8, height:104 }}>
+                      {weekData.map((w, i) => {
+                        const h = w[statsMetric] > 0 ? Math.max(6, (w[statsMetric]/wmax)*90) : 3;
+                        const sel = i === activeIdx;
+                        return (
+                          <button key={i} onClick={()=>setStatsWeek(statsWeek === i ? null : i)}
+                            style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", padding:0, height:"100%", justifyContent:"flex-end" }}>
+                            <span style={{ fontSize:10, fontWeight:800, color: sel ? mc.color : "#C8C4BC" }}>{w[statsMetric] > 0 ? shortN(w[statsMetric]) : ""}</span>
+                            <div style={{ width:"100%", height:h, background: sel ? mc.color : `${mc.color}2E`, borderRadius:5, transition:"all 0.25s ease" }}/>
+                            <span style={{ fontSize:10, fontWeight: sel?800:500, color: sel ? "#1B3F45" : "#9DB5B9" }}>{w.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ fontSize:10, color:"#9DB5B9", marginTop:12, textAlign:"center" }}>{lang==="de"?"Tippe auf einen Zeitraum":"Tap a week for its total"}</div>
+                  </div>
+                );
+              })()}
 
               {/* Top clients — share of the month's revenue */}
               {statsClientFilter === "all" && clientBreakdown.length > 0 && (() => {
@@ -3563,7 +3623,7 @@ export default function App() {
         value={statsMonth}
         lang={lang}
         maxW={SHEET_MAX}
-        onSelect={(v)=>{ if(v) setStatsMonth(v); }}
+        onSelect={(v)=>{ if(v) { setStatsMonth(v); setStatsWeek(null); } }}
         onClose={()=>setStatsMonthPickerOpen(false)}
       />
 
