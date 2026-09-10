@@ -1617,46 +1617,67 @@ export default function App() {
         };
         const mc = metricCfg[statsMetric];
 
-        // ── SVG bar chart (full-width, tall)
+        // ── Previous month (same filters) for month-over-month deltas
+        const prevYM = (() => {
+          const [y,m] = statsMonth.split("-").map(Number);
+          const d = new Date(y, m-2, 1);
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+        })();
+        const pInvoices = filterInvoicesForClient(invoices.filter(i => (i.date||"").startsWith(prevYM)));
+        const pRevenue  = pInvoices.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0);
+        const pNet      = pInvoices.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)),0);
+        const pOrdersL  = filterOrders(orders.filter(o=>(o.received||"").startsWith(prevYM)));
+        const pUnits    = pInvoices.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0);
+        const pClients  = new Set(pOrdersL.map(o=>o.clientId||o.client).filter(Boolean)).size;
+        const prevShort = new Date(prevYM+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"short"});
+        const pctDelta = (cur, prev) => {
+          if (prev <= 0) return cur > 0 ? { v:100, up:true } : null;
+          const d = Math.round(((cur - prev) / prev) * 100);
+          return { v: Math.abs(d), up: d >= 0, flat: d === 0 };
+        };
+        const deltas = {
+          revenue: pctDelta(mRevenue, pRevenue),
+          net:     pctDelta(mNet, pNet),
+          orders:  pctDelta(mOrders.length, pOrdersL.length),
+          units:   pctDelta(mUnits, pUnits),
+          clients: pctDelta(mClients, pClients),
+        };
+        const DeltaChip = ({ d, onColor }) => {
+          if (!d) return null;
+          const c = d.flat ? (onColor?"rgba(255,255,255,0.7)":"#9DB5B9") : d.up ? (onColor?"#B6F0C8":"#198038") : (onColor?"#FFC9C9":"#da1e28");
+          return <span style={{ fontSize:10, fontWeight:800, color:c, whiteSpace:"nowrap" }}>{d.flat?"→":d.up?"↑":"↓"} {d.v}%</span>;
+        };
+
+        // ── Vertical bar chart, 12 months, tappable
         const BarChart = ({ data, metricKey, color, formatVal }) => {
           const vals = data.map(d => d[metricKey]);
           const max  = Math.max(...vals, 1);
-          const W = 300; const H = 120; const padL = 4; const padR = 4;
-          const plotW = W - padL - padR;
-          const xOf = i => padL + (i / (data.length - 1)) * plotW;
-          const yOf = v => H - (v / max) * H;
-          const points = data.map((d, i) => `${xOf(i)},${yOf(vals[i])}`).join(" ");
+          const W = 324; const H = 150; const gap = 5;
+          const bw = (W - gap*(data.length-1)) / data.length;
+          const money = metricKey === "revenue" || metricKey === "net";
+          const shortVal = v => money ? (v>=1000 ? `${(v/1000).toFixed(v>=10000?0:1)}k` : Math.round(v)) : v;
           return (
-            <svg viewBox={`0 0 ${W} ${H + 28}`} style={{ width:"100%", display:"block" }} preserveAspectRatio="none">
-              {/* Grid lines */}
-              {[0.25, 0.5, 0.75, 1].map(pct => (
-                <g key={pct}>
-                  <line x1={0} y1={H - pct*H} x2={W} y2={H - pct*H} stroke="#F0EDE8" strokeWidth="0.8"/>
-                  <text x={W - 2} y={H - pct*H - 2} fontSize="6" fill="#C8C4BC" textAnchor="end">{formatVal(Math.round(max*pct))}</text>
-                </g>
+            <svg viewBox={`0 0 ${W} ${H + 20}`} style={{ width:"100%", display:"block" }}>
+              {[0.5, 1].map(p => (
+                <line key={p} x1={0} y1={H - p*H} x2={W} y2={H - p*H} stroke="#F2EEE7" strokeWidth="1"/>
               ))}
-              {/* Area fill under line */}
-              <polyline points={[`${xOf(0)},${H}`, ...data.map((_,i)=>`${xOf(i)},${yOf(vals[i])}`), `${xOf(data.length-1)},${H}`].join(" ")}
-                fill={`${color}18`} stroke="none"/>
-              {/* Line */}
-              <polyline points={points} fill="none" stroke={`${color}80`} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
-              {/* Dots + labels */}
               {data.map((d, i) => {
-                const cx = xOf(i); const cy = yOf(vals[i]);
-                const isSelected = d.ym === statsMonth;
+                const bh = vals[i] > 0 ? Math.max(3, (vals[i]/max)*H) : 0;
+                const x = i * (bw + gap);
+                const sel = d.ym === statsMonth;
                 return (
                   <g key={d.ym} onClick={() => setStatsMonth(d.ym)} style={{ cursor:"pointer" }}>
-                    <circle cx={cx} cy={cy} r={isSelected ? 5 : 3.5}
-                      fill={isSelected ? color : "white"} stroke={color} strokeWidth={isSelected ? 0 : 1.8}/>
-                    {isSelected && vals[i] > 0 && (
-                      <text x={cx} y={cy - 9} fontSize="7" fill={color} textAnchor="middle" fontWeight="bold">{formatVal(vals[i])}</text>
+                    <rect x={x} y={0} width={bw} height={H} fill="transparent"/>
+                    {bh > 0 && <rect x={x} y={H - bh} width={bw} height={bh} rx={Math.min(2.5, bw/3)}
+                      fill={sel ? color : `${color}30`} style={{ transition:"all 0.3s ease" }}/>}
+                    {sel && vals[i] > 0 && (
+                      <text x={x + bw/2} y={Math.max(9, H - bh - 4)} fontSize="8.5" fill={color} textAnchor="middle" fontWeight="800">{shortVal(vals[i])}</text>
                     )}
-                    <text x={cx} y={H + 16} fontSize="7.5" fill={isSelected?"#1B3F45":"#9DB5B9"} textAnchor="middle" fontWeight={isSelected?"bold":"normal"}>{d.label}</text>
+                    <text x={x + bw/2} y={H + 14} fontSize="8" fill={sel ? "#1B3F45" : "#9DB5B9"} textAnchor="middle" fontWeight={sel ? "800" : "400"}>{d.label}</text>
                   </g>
                 );
               })}
-              {/* Baseline */}
-              <line x1={0} y1={H} x2={W} y2={H} stroke="#E8E4DC" strokeWidth="1"/>
+              <line x1={0} y1={H} x2={W} y2={H} stroke="#E8E4DC" strokeWidth="1.2"/>
             </svg>
           );
         };
@@ -1712,72 +1733,83 @@ export default function App() {
 
             <div style={{ padding: pad }}>
 
-              {/* KPI cards */}
+              {/* KPI cards — value + month-over-month delta */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14, marginTop:16 }}>
-                {/* Revenue + Net row */}
                 {[
-                  { key:"revenue", val:mRevenue, display: mRevenue>0?`${C.currency} ${fmt(mRevenue)}`:"—", sub:lang==="de"?"inkl. Porto & MWST":"incl. shipping & tax" },
-                  { key:"net",     val:mNet,     display: mNet>0?`${C.currency} ${fmt(mNet)}`:"—",         sub:lang==="de"?"ohne Porto & MWST":"excl. shipping & tax" },
-                ].map(({ key, display, sub }) => (
-                  <button className="ssp-sq" key={key} onClick={()=>setStatsMetric(key)}
-                    style={{ background: statsMetric===key?metricCfg[key].color:"white", borderRadius:18, padding:"16px 14px", border: statsMetric===key?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: statsMetric===key?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
-                    <div style={{ fontSize:10, fontWeight:700, color: statsMetric===key?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{metricCfg[key].label}</div>
-                    <div style={{ fontSize:22, fontWeight:900, color: statsMetric===key?"white":metricCfg[key].color, letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
-                    <div style={{ fontSize:10, color: statsMetric===key?"rgba(255,255,255,0.6)":"#9DB5B9", marginTop:5 }}>{sub}</div>
-                  </button>
-                ))}
-                {/* Orders + Units + Clients row */}
-                {[
-                  { key:"orders",  val:mOrders.length,  display: String(mOrders.length), sub:`${mOpen} ${lang==="de"?"offen":"open"}` },
-                  { key:"units",   val:mUnits,  display: mUnits>0?String(mUnits):"—", sub:lang==="de"?"Steine/Stücke":"stones / pieces" },
-                  { key:"clients", val:mClients,display: mClients>0?String(mClients):"—" },
-                ].map(({ key, display, sub }) => (
-                  <button className="ssp-sq" key={key} onClick={()=>setStatsMetric(key)}
-                    style={{ background: statsMetric===key?metricCfg[key].color:"white", borderRadius:18, padding:"16px 14px", border: statsMetric===key?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: statsMetric===key?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
-                    <div style={{ fontSize:10, fontWeight:700, color: statsMetric===key?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{metricCfg[key].label}</div>
-                    <div style={{ fontSize:28, fontWeight:900, color: statsMetric===key?"white":"#1B3F45", letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
-                    {sub && <div style={{ fontSize:11, color: statsMetric===key?"rgba(255,255,255,0.6)":"#9DB5B9", marginTop:5 }}>{sub}</div>}
-                  </button>
-                ))}
+                  { key:"revenue", display: mRevenue>0?`${C.currency} ${fmt(mRevenue)}`:"—", big:false },
+                  { key:"net",     display: mNet>0?`${C.currency} ${fmt(mNet)}`:"—",         big:false },
+                  { key:"orders",  display: String(mOrders.length), big:true, sub:`${mOpen} ${lang==="de"?"offen":"open"}` },
+                  { key:"units",   display: mUnits>0?String(mUnits):"—", big:true },
+                  { key:"clients", display: mClients>0?String(mClients):"—", big:true },
+                ].map(({ key, display, big, sub }) => {
+                  const on = statsMetric===key;
+                  return (
+                    <button className="ssp-sq" key={key} onClick={()=>setStatsMetric(key)}
+                      style={{ background: on?metricCfg[key].color:"white", borderRadius:18, padding:"15px 14px", border: on?`2px solid ${metricCfg[key].color}`:"1px solid #E8E4DC", cursor:"pointer", textAlign:"left", transition:"all 0.15s", boxShadow: on?"0 4px 14px rgba(0,0,0,0.15)":"0 1px 4px rgba(0,0,0,0.04)" }}>
+                      <div style={{ fontSize:10, fontWeight:700, color: on?"rgba(255,255,255,0.7)":"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{metricCfg[key].label}</div>
+                      <div style={{ fontSize: big?26:21, fontWeight:900, color: on?"white":(big?"#1B3F45":metricCfg[key].color), letterSpacing:"-0.03em", lineHeight:1 }}>{display}</div>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6, minHeight:13 }}>
+                        <DeltaChip d={deltas[key]} onColor={on}/>
+                        <span style={{ fontSize:10, color: on?"rgba(255,255,255,0.6)":"#9DB5B9" }}>
+                          {deltas[key] ? `vs ${prevShort}` : (sub || "")}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Main chart — selected metric, 12 months, tappable bars */}
               <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"18px 16px", marginBottom:14 }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#1B3F45" }}>{mc.label} — {t("statsTrend")}</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9" }}>12 {lang==="de"?"Monate":"months"}</div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{mc.label}</div>
+                    <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1 }}>{t("statsTrend")} · 12 {lang==="de"?"Monate":"months"}</div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:16, fontWeight:900, color:mc.color, letterSpacing:"-0.02em" }}>{mc.format(trend.find(x=>x.ym===statsMonth)?.[statsMetric] || 0)}</div>
+                    <div style={{ fontSize:10, color:"#9DB5B9" }}>{monthLabel}</div>
+                  </div>
                 </div>
                 <BarChart data={trend} metricKey={statsMetric} color={mc.color} formatVal={mc.format}/>
-                <div style={{ fontSize:10, color:"#9DB5B9", marginTop:8, textAlign:"center" }}>{lang==="de"?"Tippe auf einen Punkt um den Monat zu wählen":"Tap a dot to select that month"}</div>
+                <div style={{ fontSize:10, color:"#9DB5B9", marginTop:8, textAlign:"center" }}>{lang==="de"?"Tippe auf eine Säule, um den Monat zu wählen":"Tap a bar to select that month"}</div>
               </div>
 
-              {/* Client breakdown table (only when "All clients") */}
-              {statsClientFilter === "all" && clientBreakdown.length > 0 && (
-                <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", overflow:"hidden", marginBottom:14 }}>
-                  <div style={{ padding:"14px 16px 10px", borderBottom:"1px solid #F0EDE8" }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:"#1B3F45" }}>{lang==="de"?"Nach Kunde":"By client"}</div>
-                  </div>
-                  {clientBreakdown.map((c, i) => {
-                    const maxRev = Math.max(...clientBreakdown.map(x=>x.revenue), 1);
-                    return (
-                      <div key={c.id} style={{ padding:"12px 16px", borderTop: i>0?"1px solid #F8F6F3":"none" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                          <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45" }}>{c.name}</div>
-                          <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-                            <span style={{ fontSize:11, color:"#9DB5B9" }}>{c.orders} {lang==="de"?"Auftr.":"ord."} · {c.units} {lang==="de"?"Einh.":"units"}</span>
-                            <span style={{ fontSize:13, fontWeight:800, color:"#C9933A" }}>{c.revenue>0?`${C.currency} ${fmt(c.revenue)}`:"—"}</span>
+              {/* Top clients — share of the month's revenue */}
+              {statsClientFilter === "all" && clientBreakdown.length > 0 && (() => {
+                const totalRev = clientBreakdown.reduce((s,c)=>s+c.revenue,0) || 0;
+                const top = clientBreakdown.filter(c=>c.revenue>0).slice(0, 6);
+                if (top.length === 0) return null;
+                return (
+                  <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", overflow:"hidden", marginBottom:14 }}>
+                    <div style={{ padding:"14px 16px 12px", borderBottom:"1px solid #F0EDE8", display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
+                      <div style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{lang==="de"?"Top-Kunden":"Top clients"}</div>
+                      <div style={{ fontSize:11, color:"#9DB5B9" }}>{C.currency} {fmt(totalRev)} {lang==="de"?"gesamt":"total"}</div>
+                    </div>
+                    {top.map((c, i) => {
+                      const share = totalRev > 0 ? Math.round((c.revenue/totalRev)*100) : 0;
+                      return (
+                        <div key={c.id} style={{ padding:"12px 16px", borderTop: i>0?"1px solid #F8F6F3":"none" }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7, gap:10 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:9, minWidth:0 }}>
+                              <span style={{ fontSize:11, fontWeight:800, color:"#C8C4BC", width:14, flexShrink:0 }}>{i+1}</span>
+                              <span style={{ fontSize:13, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</span>
+                            </div>
+                            <div style={{ display:"flex", alignItems:"baseline", gap:8, flexShrink:0 }}>
+                              <span style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{C.currency} {fmt(c.revenue)}</span>
+                              <span style={{ fontSize:11, fontWeight:800, color:"#C9933A", width:32, textAlign:"right" }}>{share}%</span>
+                            </div>
                           </div>
+                          <div style={{ height:6, background:"#F2EEE7", borderRadius:3, overflow:"hidden" }}>
+                            <div style={{ height:"100%", background:"#C9933A", borderRadius:3, width:`${Math.max(3, share)}%`, transition:"width 0.4s ease" }}/>
+                          </div>
+                          <div style={{ fontSize:10, color:"#9DB5B9", marginTop:5 }}>{c.orders} {lang==="de"?"Aufträge":"orders"} · {c.units} {lang==="de"?"Steine/Stücke":"pieces"}</div>
                         </div>
-                        {c.revenue > 0 && (
-                          <div style={{ height:4, background:"#F0EDE8", borderRadius:2, overflow:"hidden" }}>
-                            <div style={{ height:"100%", background:"#C9933A", borderRadius:2, width:`${(c.revenue/maxRev)*100}%`, transition:"width 0.4s ease" }}/>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* Status breakdown donut-style pills */}
               {mAllOrders.length > 0 && (
