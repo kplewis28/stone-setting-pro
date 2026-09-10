@@ -186,7 +186,7 @@ const TRANS = {
     pieceLabel:"Piece",
     unitsLabel:"Units",
     stonesLabel:"Stones to set", stoneTypePh:"e.g. Diamond", stoneSizePh:"Size", addStoneBtn:"Add stone",
-    stoneTypeCol:"Stone", stoneSizeCol:"Size", stoneQtyCol:"Qty",
+    stoneTypeCol:"Stone", stoneSizeCol:"Size", stoneQtyCol:"Qty", stonePriceCol:"Price / stone",
     stonesInvoiceHint:"Enter how many you set \u2014 price is pre-filled, adjust if needed", noStonesYet:"No stones yet \u2014 add the stones you'll set into this piece",
     pieceDescLabel:"Piece", pieceCountLabel:"Identical pieces", photoOptional:"Add photo (optional)", duplicateBtn:"Duplicate",
     descPiecePlaceholder:"Describe the work to be done\u2026",
@@ -333,7 +333,7 @@ const TRANS = {
     pieceLabel:"St\u00fcck",
     unitsLabel:"Einheiten",
     stonesLabel:"Zu fassende Steine", stoneTypePh:"z.B. Brillant", stoneSizePh:"Gr\u00f6sse", addStoneBtn:"Stein hinzuf\u00fcgen",
-    stoneTypeCol:"Stein", stoneSizeCol:"Gr\u00f6sse", stoneQtyCol:"Anz.",
+    stoneTypeCol:"Stein", stoneSizeCol:"Grösse", stoneQtyCol:"Anz.", stonePriceCol:"Preis / Stein",
     stonesInvoiceHint:"Anzahl eingeben \u2014 Preis ist vorausgef\u00fcllt, bei Bedarf anpassen", noStonesYet:"Noch keine Steine \u2014 f\u00fcge die Steine hinzu, die du in dieses St\u00fcck fasst",
     pieceDescLabel:"St\u00fcck", pieceCountLabel:"Gleiche St\u00fccke", photoOptional:"Foto hinzuf\u00fcgen (optional)", duplicateBtn:"Duplizieren",
     descPiecePlaceholder:"Zu erledigende Arbeit beschreiben\u2026",
@@ -393,14 +393,14 @@ const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", count:"1", 
 const newStone     = () => ({ id: Date.now()+Math.random(), type:"", size:"", qty:"", price:"" });
 const cloneStones  = (arr) => (arr||[]).map(s => ({ ...s, id: Date.now()+Math.random() }));
 // Default price to set one stone of a given type (CHF), pre-filled on invoices.
-const parseMM      = (s) => { const m = String(s || "").match(/[\d.]+/); return m ? parseFloat(m[0]) : null; };
+const parseMM      = (s) => { const m = String(s || "").match(/(\d+(?:[.,]\d+)?)\s*mm|(\d+(?:[.,]\d+)?)/i); const v = m && (m[1] || m[2]); return v ? parseFloat(v.replace(",", ".")) : null; };
 const stoneRate    = (type, size, client) => {
-  const s = String(type || "").toLowerCase();
-  const mm = parseMM(size);
   const R = C.stoneRates;
+  const hay = `${type || ""} ${size || ""}`.toLowerCase();          // match keyword in either field
+  const mm  = parseMM(size) ?? parseMM(type);                        // size may be typed into the type field
   let base = R.default;
   for (const [k, brackets] of Object.entries(R.brackets)) {
-    if (s.includes(k)) {
+    if (hay.includes(k)) {
       const b = brackets.find(([max]) => mm == null || mm <= max) || brackets[brackets.length - 1];
       base = b[1];
       break;
@@ -600,21 +600,30 @@ const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList 
 
       {showPrice ? stones.map(s => {
         const line = (parseFloat(s.qty)||0) * (parseFloat(s.price)||0);
+        const miniLbl = { fontSize:10, fontWeight:800, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:5, display:"block" };
         return (
-          <div key={s.id} style={{ background:"#FAFAF8", border:"1px solid #EFECE6", borderRadius:12, padding:"10px 10px 12px", marginBottom:8 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-              <input list="ssp-stonetypes" value={s.type} onChange={e=>setTypeSize(s,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1 }}/>
-              <input value={s.size} onChange={e=>setTypeSize(s,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:64, textAlign:"center", padding:"10px 4px" }}/>
-              <button onClick={()=>dup(s)} style={iconBtn}>{copyIcon}</button>
-              <button onClick={()=>del(s.id)} style={iconBtn}>{delIcon}</button>
+          <div key={s.id} style={{ background:"#fff", border:"1px solid #E8E4DC", borderRadius:14, padding:"12px 12px 13px", marginBottom:9 }}>
+            {/* Stone + size + actions */}
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:11 }}>
+              <input list="ssp-stonetypes" value={s.type} onChange={e=>setTypeSize(s,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1, fontWeight:600 }}/>
+              <input value={s.size} onChange={e=>setTypeSize(s,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:72, textAlign:"center", padding:"10px 4px" }}/>
+              <button onClick={()=>dup(s)} style={iconBtn} aria-label="duplicate">{copyIcon}</button>
+              <button onClick={()=>del(s.id)} style={iconBtn} aria-label="delete">{delIcon}</button>
             </div>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ fontSize:11, fontWeight:800, color:"#C8C4BC", textTransform:"uppercase" }}>{t("stoneQtyCol")}</span>
-              <input value={s.qty} onChange={e=>upd(s.id,{qty:e.target.value})} type="number" inputMode="numeric" placeholder="0" style={{ ...inp, width:56, textAlign:"center", fontWeight:800 }}/>
-              <span style={{ color:"#9DB5B9", fontSize:14 }}>×</span>
-              <span style={{ fontSize:11, fontWeight:800, color:"#C8C4BC" }}>{currency}</span>
-              <input value={s.price} onChange={e=>upd(s.id,{price:e.target.value})} type="number" inputMode="decimal" placeholder="—" style={{ ...inp, width:66, textAlign:"center" }}/>
-              <span style={{ marginLeft:"auto", fontSize:13, fontWeight:800, color: line>0 ? "#1B3F45" : "#C8C4BC" }}>{line>0 ? `${currency} ${line.toFixed(2)}` : "—"}</span>
+            {/* Qty · price · total — aligned columns */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:10, alignItems:"end" }}>
+              <div>
+                <span style={miniLbl}>{t("stoneQtyCol")}</span>
+                <input value={s.qty} onChange={e=>upd(s.id,{qty:e.target.value})} type="number" inputMode="numeric" placeholder="0" style={{ ...inp, width:"100%", textAlign:"center", fontWeight:800 }}/>
+              </div>
+              <div>
+                <span style={miniLbl}>{t("stonePriceCol")}</span>
+                <input value={s.price} onChange={e=>upd(s.id,{price:e.target.value})} type="number" inputMode="decimal" placeholder="—" style={{ ...inp, width:"100%", textAlign:"center" }}/>
+              </div>
+              <div style={{ textAlign:"right", paddingBottom:10, minWidth:72 }}>
+                <span style={{ ...miniLbl, marginBottom:3 }}>{t("totalLabel")}</span>
+                <span style={{ fontSize:15, fontWeight:900, color: line>0 ? "#1B3F45" : "#C8C4BC", letterSpacing:"-0.01em" }}>{line>0 ? line.toFixed(2) : "—"}</span>
+              </div>
             </div>
           </div>
         );
@@ -3701,7 +3710,7 @@ export default function App() {
       )}
 
       {/* ── BOTTOM NAV (mobile only, hidden during wizard) ── */}
-      {!isDesktop && !(tab==="orders" && view==="new") && (
+      {!isDesktop && !(tab==="orders" && view==="new") && !(tab==="invoice" && invView==="new") && (
         <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:WRAP_MAX, background:"#ffffff", borderTop:"none", boxShadow:"0 -4px 20px rgba(27,63,69,0.07)", display:"flex", padding:"8px 0 max(24px, env(safe-area-inset-bottom, 24px))", zIndex:100 }}>
           {[
             { key:"home",    icon:"orders",  label:t("tabHome")    },
