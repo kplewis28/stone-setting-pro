@@ -1648,35 +1648,33 @@ export default function App() {
         };
 
         // ── Vertical bar chart, 12 months, tappable
-        const BarChart = ({ data, metricKey, color, formatVal }) => {
+        const BarChart = ({ data, metricKey, color }) => {
           const vals = data.map(d => d[metricKey]);
           const max  = Math.max(...vals, 1);
-          const W = 324; const H = 150; const gap = 5;
+          const W = 340, TOP = 12, PLOT = 168, LABELS = 26; // generous headroom + label room
+          const H = TOP + PLOT;
+          const gap = 6;
           const bw = (W - gap*(data.length-1)) / data.length;
-          const money = metricKey === "revenue" || metricKey === "net";
-          const shortVal = v => money ? (v>=1000 ? `${(v/1000).toFixed(v>=10000?0:1)}k` : Math.round(v)) : v;
           return (
-            <svg viewBox={`0 0 ${W} ${H + 20}`} style={{ width:"100%", display:"block" }}>
+            <svg viewBox={`0 0 ${W} ${H + LABELS}`} style={{ width:"100%", display:"block", touchAction:"manipulation" }}>
               {[0.5, 1].map(p => (
-                <line key={p} x1={0} y1={H - p*H} x2={W} y2={H - p*H} stroke="#F2EEE7" strokeWidth="1"/>
+                <line key={p} x1={0} y1={H - p*PLOT} x2={W} y2={H - p*PLOT} stroke="#F2EEE7" strokeWidth="1"/>
               ))}
               {data.map((d, i) => {
-                const bh = vals[i] > 0 ? Math.max(3, (vals[i]/max)*H) : 0;
+                const bh = vals[i] > 0 ? Math.max(4, (vals[i]/max)*PLOT) : 0;
                 const x = i * (bw + gap);
                 const sel = d.ym === statsMonth;
                 return (
                   <g key={d.ym} onClick={() => setStatsMonth(d.ym)} style={{ cursor:"pointer" }}>
-                    <rect x={x} y={0} width={bw} height={H} fill="transparent"/>
-                    {bh > 0 && <rect x={x} y={H - bh} width={bw} height={bh} rx={Math.min(2.5, bw/3)}
-                      fill={sel ? color : `${color}30`} style={{ transition:"all 0.3s ease" }}/>}
-                    {sel && vals[i] > 0 && (
-                      <text x={x + bw/2} y={Math.max(9, H - bh - 4)} fontSize="8.5" fill={color} textAnchor="middle" fontWeight="800">{shortVal(vals[i])}</text>
-                    )}
-                    <text x={x + bw/2} y={H + 14} fontSize="8" fill={sel ? "#1B3F45" : "#9DB5B9"} textAnchor="middle" fontWeight={sel ? "800" : "400"}>{d.label}</text>
+                    {/* full-height tap target incl. the gap on the right */}
+                    <rect x={x - gap/2} y={0} width={bw + gap} height={H + LABELS} fill="transparent"/>
+                    {bh > 0 && <rect x={x} y={H - bh} width={bw} height={bh} rx={3}
+                      fill={sel ? color : `${color}2E`} style={{ transition:"all 0.3s ease" }}/>}
+                    <text x={x + bw/2} y={H + 17} fontSize="9" fill={sel ? "#1B3F45" : "#9DB5B9"} textAnchor="middle" fontWeight={sel ? "800" : "500"}>{d.label}</text>
                   </g>
                 );
               })}
-              <line x1={0} y1={H} x2={W} y2={H} stroke="#E8E4DC" strokeWidth="1.2"/>
+              <line x1={0} y1={H} x2={W} y2={H} stroke="#E8E4DC" strokeWidth="1.4"/>
             </svg>
           );
         };
@@ -1775,19 +1773,19 @@ export default function App() {
               </div>
 
               {/* Main chart — selected metric, 12 months, tappable bars */}
-              <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"18px 16px", marginBottom:14 }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+              <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"18px 16px 16px", marginBottom:14 }}>
+                <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:20 }}>
                   <div>
                     <div style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{mc.label}</div>
-                    <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1 }}>{t("statsTrend")} · 12 {lang==="de"?"Monate":"months"}</div>
+                    <div style={{ fontSize:11, color:"#9DB5B9", marginTop:2 }}>{t("statsTrend")} · 12 {lang==="de"?"Monate":"months"}</div>
                   </div>
                   <div style={{ textAlign:"right" }}>
-                    <div style={{ fontSize:16, fontWeight:900, color:mc.color, letterSpacing:"-0.02em" }}>{mc.format(trend.find(x=>x.ym===statsMonth)?.[statsMetric] || 0)}</div>
-                    <div style={{ fontSize:10, color:"#9DB5B9" }}>{monthLabel}</div>
+                    <div style={{ fontSize:18, fontWeight:900, color:mc.color, letterSpacing:"-0.02em", lineHeight:1 }}>{mc.format(trend.find(x=>x.ym===statsMonth)?.[statsMetric] || 0)}</div>
+                    <div style={{ fontSize:10, color:"#9DB5B9", marginTop:3 }}>{monthLabel}</div>
                   </div>
                 </div>
-                <BarChart data={trend} metricKey={statsMetric} color={mc.color} formatVal={mc.format}/>
-                <div style={{ fontSize:10, color:"#9DB5B9", marginTop:8, textAlign:"center" }}>{lang==="de"?"Tippe auf eine Säule, um den Monat zu wählen":"Tap a bar to select that month"}</div>
+                <BarChart data={trend} metricKey={statsMetric} color={mc.color}/>
+                <div style={{ fontSize:10, color:"#9DB5B9", marginTop:10, textAlign:"center" }}>{lang==="de"?"Tippe auf eine Säule, um den Monat zu wählen":"Tap a bar to select that month"}</div>
               </div>
 
               {/* Top clients — share of the month's revenue */}
