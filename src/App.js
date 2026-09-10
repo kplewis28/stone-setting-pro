@@ -1954,31 +1954,6 @@ export default function App() {
                 );
               })()}
 
-              {/* Status breakdown donut-style pills */}
-              {mAllOrders.length > 0 && (
-                <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"14px 16px" }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#1B3F45", marginBottom:12 }}>{lang==="de"?"Nach Status":"By status"}</div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                    {Object.entries(C.statuses).map(([key, st]) => {
-                      const count = mAllOrders.filter(o=>o.status===key).length;
-                      if (count === 0) return null;
-                      const pct = Math.round((count / mAllOrders.length) * 100);
-                      return (
-                        <div key={key}>
-                          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                            <span style={{ fontSize:12, color:"#5A7A80", fontWeight:600 }}>{st.label}</span>
-                            <span style={{ fontSize:12, fontWeight:700, color:"#1B3F45" }}>{count} <span style={{ color:"#9DB5B9", fontWeight:400 }}>({pct}%)</span></span>
-                          </div>
-                          <div style={{ height:6, background:"#F0EDE8", borderRadius:3, overflow:"hidden" }}>
-                            <div style={{ height:"100%", background:st.color, borderRadius:3, width:`${pct}%`, transition:"width 0.4s ease" }}/>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
             </div>
           </div>
         );
