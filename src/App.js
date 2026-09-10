@@ -1104,27 +1104,31 @@ export default function App() {
     const mwst   = sub * C.taxRate;
     const total  = roundCHF(sub + porto + mwst);
     const esc = s => String(s||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    // Every item ALWAYS produces at least one row. A piece with priced stones
-    // is ONE row: piece name + a small breakdown line (count · type · à price),
-    // stone count in ANZ., piece total in BETRAG.
+    // Every item ALWAYS produces at least one row. A piece with priced stones is
+    // ONE row: piece name + a small breakdown grouped by Preisliste tier
+    // (e.g. "3× Brillant bis 2 mm à CHF 14,00 = CHF 42,00"). ANZ. = number of
+    // identical pieces, STÜCKPREIS = price of one piece, BETRAG = ANZ × STÜCKPREIS.
+    const stoneGroups = (stones) => {
+      const g = [];
+      stones.forEach(s => {
+        const qty = parseFloat(s.qty)||0, u = parseFloat(s.price)||0;
+        const label = stoneRule(s.type, s.size) || ([s.type, s.size].filter(Boolean).join(" ") || "Steine");
+        const hit = g.find(x => x.label === label && x.u === u);
+        if (hit) hit.qty += qty; else g.push({ label, u, qty });
+      });
+      return g;
+    };
     const rowsHtml = inv.items.map(it => {
       const cnt = parseFloat(it.count) || 1;
       const priced = (it.stones || []).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
       if (priced.length) {
-        const pieceTotal = lineTotal(it);
-        const totQty = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0), 0) * cnt;
-        const breakdown = priced.map(s => {
-          const q = (parseFloat(s.qty)||0) * cnt, u = parseFloat(s.price)||0;
-          const name = [s.type, s.size].filter(Boolean).join(" ") || "Stein";
-          const rule = stoneRule(s.type, s.size);
-          const rw   = rule && rule.split(" ")[0];
-          const range = rule && name.toLowerCase().includes(rw.toLowerCase()) ? rule.slice(rw.length).trim() : rule;
-          const per  = u ? `${fmtCHF(u)}/Stein` : "";
-          const tail = [range, per].filter(Boolean).join(": ");
-          return `${q ? q + "× " : ""}${esc(name)}${tail ? ` — ${esc(tail)}` : ""}`;
+        const pieceUnit = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0) * (parseFloat(s.price)||0), 0);
+        const betrag = pieceUnit * cnt;
+        const breakdown = stoneGroups(priced).map(g => {
+          const line = `${g.qty}× ${esc(g.label)}`;
+          return g.u ? `${line} à ${fmtCHF(g.u)} = ${fmtCHF(g.qty * g.u)}` : line;
         }).join("<br>");
-        const cntTag = cnt > 1 ? ` <span class="muted">(${cnt}×)</span>` : "";
-        return `<tbody class="piece-group"><tr class="piece"><td>${esc(it.desc) || "—"}${cntTag}<div class="stone-line">${breakdown}</div></td><td class="right">${totQty || ""}</td><td class="right"></td><td class="right">${pieceTotal ? fmtCHF(pieceTotal) : ""}</td></tr></tbody>`;
+        return `<tbody class="piece-group"><tr class="piece"><td>${esc(it.desc) || "—"}<div class="stone-line">${breakdown}</div></td><td class="right">${cnt}</td><td class="right">${pieceUnit ? fmtCHF(pieceUnit) : ""}</td><td class="right">${betrag ? fmtCHF(betrag) : ""}</td></tr></tbody>`;
       }
       // no priced stones — fall back to one row for the item itself
       const qty  = parseFloat(it.qty) || 1;
@@ -3442,27 +3446,27 @@ export default function App() {
                           const cnt = parseFloat(it.count)||1;
                           const priced = (it.stones||[]).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
                           if (priced.length) {
-                            const pieceTotal = lineTotal(it);
-                            const totQty = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0), 0) * cnt;
-                            const stoneLines = priced.map(s => {
-                              const q = (parseFloat(s.qty)||0) * cnt, u = parseFloat(s.price)||0;
-                              const name = [s.type, s.size].filter(Boolean).join(" ") || "Piedra";
-                              const rule = stoneRule(s.type, s.size);
-                              const rw   = rule && rule.split(" ")[0];
-                              const range = rule && name.toLowerCase().includes(rw.toLowerCase()) ? rule.slice(rw.length).trim() : rule;
-                              const per  = u ? `${C.currency} ${fmt(u)}/Stein` : "";
-                              const tail = [range, per].filter(Boolean).join(": ");
-                              return `${q ? q + "× " : ""}${name}${tail ? ` — ${tail}` : ""}`;
+                            const pieceUnit = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0) * (parseFloat(s.price)||0), 0);
+                            const betrag = pieceUnit * cnt;
+                            const groups = [];
+                            priced.forEach(s => {
+                              const qty = parseFloat(s.qty)||0, u = parseFloat(s.price)||0;
+                              const label = stoneRule(s.type, s.size) || ([s.type, s.size].filter(Boolean).join(" ") || "Piedras");
+                              const hit = groups.find(x => x.label === label && x.u === u);
+                              if (hit) hit.qty += qty; else groups.push({ label, u, qty });
                             });
+                            const stoneLines = groups.map(g => g.u
+                              ? `${g.qty}× ${g.label} · ${C.currency} ${fmt(g.u)} = ${C.currency} ${fmt(g.qty*g.u)}`
+                              : `${g.qty}× ${g.label}`);
                             return [(
                               <tr key={i} style={{ borderBottom:"1px solid #E8E4DC" }}>
                                 <td style={{ padding:"8px 4px 8px 0", verticalAlign:"top" }}>
-                                  <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{it.desc||"—"}{cnt>1 && <span style={{ color:"#9DB5B9", fontWeight:400 }}> ({cnt}×)</span>}</div>
+                                  <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{it.desc||"—"}</div>
                                   <div style={{ fontSize:11, color:"#41595E", marginTop:3, lineHeight:1.55, wordBreak:"break-word" }}>{stoneLines.map((l,k)=><div key={k}>{l}</div>)}</div>
                                 </td>
-                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{totQty||""}</td>
-                                <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", verticalAlign:"top" }}></td>
-                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1B3F45", verticalAlign:"top" }}>{pieceTotal ? `${C.currency} ${fmt(pieceTotal)}` : ""}</td>
+                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{cnt}</td>
+                                <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{pieceUnit ? `${C.currency} ${fmt(pieceUnit)}` : ""}</td>
+                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1B3F45", verticalAlign:"top" }}>{betrag ? `${C.currency} ${fmt(betrag)}` : ""}</td>
                               </tr>
                             )];
                           }
