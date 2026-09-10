@@ -1507,10 +1507,9 @@ export default function App() {
                     const sel = homePrio===key;
                     return (
                       <button key={key} onClick={()=>setHomePrio(key)}
-                        style={{ flex:1, minWidth:0, padding:"9px 6px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:5, overflow:"hidden", textOverflow:"ellipsis" }}>
+                        style={{ flex:1, minWidth:0, padding:"9px 6px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:6, overflow:"hidden", textOverflow:"ellipsis" }}>
                         {dot && <span style={{ width:7, height:7, borderRadius:"50%", background:dot, flexShrink:0 }}/>}
                         <span style={{ overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
-                        <span style={{ fontWeight:500, opacity:0.55, flexShrink:0 }}>{cnt}</span>
                       </button>
                     );
                   })}
@@ -2026,14 +2025,13 @@ export default function App() {
                 <div style={{ display:"flex", gap:6, marginBottom:16 }}>
                   {[["all", lang==="de"?"Alle":"All", orders.length, null],
                     ...PRIORITY_ORDER.map(p => [p, lang==="de"?PRIORITY_META[p].de:PRIORITY_META[p].en, prioCounts[p], PRIORITY_META[p].color])
-                  ].map(([key,label,cnt,dot])=>{
+                  ].map(([key,label,,dot])=>{
                     const sel = filterPrio===key;
                     return (
                       <button key={key} onClick={()=>setFilterPrio(key)}
-                        style={{ flex:1, minWidth:0, padding:"9px 6px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:5, overflow:"hidden", textOverflow:"ellipsis" }}>
+                        style={{ flex:1, minWidth:0, padding:"9px 6px", borderRadius:100, border:"none", background: sel ? "#1B3F45" : "white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: sel ? "white" : "#5A7A80", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:6, overflow:"hidden", textOverflow:"ellipsis" }}>
                         {dot && <span style={{ width:7, height:7, borderRadius:"50%", background:dot, flexShrink:0 }}/>}
                         <span style={{ overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
-                        <span style={{ fontWeight:500, opacity:0.55, flexShrink:0 }}>{cnt}</span>
                       </button>
                     );
                   })}
