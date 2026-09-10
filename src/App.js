@@ -1545,9 +1545,11 @@ export default function App() {
                 </div>
 
                 {active.length > 0 && (
-                  <button onClick={()=>setTab("orders")} style={{ width:"100%", padding:"15px 16px", background:"#F7F5F0", border:"0.5px solid #E8E4DC", borderRadius:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:700, color:"#1B3F45", cursor:"pointer", textAlign:"center" }}>
-                    {t("viewAllOrders")}
-                  </button>
+                  <div style={{ display:"flex", justifyContent:"center", marginTop:2 }}>
+                    <button onClick={()=>setTab("orders")} style={{ padding:"10px 18px", background:"#F0F6F7", border:"none", borderRadius:100, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:13, fontWeight:700, color:"#1B3F45", cursor:"pointer" }}>
+                      {t("viewAllOrders")}
+                    </button>
+                  </div>
                 )}
               </div>
             );
