@@ -1979,7 +1979,7 @@ export default function App() {
                       {view==="new" ? t("newOrderTitle") : view==="edit" ? t("editOrderTitle") : view==="detail" ? selectedOrder?.client : t("ordersHeader")}
                     </div>
                     {view==="detail" && selectedOrder?.orderNumber && (
-                      <div style={{ fontSize:11, fontWeight:600, color:"#9DB5B9", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>Order #{selectedOrder.orderNumber}</div>
+                      <div style={{ fontSize:13, fontWeight:500, color:"#5A7A80", marginTop:6 }}>Order #{selectedOrder.orderNumber}</div>
                     )}
                   </div>
                 </div>
@@ -2996,7 +2996,7 @@ export default function App() {
                     <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>New Invoice</div>
-                      {invClient && <div style={{ fontSize:13, color:"#5A7A80", marginTop:2, fontWeight:500 }}>{invClient}</div>}
+                      {invClient && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{invClient}</div>}
                     </div>
                     {draftTotal > 0 && (
                       <div style={{ background:"#1B3F45", borderRadius:14, padding:"8px 14px", textAlign:"right" }}>
@@ -3163,7 +3163,7 @@ export default function App() {
                     <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{inv.number}</div>
-                      {inv.client && <div style={{ fontSize:13, color:"#5A7A80", marginTop:2, fontWeight:500 }}>{inv.client}</div>}
+                      {inv.client && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{inv.client}</div>}
                     </div>
                     <button onClick={()=>showConfirm(`${t("deleteOrderConfirm")} ${inv.number}? ${t("cannotUndone")}.`,()=>{ setInvoices(invoices.filter(i=>i.id!==inv.id)); setSelectedInvoice(null); setInvView("list"); showToast(t("invoiceDeleted"),"#da1e28"); })} style={{ width:36, height:36, borderRadius:11, background:"#fff1f1", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="trash" size={17} color="#da1e28"/></button>
                   </div>
@@ -3268,7 +3268,7 @@ export default function App() {
                   <button onClick={()=>setClientView("list")} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                 )}
                 <div>
-                  <div style={{ fontSize: clientView==="list"?28:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
+                  <div style={{ fontSize: clientView==="list"?24:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
                     {clientView==="list" ? t("clientsTitle") : clientView==="new" ? t("newClientTitle") : clientView==="edit" ? t("editClientTitle") : (clients.find(c=>c.id===selectedClientId)?.company || clients.find(c=>c.id===selectedClientId)?.name || t("clientsTitle"))}
                   </div>
                   {clientView==="list" && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{clients.length} client{clients.length!==1?"s":""}</div>}
