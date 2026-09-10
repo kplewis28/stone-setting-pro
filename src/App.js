@@ -22,9 +22,17 @@ const CONFIG = {
   accentColor: "#C9933A",
   serviceTypes: ["Pavé", "Bezel", "Prong", "Channel", "Flush", "Invisible"],
   itemCategories: ["Diamond", "Ruby", "Emerald", "Sapphire", "Amethyst", "Other"],
-  // Default price (CHF) to charge for setting one stone, by type. Pre-filled on
-  // the invoice and editable there. Unknown types fall back to stoneRateDefault.
-  stoneRates: { Brillant: 15, Diamant: 15, Diamond: 15, Smaragd: 20, Emerald: 20, Rubin: 18, Ruby: 18, Saphir: 18, Sapphire: 18 },
+  // Default price (CHF) to set one stone — keyword-matched against what David
+  // types in the "Stone" field (Preisliste 2026, mostly for diamonds; colour
+  // stones are individual). Pre-filled on the invoice and editable there.
+  stoneRates: {
+    "zargen": 70, "rechteck": 90,
+    "grifffass": 25, "griff": 25,
+    "carré": 23, "carre": 23,
+    "abgedeckt": 13,
+    "eingerieb": 17,
+    "korn": 15, "verschnitt": 15, "brill": 15, "diamant": 15, "pavé": 15, "pave": 15,
+  },
   stoneRateDefault: 15,
   fieldLabel: "Stone",
   subFieldLabel: "Setting",
@@ -371,9 +379,9 @@ const newStone     = () => ({ id: Date.now()+Math.random(), type:"", size:"", qt
 const cloneStones  = (arr) => (arr||[]).map(s => ({ ...s, id: Date.now()+Math.random() }));
 // Default price to set one stone of a given type (CHF), pre-filled on invoices.
 const stoneRate    = (type) => {
-  if (!type) return C.stoneRateDefault;
-  const k = Object.keys(C.stoneRates).find(x => x.toLowerCase() === String(type).trim().toLowerCase());
-  return k ? C.stoneRates[k] : C.stoneRateDefault;
+  const s = String(type || "").toLowerCase();
+  for (const [k, v] of Object.entries(C.stoneRates)) if (s.includes(k)) return v;
+  return C.stoneRateDefault;
 };
 // A piece total: (identical count) × sum of its stones (qty × price) when it has
 // any; otherwise (count ×) the legacy qty × unit-price.
@@ -547,39 +555,56 @@ const SectionTitle = ({ children }) => (
 // Order phase: type + size only. Invoice phase (showPrice): + qty × price.
 const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList = [] }) => {
   const upd = (id, patch) => onChange(stones.map(s => s.id === id ? { ...s, ...patch } : s));
+  const del = (id) => onChange(stones.filter(x => x.id !== id));
+  const dup = (s) => { const i = stones.findIndex(x => x.id === s.id); const arr = [...stones]; arr.splice(i+1, 0, { ...s, id: Date.now()+Math.random() }); onChange(arr); };
   const inp = { padding:"10px 11px", border:"1.5px solid #E8E4DC", borderRadius:11, fontSize:14, color:"#1B3F45", outline:"none", background:"#fff", minWidth:0, boxSizing:"border-box", fontFamily:"inherit" };
-  const col = { fontSize:10, fontWeight:800, color:"#C8C4BC", textTransform:"uppercase", letterSpacing:"0.05em" };
+  const iconBtn = { background:"none", border:"none", cursor:"pointer", padding:5, flexShrink:0, display:"flex" };
+  const copyIcon = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>;
+  const delIcon = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C8C4BC" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>;
   return (
     <div>
       <div style={{ fontSize:12, fontWeight:800, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:8 }}>{t("stonesLabel")}</div>
       {stones.length === 0 && <div style={{ fontSize:13, color:"#9DB5B9", marginBottom:10 }}>{t("noStonesYet")}</div>}
-      {stones.length > 0 && (
-        <div style={{ display:"flex", gap:6, marginBottom:4, padding:"0 2px" }}>
-          <span style={{ ...col, flex:2 }}>{t("stoneTypeCol")}</span>
-          <span style={{ ...col, flex:1 }}>{t("stoneSizeCol")}</span>
-          {showPrice && <>
-            <span style={{ ...col, width:44, textAlign:"center" }}>{t("stoneQtyCol")}</span>
-            <span style={{ width:10 }}/>
-            <span style={{ ...col, width:60, textAlign:"center" }}>{currency}</span>
-          </>}
-          <span style={{ width:22 }}/>
-        </div>
-      )}
       <datalist id="ssp-stonetypes">{typeList.map(x => <option key={x} value={x}/>)}</datalist>
-      {stones.map(s => (
-        <div key={s.id} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
-          <input list="ssp-stonetypes" value={s.type} onChange={e=>upd(s.id,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:2 }}/>
-          <input value={s.size} onChange={e=>upd(s.id,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, flex:1 }}/>
-          {showPrice && <>
-            <input value={s.qty} onChange={e=>upd(s.id,{qty:e.target.value})} type="number" inputMode="numeric" placeholder="0" style={{ ...inp, width:44, textAlign:"center", padding:"10px 3px", fontWeight:700 }}/>
-            <span style={{ color:"#9DB5B9", fontSize:13, flexShrink:0 }}>×</span>
-            <input value={s.price} onChange={e=>upd(s.id,{price:e.target.value})} type="number" inputMode="decimal" placeholder="—" style={{ ...inp, width:60, textAlign:"center", padding:"10px 3px" }}/>
-          </>}
-          <button onClick={()=>onChange(stones.filter(x=>x.id!==s.id))} style={{ background:"none", border:"none", cursor:"pointer", padding:5, flexShrink:0 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C8C4BC" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
-        </div>
-      ))}
+
+      {showPrice ? stones.map(s => {
+        const line = (parseFloat(s.qty)||0) * (parseFloat(s.price)||0);
+        return (
+          <div key={s.id} style={{ background:"#FAFAF8", border:"1px solid #EFECE6", borderRadius:12, padding:"10px 10px 12px", marginBottom:8 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+              <input list="ssp-stonetypes" value={s.type} onChange={e=>upd(s.id,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1 }}/>
+              <input value={s.size} onChange={e=>upd(s.id,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:64, textAlign:"center", padding:"10px 4px" }}/>
+              <button onClick={()=>dup(s)} style={iconBtn}>{copyIcon}</button>
+              <button onClick={()=>del(s.id)} style={iconBtn}>{delIcon}</button>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:11, fontWeight:800, color:"#C8C4BC", textTransform:"uppercase" }}>{t("stoneQtyCol")}</span>
+              <input value={s.qty} onChange={e=>upd(s.id,{qty:e.target.value})} type="number" inputMode="numeric" placeholder="0" style={{ ...inp, width:56, textAlign:"center", fontWeight:800 }}/>
+              <span style={{ color:"#9DB5B9", fontSize:14 }}>×</span>
+              <span style={{ fontSize:11, fontWeight:800, color:"#C8C4BC" }}>{currency}</span>
+              <input value={s.price} onChange={e=>upd(s.id,{price:e.target.value})} type="number" inputMode="decimal" placeholder="—" style={{ ...inp, width:66, textAlign:"center" }}/>
+              <span style={{ marginLeft:"auto", fontSize:13, fontWeight:800, color: line>0 ? "#1B3F45" : "#C8C4BC" }}>{line>0 ? `${currency} ${line.toFixed(2)}` : "—"}</span>
+            </div>
+          </div>
+        );
+      }) : (<>
+        {stones.length > 0 && (
+          <div style={{ display:"flex", gap:6, marginBottom:4, padding:"0 2px" }}>
+            <span style={{ flex:1, fontSize:10, fontWeight:800, color:"#C8C4BC", textTransform:"uppercase", letterSpacing:"0.05em" }}>{t("stoneTypeCol")}</span>
+            <span style={{ width:64, fontSize:10, fontWeight:800, color:"#C8C4BC", textTransform:"uppercase", letterSpacing:"0.05em" }}>{t("stoneSizeCol")}</span>
+            <span style={{ width:52 }}/>
+          </div>
+        )}
+        {stones.map(s => (
+          <div key={s.id} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+            <input list="ssp-stonetypes" value={s.type} onChange={e=>upd(s.id,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1 }}/>
+            <input value={s.size} onChange={e=>upd(s.id,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:64, textAlign:"center", padding:"10px 4px" }}/>
+            <button onClick={()=>dup(s)} style={iconBtn}>{copyIcon}</button>
+            <button onClick={()=>del(s.id)} style={iconBtn}>{delIcon}</button>
+          </div>
+        ))}
+      </>)}
+
       <button onClick={()=>onChange([...stones, newStone()])} style={{ display:"flex", alignItems:"center", gap:7, padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:100, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", marginTop:4 }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
         {t("addStoneBtn")}
