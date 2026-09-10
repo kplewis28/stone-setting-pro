@@ -995,15 +995,16 @@ export default function App() {
   .back-btn { position:fixed; top:14px; right:14px; z-index:9999; }
   .back-btn button { background:#1B3F45; color:white; border:none; border-radius:10px; padding:10px 18px; font-size:13pt; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; }
   @media print {
-    @page { size: letter portrait; margin: 14mm 18mm; }
+    @page { size: A4 portrait; margin: 12mm 14mm; }
     html, body { margin:0; padding:0; }
     .page { max-width:100%; }
     .back-btn { display:none; }
+    tr, td, tbody, table, .bank-section, .thanks, .totals { page-break-inside: avoid; }
   }
 </style></head>
 <body>
 <div class="back-btn"><button onclick="window.close()">← Back to app</button></div>
-<div class="page">
+<div id="fit"><div class="page">
   <div class="logo">
     <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:70px;object-fit:contain;">
   </div>
@@ -1045,7 +1046,10 @@ export default function App() {
     ${C.ownerName}
   </div>
 </div>
-  ${withPrintScript ? ["<script>window.onload=()=>{ window.print(); }</","script>"].join("") : ""}
+</div>
+  ${["<","script>(function(){function fit(){try{var p=document.querySelector('.page');if(!p)return;var dpi=96;var availH=(297-24)/25.4*dpi;var availW=(210-28)/25.4*dpi;var s=Math.min(1, availH/p.scrollHeight, availW/p.scrollWidth);var f=document.getElementById('fit');if(s<1){p.style.transformOrigin='top center';p.style.transform='scale('+s+')';f.style.height=(p.scrollHeight*s)+'px';f.style.overflow='hidden';}else{p.style.transform='';f.style.height='';}}catch(e){}}",
+     (withPrintScript ? "window.onload=function(){fit();setTimeout(function(){window.print();},60);};" : "window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);"),
+     "})();</","script>"].join("")}
 </body></html>`;
     return html;
   };
