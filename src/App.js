@@ -1077,19 +1077,25 @@ export default function App() {
     const mwst   = sub * C.taxRate;
     const total  = roundCHF(sub + porto + mwst);
     const esc = s => String(s||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    // Every item ALWAYS produces at least one row.
     const rowsHtml = inv.items.map(it => {
-      const st = it.stones || [];
-      if (st.length) {
-        const cnt = parseFloat(it.count)||1;
-        return st.filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0).map(s => {
+      const cnt = parseFloat(it.count) || 1;
+      const priced = (it.stones || []).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
+      if (priced.length) {
+        return priced.map(s => {
           const q = (parseFloat(s.qty)||0) * cnt, u = parseFloat(s.price)||0;
           const label = [it.desc, [s.type, s.size].filter(Boolean).join(" ")].filter(Boolean).join(" — ");
-          return `<tr><td>${esc(label) || "—"}</td><td class="right">${q}</td><td class="right">${fmtCHF(u)}</td><td class="right">${fmtCHF(q*u)}</td></tr>`;
+          return `<tr><td>${esc(label) || "—"}</td><td class="right">${q||""}</td><td class="right">${u ? fmtCHF(u) : ""}</td><td class="right">${(q&&u) ? fmtCHF(q*u) : ""}</td></tr>`;
         }).join("");
       }
-      const qty  = parseFloat(it.qty)||1;
-      const unit = parseFloat(it.unitPrice)||parseFloat(it.price)||0;
-      return `<tr><td>${esc(it.desc) || "—"}</td><td class="right">${qty}</td><td class="right">${fmtCHF(unit)}</td><td class="right">${fmtCHF(qty*unit)}</td></tr>`;
+      // no priced stones — fall back to one row for the item itself
+      const qty  = parseFloat(it.qty) || 1;
+      const unit = parseFloat(it.unitPrice) || parseFloat(it.price) || 0;
+      const tot  = lineTotal(it);
+      const label = (it.stones || []).length
+        ? [it.desc, (it.stones || []).map(s => [s.type, s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
+        : (it.desc || "—");
+      return `<tr><td>${esc(label)}</td><td class="right">${qty}</td><td class="right">${unit ? fmtCHF(unit) : "—"}</td><td class="right">${tot ? fmtCHF(tot) : "—"}</td></tr>`;
     }).join("");
 
     // Build recipient block — avoid repeating client name if address already starts with it
@@ -3389,29 +3395,33 @@ export default function App() {
                       <tbody>
                         {inv.items.flatMap((it,i)=>{
                           const cnt = parseFloat(it.count)||1;
-                          const st = (it.stones||[]).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
-                          if (st.length) return st.map((s,j)=>{
+                          const priced = (it.stones||[]).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
+                          if (priced.length) return priced.map((s,j)=>{
                             const q = (parseFloat(s.qty)||0) * cnt, u = parseFloat(s.price)||0;
                             const label = [it.desc, [s.type, s.size].filter(Boolean).join(" ")].filter(Boolean).join(" — ");
                             return (
                               <tr key={`${i}-${j}`} style={{ borderBottom:"1px solid #E8E4DC" }}>
                                 <td style={{ padding:"8px 4px 8px 0", verticalAlign:"top" }}><div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{label||"—"}</div></td>
-                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{q}</td>
-                                <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{C.currency} {fmt(u)}</td>
-                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1B3F45", verticalAlign:"top" }}>{C.currency} {fmt(q*u)}</td>
+                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{q||""}</td>
+                                <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{u ? `${C.currency} ${fmt(u)}` : ""}</td>
+                                <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1B3F45", verticalAlign:"top" }}>{(q&&u) ? `${C.currency} ${fmt(q*u)}` : ""}</td>
                               </tr>
                             );
                           });
                           const qty = parseFloat(it.qty)||1;
                           const unit = parseFloat(it.unitPrice)||parseFloat(it.price)||0;
+                          const tot = lineTotal(it);
+                          const label = (it.stones||[]).length
+                            ? [it.desc, (it.stones||[]).map(s=>[s.type,s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
+                            : (it.desc||"—");
                           return [(
                             <tr key={i} style={{ borderBottom:"1px solid #E8E4DC" }}>
                               <td style={{ padding:"8px 4px 8px 0", verticalAlign:"top" }}>
-                                <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{it.desc||"—"}</div>
+                                <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{label}</div>
                               </td>
                               <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{qty}</td>
-                              <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{C.currency} {fmt(unit)}</td>
-                              <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1B3F45", verticalAlign:"top" }}>{C.currency} {fmt(qty*unit)}</td>
+                              <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{unit ? `${C.currency} ${fmt(unit)}` : "—"}</td>
+                              <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, fontWeight:700, color:"#1B3F45", verticalAlign:"top" }}>{tot ? `${C.currency} ${fmt(tot)}` : "—"}</td>
                             </tr>
                           )];
                         })}
