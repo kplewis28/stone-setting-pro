@@ -22,18 +22,33 @@ const CONFIG = {
   accentColor: "#C9933A",
   serviceTypes: ["Pavé", "Bezel", "Prong", "Channel", "Flush", "Invisible"],
   itemCategories: ["Diamond", "Ruby", "Emerald", "Sapphire", "Amethyst", "Other"],
-  // Default price (CHF) to set one stone — keyword-matched against what David
-  // types in the "Stone" field (Preisliste 2026, mostly for diamonds; colour
-  // stones are individual). Pre-filled on the invoice and editable there.
+  // Per-stone setting price (CHF) — Preisliste 2026. Keyword-matched against
+  // what David types in the "Stone" field, then by size bracket [maxMM, price].
+  // Diamonds are the cheap grain/covered rates; colour stones cost more.
+  // Pre-filled on the invoice, always editable.
   stoneRates: {
-    "zargen": 70, "rechteck": 90,
-    "grifffass": 25, "griff": 25,
-    "carré": 23, "carre": 23,
-    "abgedeckt": 13,
-    "eingerieb": 17,
-    "korn": 15, "verschnitt": 15, "brill": 15, "diamant": 15, "pavé": 15, "pave": 15,
+    brackets: {
+      "abgedeckt":  [[2.0, 13], [4.0, 22]],
+      "eingerieb":  [[2.5, 17], [4.0, 30], [5.5, 45]],
+      "carré":      [[999, 23]], "carre": [[999, 23]],
+      "korn":       [[2.0, 14], [4.0, 17]],
+      "verschnitt": [[2.0, 14], [4.0, 17]],
+      "brill":      [[2.0, 14], [4.0, 17]],
+      "diamant":    [[2.0, 14], [4.0, 17]],
+      "pavé":       [[2.0, 14], [4.0, 17]], "pave": [[2.0, 14], [4.0, 17]],
+      "smaragd":  [[999, 25]], "emerald": [[999, 25]],
+      "rubin":    [[999, 22]], "ruby": [[999, 22]],
+      "saphir":   [[999, 22]], "sapphire": [[999, 22]],
+      "farbstein":[[999, 25]],
+      "zargen":   [[999, 70]], "rechteck": [[999, 90]],
+      "griff":    [[999, 25]],
+    },
+    default: 15,
+    // exact client (company or name) → per-stone adjustment on top of the base
+    clientRates: {
+      "Lohri AG": { add: 1 },   // special client: pays 15 where base is 14, etc.
+    },
   },
-  stoneRateDefault: 15,
   fieldLabel: "Stone",
   subFieldLabel: "Setting",
   piecesLabel: "Pieces",
@@ -378,10 +393,25 @@ const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", count:"1", 
 const newStone     = () => ({ id: Date.now()+Math.random(), type:"", size:"", qty:"", price:"" });
 const cloneStones  = (arr) => (arr||[]).map(s => ({ ...s, id: Date.now()+Math.random() }));
 // Default price to set one stone of a given type (CHF), pre-filled on invoices.
-const stoneRate    = (type) => {
+const parseMM      = (s) => { const m = String(s || "").match(/[\d.]+/); return m ? parseFloat(m[0]) : null; };
+const stoneRate    = (type, size, client) => {
   const s = String(type || "").toLowerCase();
-  for (const [k, v] of Object.entries(C.stoneRates)) if (s.includes(k)) return v;
-  return C.stoneRateDefault;
+  const mm = parseMM(size);
+  const R = C.stoneRates;
+  let base = R.default;
+  for (const [k, brackets] of Object.entries(R.brackets)) {
+    if (s.includes(k)) {
+      const b = brackets.find(([max]) => mm == null || mm <= max) || brackets[brackets.length - 1];
+      base = b[1];
+      break;
+    }
+  }
+  const ov = client && R.clientRates[client];
+  if (ov) {
+    if (ov.factor) base = Math.round(base * ov.factor * 100) / 100;
+    if (ov.add) base = base + ov.add;
+  }
+  return base;
 };
 // A piece total: (identical count) × sum of its stones (qty × price) when it has
 // any; otherwise (count ×) the legacy qty × unit-price.
@@ -553,8 +583,9 @@ const SectionTitle = ({ children }) => (
 
 // ─── STONES EDITOR ──────────────────────────────────────────────────────
 // Order phase: type + size only. Invoice phase (showPrice): + qty × price.
-const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList = [] }) => {
+const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList = [], priceFor }) => {
   const upd = (id, patch) => onChange(stones.map(s => s.id === id ? { ...s, ...patch } : s));
+  const setTypeSize = (s, patch) => upd(s.id, priceFor ? { ...patch, price: String(priceFor({ ...s, ...patch }.type, { ...s, ...patch }.size)) } : patch);
   const del = (id) => onChange(stones.filter(x => x.id !== id));
   const dup = (s) => { const i = stones.findIndex(x => x.id === s.id); const arr = [...stones]; arr.splice(i+1, 0, { ...s, id: Date.now()+Math.random() }); onChange(arr); };
   const inp = { padding:"10px 11px", border:"1.5px solid #E8E4DC", borderRadius:11, fontSize:14, color:"#1B3F45", outline:"none", background:"#fff", minWidth:0, boxSizing:"border-box", fontFamily:"inherit" };
@@ -572,8 +603,8 @@ const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList 
         return (
           <div key={s.id} style={{ background:"#FAFAF8", border:"1px solid #EFECE6", borderRadius:12, padding:"10px 10px 12px", marginBottom:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-              <input list="ssp-stonetypes" value={s.type} onChange={e=>upd(s.id,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1 }}/>
-              <input value={s.size} onChange={e=>upd(s.id,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:64, textAlign:"center", padding:"10px 4px" }}/>
+              <input list="ssp-stonetypes" value={s.type} onChange={e=>setTypeSize(s,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1 }}/>
+              <input value={s.size} onChange={e=>setTypeSize(s,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:64, textAlign:"center", padding:"10px 4px" }}/>
               <button onClick={()=>dup(s)} style={iconBtn}>{copyIcon}</button>
               <button onClick={()=>del(s.id)} style={iconBtn}>{delIcon}</button>
             </div>
@@ -1021,7 +1052,7 @@ export default function App() {
     setInvDate(new Date().toISOString().split("T")[0]);
     setInvPorto("");
     const invoiceItems = (o.lineItems||[]).length > 0
-      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc||"", count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:String(stoneRate(st.type)) })) }))
+      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc||"", count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:String(stoneRate(st.type, st.size, o.client)) })) }))
       : [{ id:Date.now()+Math.random(), desc: o.description||`Order #${o.id}`, qty:"1", unitPrice:String(o.amount||""), price:String(o.amount||""), orderRef:o.id }];
     setItems(invoiceItems);
     setInvNumber(genClientInvNumber(invoices, o.client));
@@ -3209,7 +3240,7 @@ export default function App() {
                       </Field>
                       {(it.stones||[]).length > 0 ? (
                         <>
-                          <StonesEditor stones={it.stones} onChange={s=>setItems(items.map(i=>i.id===it.id?{...i,stones:s}:i))} showPrice t={t} currency={C.currency} typeList={C.itemCategories}/>
+                          <StonesEditor stones={it.stones} onChange={s=>setItems(items.map(i=>i.id===it.id?{...i,stones:s}:i))} showPrice t={t} currency={C.currency} typeList={C.itemCategories} priceFor={(ty,sz)=>stoneRate(ty,sz,invClient)}/>
                           <div style={{ fontSize:11, color:"#9DB5B9", marginTop:6 }}>{t("stonesInvoiceHint")}{(parseFloat(it.count)||1) > 1 ? ` · × ${it.count}` : ""}</div>
                         </>
                       ) : (
@@ -3242,7 +3273,7 @@ export default function App() {
                         <Select value="" onChange={e=>{
                           const o = orders.find(x=>x.id===e.target.value);
                           if(!o) return;
-                          const newItems = (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:String(stoneRate(st.type)) })) }));
+                          const newItems = (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:String(stoneRate(st.type, st.size, o.client)) })) }));
                           setItems([...items, ...newItems]);
                         }}>
                           <option value="">{t("addFromOrder")}</option>
