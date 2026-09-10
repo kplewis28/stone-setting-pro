@@ -666,8 +666,12 @@ export default function App() {
   const [statsClientFilter, setStatsClientFilter] = useState("all");
   const [statsClientPickerOpen, setStatsClientPickerOpen] = useState(false);
   const [statsMonthPickerOpen, setStatsMonthPickerOpen] = useState(false);
+  const [statsRange, setStatsRange] = useState(null); // null = single month; else { from, to }
+  const [statsPeriodKey, setStatsPeriodKey] = useState("month"); // month | 3m | 6m | year | custom
+  const [statsFromOpen, setStatsFromOpen] = useState(false);
+  const [statsToOpen, setStatsToOpen] = useState(false);
   const [statsMetric, setStatsMetric] = useState("revenue"); // "orders"|"revenue"|"units"|"clients"
-  const [statsWeek, setStatsWeek] = useState(null); // tapped week index within the selected month
+  const [statsWeek, setStatsWeek] = useState(null); // tapped week/segment index within the period
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
@@ -1571,7 +1575,18 @@ export default function App() {
         };
         // eslint-disable-next-line no-unused-vars
         const isCurrentMonth = statsMonth === new Date().toISOString().slice(0,7);
-        const monthLabel = new Date(statsMonth+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"long",year:"numeric"});
+
+        // ── Active period: a single month, or a custom [from, to] range
+        const [msY, msM] = statsMonth.split("-").map(Number);
+        const monthLastDay = new Date(msY, msM, 0).getDate();
+        const monthName = new Date(statsMonth+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"long",year:"numeric"});
+        const fmtD2 = ds => ds ? new Date(ds+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"}) : "";
+        const periodStart = statsRange ? statsRange.from : `${statsMonth}-01`;
+        const periodEnd   = statsRange ? statsRange.to   : `${statsMonth}-${String(monthLastDay).padStart(2,"0")}`;
+        const periodDays  = Math.max(1, Math.round((new Date(periodEnd) - new Date(periodStart)) / 86400000) + 1);
+        const periodLabel = statsRange ? `${fmtD2(periodStart)} – ${fmtD2(periodEnd)}` : monthName;
+        const monthLabel  = periodLabel;
+        const inP = ds => !!ds && ds >= periodStart && ds <= periodEnd;
 
         // ── Apply filters
         const filterOrders = (os) => os.filter(o =>
@@ -1581,9 +1596,9 @@ export default function App() {
           statsClientFilter === "all" || i.client === (clients.find(c=>c.id===statsClientFilter)?.company || clients.find(c=>c.id===statsClientFilter)?.name || statsClientFilter)
         );
 
-        const mAllOrders  = orders.filter(o => (o.received||"").startsWith(statsMonth));
+        const mAllOrders  = orders.filter(o => inP(o.received));
         const mOrders     = filterOrders(mAllOrders);
-        const mInvoices   = filterInvoicesForClient(invoices.filter(i => (i.date||"").startsWith(statsMonth)));
+        const mInvoices   = filterInvoicesForClient(invoices.filter(i => inP(i.date)));
         const mRevenue    = mInvoices.reduce((s,i) => s + roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)), 0);
         const mNet        = mInvoices.reduce((s,i) => s + roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)), 0);
         const mUnits      = mInvoices.reduce((s,i) => s + i.items.reduce((ss,it) => ss + (parseFloat(it.qty)||0), 0), 0);
@@ -1617,19 +1632,26 @@ export default function App() {
         };
         const mc = metricCfg[statsMetric];
 
-        // ── Previous month (same filters) for month-over-month deltas
-        const prevYM = (() => {
-          const [y,m] = statsMonth.split("-").map(Number);
-          const d = new Date(y, m-2, 1);
-          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
-        })();
-        const pInvoices = filterInvoicesForClient(invoices.filter(i => (i.date||"").startsWith(prevYM)));
+        // ── Previous comparable period (same length, immediately before) for deltas
+        const isoAdd = (ds, days) => { const d = new Date(ds+"T12:00:00"); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); };
+        let ppStart, ppEnd, prevShort;
+        if (statsRange) {
+          ppEnd = isoAdd(periodStart, -1);
+          ppStart = isoAdd(ppEnd, -(periodDays - 1));
+          prevShort = lang==="de" ? "Vorperiode" : "prev.";
+        } else {
+          const d = new Date(msY, msM-2, 1);
+          ppStart = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`;
+          ppEnd   = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(new Date(d.getFullYear(), d.getMonth()+1, 0).getDate()).padStart(2,"0")}`;
+          prevShort = d.toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"short"});
+        }
+        const inPP = ds => !!ds && ds >= ppStart && ds <= ppEnd;
+        const pInvoices = filterInvoicesForClient(invoices.filter(i => inPP(i.date)));
         const pRevenue  = pInvoices.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0);
         const pNet      = pInvoices.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)),0);
-        const pOrdersL  = filterOrders(orders.filter(o=>(o.received||"").startsWith(prevYM)));
+        const pOrdersL  = filterOrders(orders.filter(o=>inPP(o.received)));
         const pUnits    = pInvoices.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0);
         const pClients  = new Set(pOrdersL.map(o=>o.clientId||o.client).filter(Boolean)).size;
-        const prevShort = new Date(prevYM+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"short"});
         const pctDelta = (cur, prev) => {
           if (prev <= 0) return cur > 0 ? { v:100, up:true } : null;
           const d = Math.round(((cur - prev) / prev) * 100);
@@ -1648,24 +1670,29 @@ export default function App() {
           return <span style={{ fontSize:10, fontWeight:800, color:c, whiteSpace:"nowrap" }}>{d.flat?"→":d.up?"↑":"↓"} {d.v}%</span>;
         };
 
-        // ── Weekly breakdown of the selected month (which stretch was busiest)
-        const [sy, sm] = statsMonth.split("-").map(Number);
-        const daysInSel = new Date(sy, sm, 0).getDate();
-        const weekBuckets = [];
-        for (let s = 1; s <= daysInSel; s += 7) weekBuckets.push({ s, e: Math.min(s+6, daysInSel) });
-        const dayOf = ds => (ds && ds.startsWith(statsMonth)) ? parseInt(ds.slice(8,10)) : -1;
-        const weekData = weekBuckets.map(w => {
-          const wInvs   = mInvoices.filter(i => { const d = dayOf(i.date); return d >= w.s && d <= w.e; });
-          const wOrders = mOrders.filter(o => { const d = dayOf(o.received); return d >= w.s && d <= w.e; });
+        // ── Breakdown of the active period into segments (which stretch was busiest)
+        const segCount  = Math.max(2, Math.min(8, Math.ceil(periodDays / 7)));
+        const segSize   = Math.ceil(periodDays / segCount);
+        const segShort  = periodDays <= 62;
+        const weekData = Array.from({ length: segCount }, (_, k) => {
+          const from = isoAdd(periodStart, k * segSize);
+          const to   = isoAdd(periodStart, Math.min(periodDays - 1, (k+1) * segSize - 1));
+          if (from > periodEnd) return null;
+          const inSeg = ds => !!ds && ds >= from && ds <= to;
+          const wInvs   = mInvoices.filter(i => inSeg(i.date));
+          const wOrders = mOrders.filter(o => inSeg(o.received));
+          const label = segShort
+            ? `${new Date(from+"T12:00:00").getDate()}–${new Date(to+"T12:00:00").getDate()}`
+            : fmtD2(from);
           return {
-            label: `${w.s}–${w.e}`,
+            label,
             revenue: wInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0),
             net:     wInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)),0),
             orders:  wOrders.length,
             units:   wInvs.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0),
             clients: new Set(wOrders.map(o=>o.clientId||o.client).filter(Boolean)).size,
           };
-        });
+        }).filter(Boolean);
 
         // ── Vertical bar chart, 12 months, tappable
         const BarChart = ({ data, metricKey, color }) => {
@@ -1683,9 +1710,9 @@ export default function App() {
               {data.map((d, i) => {
                 const bh = vals[i] > 0 ? Math.max(4, (vals[i]/max)*PLOT) : 0;
                 const x = i * (bw + gap);
-                const sel = d.ym === statsMonth;
+                const sel = statsRange ? (d.ym >= periodStart.slice(0,7) && d.ym <= periodEnd.slice(0,7)) : d.ym === statsMonth;
                 return (
-                  <g key={d.ym} onClick={() => { setStatsMonth(d.ym); setStatsWeek(null); }} style={{ cursor:"pointer" }}>
+                  <g key={d.ym} onClick={() => { setStatsRange(null); setStatsMonth(d.ym); setStatsWeek(null); }} style={{ cursor:"pointer" }}>
                     {/* full-height tap target incl. the gap on the right */}
                     <rect x={x - gap/2} y={0} width={bw + gap} height={H + LABELS} fill="transparent"/>
                     {bh > 0 && <rect x={x} y={H - bh} width={bw} height={bh} rx={3}
@@ -1703,7 +1730,7 @@ export default function App() {
         const clientBreakdown = clients.map(c => {
           const cName = c.company || c.name;
           const cOrders = mAllOrders.filter(o => o.clientId===c.id || o.client===cName);
-          const cInvs   = invoices.filter(i => i.client===cName && (i.date||"").startsWith(statsMonth));
+          const cInvs   = invoices.filter(i => i.client===cName && inP(i.date));
           const cRev    = cInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(i.porto)||0)),0);
           const cNet    = cInvs.reduce((s,i)=>s+roundCHF(i.items.reduce((ss,it)=>ss+lineTotal(it),0)),0);
           return { id:c.id, name:cName, orders:cOrders.length, revenue:cRev, net:cNet, units:cInvs.reduce((s,i)=>s+i.items.reduce((ss,it)=>ss+(parseFloat(it.qty)||0),0),0) };
@@ -1723,27 +1750,70 @@ export default function App() {
               </div>
 
 
-              {/* Cliente + Mes — pickers propios */}
+              {/* Período: preset + cliente + fecha(s) */}
               {(() => {
                 const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
                 const chev = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>;
+                const cal = (active) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={active?"#C9933A":"#9DB5B9"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
                 const cSel = clients.find(c=>c.id===statsClientFilter);
                 const cLabel = statsClientFilter==="all" ? (lang==="de"?"Alle Kunden":"All clients") : (cSel ? (cSel.company||cSel.name) : statsClientFilter);
                 const mLabel = new Date(statsMonth+"-15").toLocaleDateString(lang==="de"?"de-CH":"en-US",{month:"long",year:"numeric"});
+                const applyPreset = (key) => {
+                  setStatsWeek(null); setStatsPeriodKey(key);
+                  const today = new Date().toISOString().slice(0,10);
+                  const monthsAgo = (n) => { const d = new Date(); d.setMonth(d.getMonth()-n); d.setDate(1); return d.toISOString().slice(0,10); };
+                  if (key === "month") setStatsRange(null);
+                  else if (key === "3m") setStatsRange({ from: monthsAgo(2), to: today });
+                  else if (key === "6m") setStatsRange({ from: monthsAgo(5), to: today });
+                  else if (key === "year") setStatsRange({ from: `${new Date().getFullYear()}-01-01`, to: today });
+                  else if (key === "custom" && !statsRange) setStatsRange({ from: monthsAgo(1), to: today });
+                };
+                const presets = [
+                  ["month", lang==="de"?"Monat":"Month"],
+                  ["3m", "3M"], ["6m", "6M"],
+                  ["year", lang==="de"?"Jahr":"Year"],
+                  ["custom", lang==="de"?"Frei":"Custom"],
+                ];
                 return (
-                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                    <button className="ssp-sq" onClick={()=>setStatsClientPickerOpen(true)} style={fieldStyle}>
-                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: statsClientFilter!=="all"?"#1B3F45":"#5A7A80" }}>{cLabel}</span>
-                      {chev}
-                    </button>
-                    <button className="ssp-sq" onClick={()=>setStatsMonthPickerOpen(true)} style={fieldStyle}>
-                      <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color:"#1B3F45" }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{mLabel}</span>
-                      </span>
-                      {chev}
-                    </button>
-                  </div>
+                  <>
+                    <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+                      {presets.map(([k, label]) => {
+                        const on = statsPeriodKey === k;
+                        return (
+                          <button key={k} onClick={()=>applyPreset(k)}
+                            style={{ flex:1, minWidth:0, padding:"8px 4px", borderRadius:100, border:"none", background: on?"#1B3F45":"white", color: on?"white":"#5A7A80", fontSize:12, fontWeight:800, cursor:"pointer", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                      <button className="ssp-sq" onClick={()=>setStatsClientPickerOpen(true)} style={fieldStyle}>
+                        <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: statsClientFilter!=="all"?"#1B3F45":"#5A7A80" }}>{cLabel}</span>
+                        {chev}
+                      </button>
+                      {statsPeriodKey === "month" ? (
+                        <button className="ssp-sq" onClick={()=>setStatsMonthPickerOpen(true)} style={fieldStyle}>
+                          <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color:"#1B3F45" }}>{cal(true)}<span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{mLabel}</span></span>
+                          {chev}
+                        </button>
+                      ) : statsPeriodKey === "custom" ? (
+                        <div style={{ flex:1, minWidth:0, display:"flex", gap:6 }}>
+                          <button className="ssp-sq" onClick={()=>setStatsFromOpen(true)} style={{ ...fieldStyle, padding:"12px 10px" }}>
+                            <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#1B3F45" }}>{statsRange ? new Date(statsRange.from+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"}) : "—"}</span>
+                          </button>
+                          <span style={{ color:"#9DB5B9", fontWeight:800, alignSelf:"center" }}>→</span>
+                          <button className="ssp-sq" onClick={()=>setStatsToOpen(true)} style={{ ...fieldStyle, padding:"12px 10px" }}>
+                            <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#1B3F45" }}>{statsRange ? new Date(statsRange.to+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"}) : "—"}</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ flex:1, minWidth:0, display:"flex", alignItems:"center", gap:7, padding:"12px 14px", background:"#F7F5F0", border:"1.5px solid #E8E4DC", borderRadius:14, fontSize:13, fontWeight:700, color:"#1B3F45" }}>
+                          {cal(true)}<span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{periodLabel}</span>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 );
               })()}
             </div>
@@ -1800,8 +1870,8 @@ export default function App() {
                     <div style={{ fontSize:11, color:"#9DB5B9", marginTop:2 }}>{t("statsTrend")} · 12 {lang==="de"?"Monate":"months"}</div>
                   </div>
                   <div style={{ textAlign:"right" }}>
-                    <div style={{ fontSize:18, fontWeight:900, color:mc.color, letterSpacing:"-0.02em", lineHeight:1 }}>{mc.format(trend.find(x=>x.ym===statsMonth)?.[statsMetric] || 0)}</div>
-                    <div style={{ fontSize:10, color:"#9DB5B9", marginTop:3 }}>{monthLabel}</div>
+                    <div style={{ fontSize:18, fontWeight:900, color:mc.color, letterSpacing:"-0.02em", lineHeight:1 }}>{mc.format(statsRange ? ({ revenue:mRevenue, net:mNet, orders:mOrders.length, units:mUnits, clients:mClients }[statsMetric]) : (trend.find(x=>x.ym===statsMonth)?.[statsMetric] || 0))}</div>
+                    <div style={{ fontSize:10, color:"#9DB5B9", marginTop:3 }}>{periodLabel}</div>
                   </div>
                 </div>
                 <BarChart data={trend} metricKey={statsMetric} color={mc.color}/>
@@ -1820,11 +1890,11 @@ export default function App() {
                   <div style={{ background:"white", borderRadius:18, border:"1px solid #E8E4DC", padding:"18px 16px 14px", marginBottom:14 }}>
                     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:18 }}>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{lang==="de"?"Innerhalb des Monats":"Within the month"}</div>
+                        <div style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{statsRange ? (lang==="de"?"Innerhalb des Zeitraums":"Within the period") : (lang==="de"?"Innerhalb des Monats":"Within the month")}</div>
                         <div style={{ fontSize:11, color:"#9DB5B9", marginTop:2 }}>
                           {statsWeek == null
-                            ? `${lang==="de"?"Aktivster Zeitraum":"Busiest stretch"}: ${lang==="de"?"Tag":"day"} ${aw.label}`
-                            : `${lang==="de"?"Tag":"Day"} ${aw.label} · ${monthLabel}`}
+                            ? `${lang==="de"?"Aktivster Abschnitt":"Busiest stretch"}: ${aw.label}`
+                            : aw.label}
                         </div>
                       </div>
                       <div style={{ fontSize:18, fontWeight:900, color:mc.color, letterSpacing:"-0.02em", lineHeight:1 }}>{mc.format(aw[statsMetric])}</div>
@@ -3625,6 +3695,22 @@ export default function App() {
         maxW={SHEET_MAX}
         onSelect={(v)=>{ if(v) { setStatsMonth(v); setStatsWeek(null); } }}
         onClose={()=>setStatsMonthPickerOpen(false)}
+      />
+      <DateSheet
+        open={statsFromOpen}
+        value={statsRange?.from || ""}
+        lang={lang}
+        maxW={SHEET_MAX}
+        onSelect={(v)=>{ if(v) { setStatsPeriodKey("custom"); setStatsWeek(null); setStatsRange(r => { const to = (r?.to && r.to >= v) ? r.to : v; return { from: v, to }; }); } }}
+        onClose={()=>setStatsFromOpen(false)}
+      />
+      <DateSheet
+        open={statsToOpen}
+        value={statsRange?.to || ""}
+        lang={lang}
+        maxW={SHEET_MAX}
+        onSelect={(v)=>{ if(v) { setStatsPeriodKey("custom"); setStatsWeek(null); setStatsRange(r => { const from = (r?.from && r.from <= v) ? r.from : v; return { from, to: v }; }); } }}
+        onClose={()=>setStatsToOpen(false)}
       />
 
       {/* ── DONE MODAL ── */}
