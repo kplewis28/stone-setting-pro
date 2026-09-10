@@ -354,8 +354,13 @@ const orderPriority = o => (o && PRIORITY_META[o.priority]) ? o.priority : "norm
 
 const newOrder     = () => ({ id: String(Date.now()).slice(-4), client:"", clientId:"", received: new Date().toISOString().split("T")[0], field1:"", field2:"", description:"", deadline:"", priority:"normal", pieces:"", status:"received", notes:"", amount:0, lineItems:[] });
 const newClient    = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
-const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", qty:"1", unitPrice:"", price:"" });
-const lineTotal    = it => (parseFloat(it.qty)||1) * (parseFloat(it.unitPrice)||parseFloat(it.price)||0);
+const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", qty:"1", unitPrice:"", price:"", stones:[] });
+const lineTotal    = it => {
+  const count = parseFloat(it.count) || 1;
+  if (Array.isArray(it.stones) && it.stones.length)
+    return count * it.stones.reduce((s, st) => s + (parseFloat(st.qty)||0) * (parseFloat(st.price)||0), 0);
+  return count * (parseFloat(it.qty)||1) * (parseFloat(it.unitPrice)||parseFloat(it.price)||0);
+};
 const genOrderNumber = (orders, clientName) => {
   const clientOrders = (orders||[]).filter(o => o.client === clientName);
   const nums = clientOrders.map(o=>parseInt(o.orderNumber)||0).filter(n=>n>0);
@@ -920,7 +925,7 @@ export default function App() {
     setInvDate(new Date().toISOString().split("T")[0]);
     setInvPorto("");
     const invoiceItems = (o.lineItems||[]).length > 0
-      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc||"", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }))
+      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc||"", count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:st.price!=null&&st.price!==""?String(st.price):"" })) }))
       : [{ id:Date.now()+Math.random(), desc: o.description||`Order #${o.id}`, qty:"1", unitPrice:String(o.amount||""), price:String(o.amount||""), orderRef:o.id }];
     setItems(invoiceItems);
     setInvNumber(genClientInvNumber(invoices, o.client));
@@ -2985,7 +2990,7 @@ export default function App() {
             };
 
             const saveInvoice = (print) => {
-              const validItems = items.filter(it=>it.desc||it.unitPrice||it.price).map(it=>({...it, price: String(lineTotal(it))}));
+              const validItems = items.filter(it=>it.desc||it.unitPrice||it.price||(it.stones||[]).length).map(it=>({...it, price: String(lineTotal(it))}));
               const inv = {
                 id: Date.now(),
                 number: invNumber || genClientInvNumber(invoices, invClient),
@@ -3121,7 +3126,7 @@ export default function App() {
                         <Select value="" onChange={e=>{
                           const o = orders.find(x=>x.id===e.target.value);
                           if(!o) return;
-                          const newItems = (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id }));
+                          const newItems = (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:st.price!=null&&st.price!==""?String(st.price):"" })) }));
                           setItems([...items, ...newItems]);
                         }}>
                           <option value="">{t("addFromOrder")}</option>
