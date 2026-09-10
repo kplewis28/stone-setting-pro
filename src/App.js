@@ -1742,9 +1742,9 @@ export default function App() {
         return (
           <div style={{ animation:"fadeUp 0.3s ease" }}>
             {/* Header — same structure as Orders/Invoice */}
-            <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+            <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
               <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
-              <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{monthLabel}</div>
+              <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{monthLabel}</div>
             </div>
 
             <div style={{ padding: isDesktop?"16px 40px 0":isTablet?"16px 32px 0":"14px 22px 0" }}>
@@ -1961,13 +1961,13 @@ export default function App() {
       {tab==="orders" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* HEADER */}
-          <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+          <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               {/* Left: title (list) or back + title (other views) */}
               {view==="list" ? (
                 <div>
                   <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("ordersHeader")}</div>
-                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>
+                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>
                     {orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}
                   </div>
                 </div>
@@ -2820,11 +2820,11 @@ export default function App() {
             return (
               <>
                 {/* Header */}
-                <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+                <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
-                      {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
+                      {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
                     </div>
                     <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
                       style={{ display:"flex", alignItems:"center", gap:5, background:"#C9933A", color:"white", border:"none", borderRadius:100, padding:"9px 15px", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", flexShrink:0 }}>
@@ -2991,7 +2991,7 @@ export default function App() {
             return (
               <>
                 {/* Header with live total */}
-                <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+                <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
@@ -3158,7 +3158,7 @@ export default function App() {
             const invTotal = roundCHF(invSub + invPortoVal + invMwst);
             return (
               <>
-                <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+                <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
@@ -3261,7 +3261,7 @@ export default function App() {
       {tab==="clients" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* Header */}
-          <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+          <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {clientView!=="list" && (
@@ -3271,7 +3271,7 @@ export default function App() {
                   <div style={{ fontSize: clientView==="list"?28:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
                     {clientView==="list" ? t("clientsTitle") : clientView==="new" ? t("newClientTitle") : clientView==="edit" ? t("editClientTitle") : (clients.find(c=>c.id===selectedClientId)?.company || clients.find(c=>c.id===selectedClientId)?.name || t("clientsTitle"))}
                   </div>
-                  {clientView==="list" && <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{clients.length} client{clients.length!==1?"s":""}</div>}
+                  {clientView==="list" && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{clients.length} client{clients.length!==1?"s":""}</div>}
                 </div>
               </div>
               {clientView==="list" && (
