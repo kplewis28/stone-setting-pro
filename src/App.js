@@ -1740,15 +1740,12 @@ export default function App() {
         return (
           <div style={{ animation:"fadeUp 0.3s ease" }}>
             {/* Header — same structure as Orders/Invoice */}
-            <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-                <div>
-                  <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
-                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{monthLabel}</div>
-                </div>
-              </div>
+            <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
+              <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
+              <div style={{ fontSize:13, color:"#5A7A80", marginTop:3, fontWeight:500 }}>{monthLabel}</div>
+            </div>
 
-
+            <div style={{ padding: isDesktop?"16px 40px 0":isTablet?"16px 32px 0":"14px 22px 0" }}>
               {/* Período: preset + cliente + fecha(s) */}
               {(() => {
                 const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
@@ -1962,7 +1959,7 @@ export default function App() {
       {tab==="orders" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* HEADER */}
-          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px" }}>
+          <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               {/* Left: title (list) or back + title (other views) */}
               {view==="list" ? (
@@ -2821,7 +2818,7 @@ export default function App() {
             return (
               <>
                 {/* Header */}
-                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 16px":"max(56px, env(safe-area-inset-top, 56px)) 22px 16px" }}>
+                <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
@@ -2992,7 +2989,7 @@ export default function App() {
             return (
               <>
                 {/* Header with live total */}
-                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px" }}>
+                <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
@@ -3159,7 +3156,7 @@ export default function App() {
             const invTotal = roundCHF(invSub + invPortoVal + invMwst);
             return (
               <>
-                <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px" }}>
+                <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
@@ -3262,7 +3259,7 @@ export default function App() {
       {tab==="clients" && (
         <div style={{ animation:"fadeUp 0.3s ease" }}>
           {/* Header */}
-          <div style={{ padding: isDesktop?"32px 40px 20px":isTablet?"max(32px, env(safe-area-inset-top, 32px)) 32px 20px":"max(56px, env(safe-area-inset-top, 56px)) 22px 20px" }}>
+          <div style={{ padding: isDesktop?"20px 40px 14px":isTablet?"max(16px, env(safe-area-inset-top, 16px)) 32px 14px":"max(12px, env(safe-area-inset-top, 12px)) 22px 14px", background:"#fff", borderBottom:"1px solid #E8E4DC" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {clientView!=="list" && (
