@@ -1368,7 +1368,7 @@ export default function App() {
         <div style={{ animation:"fadeUp 0.3s ease" }}>
 
           {/* ── S1: HEADER ── */}
-          <div style={{ padding: isDesktop ? "36px 40px 20px" : isTablet ? "max(32px, env(safe-area-inset-top, 32px)) 32px 18px" : "max(56px, env(safe-area-inset-top, 56px)) 22px 18px" }}>
+          <div style={{ padding: isDesktop ? "28px 40px 18px" : isTablet ? "max(20px, env(safe-area-inset-top, 20px)) 32px 16px" : "max(22px, env(safe-area-inset-top, 22px)) 22px 16px" }}>
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{t(greeting)},</div>
