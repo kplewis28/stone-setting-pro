@@ -413,32 +413,36 @@ const stoneRate    = (type, size, client) => {
   }
   return base;
 };
-// Human label for the Preisliste rule that sets a stone's price — shown small
-// on the invoice under the piece, e.g. "Korn 1–2 mm" / "Eingerieben 2.5–4 mm".
-const STONE_RULE_NAMES = {
-  abgedeckt:"Abgedeckt", eingerieb:"Eingerieben", "carré":"Carré", carre:"Carré",
-  korn:"Korn", verschnitt:"Verschnitt", brill:"Brillant", diamant:"Diamant",
-  "pavé":"Pavé", pave:"Pavé", smaragd:"Smaragd", emerald:"Smaragd", rubin:"Rubin",
-  ruby:"Rubin", saphir:"Saphir", sapphire:"Saphir", farbstein:"Farbstein",
-  zargen:"Zargenfassung", rechteck:"Zargenfassung eckig", griff:"Grifffassung",
-};
 const fmtMM = n => String(n).replace(/\.0$/, "");
-const stoneRule = (type, size) => {
-  const R = C.stoneRates;
-  const hay = `${type || ""} ${size || ""}`.toLowerCase();
-  const mm  = parseMM(size) ?? parseMM(type);
-  for (const [k, brackets] of Object.entries(R.brackets)) {
-    if (!hay.includes(k)) continue;
-    const name = STONE_RULE_NAMES[k] || k;
-    if (brackets.length === 1 && brackets[0][0] >= 999) return name;   // no size tiers
-    let lo = 0;
-    for (const [max] of brackets) {
-      if (mm == null || mm <= max) return lo ? `${name} ${fmtMM(lo)}–${fmtMM(max)} mm` : `${name} bis ${fmtMM(max)} mm`;
-      lo = max;
-    }
-    return `${name} ab ${fmtMM(brackets[brackets.length - 1][0])} mm`;
-  }
-  return null;
+// Collapse a piece's stones into price groups so the invoice shows
+// "3× bis 2.0 mm à CHF 14 = CHF 42" instead of a line per stone.
+const stoneGroups = (stones) => {
+  const g = [];
+  (stones || []).forEach(s => {
+    const qty = parseFloat(s.qty) || 0, u = parseFloat(s.price) || 0;
+    const mm  = parseMM(s.size) ?? parseMM(s.type);
+    const type = (s.type || "").trim();
+    let hit = g.find(x => x.u === u);
+    if (!hit) { hit = { u, qty: 0, mm: [], types: new Set() }; g.push(hit); }
+    hit.qty += qty;
+    if (mm != null) hit.mm.push(mm);
+    if (type) hit.types.add(type);
+  });
+  return g
+    .map(x => {
+      const mn = x.mm.length ? Math.min(...x.mm) : null;
+      const mx = x.mm.length ? Math.max(...x.mm) : null;
+      let range = "";
+      if (mn != null) {
+        if (mn === mx) range = `${fmtMM(mn)} mm`;
+        else if (mx <= 2) range = "bis 2.0 mm";
+        else if (mn > 2) range = "über 2.0 mm";
+        else range = `${fmtMM(mn)}–${fmtMM(mx)} mm`;
+      }
+      const type = x.types.size === 1 ? [...x.types][0] : "";
+      return { label: [type, range].filter(Boolean).join(" ") || "Steine", u: x.u, qty: x.qty, sort: mn == null ? 1e9 : mn };
+    })
+    .sort((a, b) => a.sort - b.sort);
 };
 // A piece total: (identical count) × sum of its stones (qty × price) when it has
 // any; otherwise (count ×) the legacy qty × unit-price.
@@ -1108,16 +1112,6 @@ export default function App() {
     // ONE row: piece name + a small breakdown grouped by Preisliste tier
     // (e.g. "3× Brillant bis 2 mm à CHF 14,00 = CHF 42,00"). ANZ. = number of
     // identical pieces, STÜCKPREIS = price of one piece, BETRAG = ANZ × STÜCKPREIS.
-    const stoneGroups = (stones) => {
-      const g = [];
-      stones.forEach(s => {
-        const qty = parseFloat(s.qty)||0, u = parseFloat(s.price)||0;
-        const label = stoneRule(s.type, s.size) || ([s.type, s.size].filter(Boolean).join(" ") || "Steine");
-        const hit = g.find(x => x.label === label && x.u === u);
-        if (hit) hit.qty += qty; else g.push({ label, u, qty });
-      });
-      return g;
-    };
     const rowsHtml = inv.items.map(it => {
       const cnt = parseFloat(it.count) || 1;
       const priced = (it.stones || []).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
@@ -3448,14 +3442,7 @@ export default function App() {
                           if (priced.length) {
                             const pieceUnit = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0) * (parseFloat(s.price)||0), 0);
                             const betrag = pieceUnit * cnt;
-                            const groups = [];
-                            priced.forEach(s => {
-                              const qty = parseFloat(s.qty)||0, u = parseFloat(s.price)||0;
-                              const label = stoneRule(s.type, s.size) || ([s.type, s.size].filter(Boolean).join(" ") || "Piedras");
-                              const hit = groups.find(x => x.label === label && x.u === u);
-                              if (hit) hit.qty += qty; else groups.push({ label, u, qty });
-                            });
-                            const stoneLines = groups.map(g => g.u
+                            const stoneLines = stoneGroups(priced).map(g => g.u
                               ? `${g.qty}× ${g.label} · ${C.currency} ${fmt(g.u)} = ${C.currency} ${fmt(g.qty*g.u)}`
                               : `${g.qty}× ${g.label}`);
                             return [(
