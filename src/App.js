@@ -1151,7 +1151,7 @@ export default function App() {
   .page { width: 100%; max-width: 176mm; margin: 0 auto; padding: 0; }
   .logo { margin-bottom: 14px; }
   .address { font-size:8.5pt; color:#555; margin-bottom:18px; line-height:1.6; }
-  .rechnung-title { font-size:17pt; font-weight:bold; letter-spacing:3px; color:#8E8E93; border:2.5px solid #C7C7CC; display:inline-block; padding:3px 10px; margin-bottom:4px; text-transform:uppercase; }
+  .rechnung-title { font-size:17pt; font-weight:bold; letter-spacing:3px; color:#1B3F45; border:2.5px solid #1B3F45; display:inline-block; padding:3px 10px; margin-bottom:4px; text-transform:uppercase; }
   .datum { font-size:9.5pt; font-weight:bold; margin-bottom:0; }
   .recipient-block { float:right; text-align:left; font-size:9.5pt; line-height:1.7; margin-top:-64px; margin-bottom:20px; min-width:180px; }
   .clearfix::after { content:""; display:table; clear:both; }
@@ -1175,9 +1175,11 @@ export default function App() {
   .back-btn { position:fixed; top:14px; right:14px; z-index:9999; }
   .back-btn button { background:#1B3F45; color:white; border:none; border-radius:10px; padding:10px 18px; font-size:13pt; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; }
   @media print {
-    @page { size: A4 portrait; margin: 12mm 14mm; }
+    /* margin:0 so the browser prints no URL/date header or footer;
+       the page's own padding provides the white border instead. */
+    @page { size: A4 portrait; margin: 0; }
     html, body { margin:0; padding:0; }
-    .page { max-width:100%; }
+    .page { max-width:100%; padding:14mm 14mm 12mm; }
     .back-btn { display:none; }
     tr, td, tbody, table, .bank-section, .thanks, .totals, tbody.piece-group { page-break-inside: avoid; }
   }
@@ -1227,7 +1229,7 @@ export default function App() {
   </div>
 </div>
 </div>
-  ${["<","script>(function(){function fit(){try{var p=document.querySelector('.page');if(!p)return;var dpi=96;var availH=(297-24)/25.4*dpi;var availW=(210-28)/25.4*dpi;var s=Math.min(1, availH/p.scrollHeight, availW/p.scrollWidth);var f=document.getElementById('fit');if(s<1){p.style.transformOrigin='top center';p.style.transform='scale('+s+')';f.style.height=(p.scrollHeight*s)+'px';f.style.overflow='hidden';}else{p.style.transform='';f.style.height='';}}catch(e){}}",
+  ${["<","script>(function(){function fit(){try{var p=document.querySelector('.page');if(!p)return;var dpi=96;var availH=297/25.4*dpi;var availW=210/25.4*dpi;var s=Math.min(1, availH/p.scrollHeight, availW/p.scrollWidth);var f=document.getElementById('fit');if(s<1){p.style.transformOrigin='top center';p.style.transform='scale('+s+')';f.style.height=(p.scrollHeight*s)+'px';f.style.overflow='hidden';}else{p.style.transform='';f.style.height='';}}catch(e){}}",
      (withPrintScript ? "window.onload=function(){fit();setTimeout(function(){window.print();},60);};" : "window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);"),
      "})();</","script>"].join("")}
 </body></html>`;
@@ -4289,7 +4291,7 @@ export default function App() {
                 {/* RECHNUNG title + date + recipient row */}
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:32 }}>
                   <div>
-                    <div style={{ fontFamily:"'Arial Black',Arial,sans-serif", fontSize:21, fontWeight:900, letterSpacing:"0.18em", color:"#555", textTransform:"uppercase", marginBottom:8 }}>RECHNUNG</div>
+                    <div style={{ fontFamily:"'Arial Black',Arial,sans-serif", fontSize:21, fontWeight:900, letterSpacing:"0.18em", color:"#1B3F45", textTransform:"uppercase", marginBottom:8 }}>RECHNUNG</div>
                     <div style={{ fontSize:11, fontWeight:700, color:"#1a1a1a" }}>DATUM: {dateStr}</div>
                   </div>
                   <div style={{ textAlign:"left", fontSize:11, lineHeight:1.9, color:"#1a1a1a", paddingTop:4 }}>
