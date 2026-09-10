@@ -1228,9 +1228,8 @@ export default function App() {
     <div style={{ fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", minHeight:"100vh", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
       <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
       <div style={{ width:"100%", maxWidth:360, background:"white", borderRadius:24, padding:"36px 28px", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
-        <img src="/logo.png" alt={C.businessName} style={{ height:52, objectFit:"contain", display:"block", marginBottom:8 }} onError={e=>e.target.style.display="none"}/>
-        <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", marginBottom:4 }}>{C.businessName}</div>
-        <div style={{ fontSize:13, color:"#5A7A80", marginBottom:28 }}>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.signInTo ?? TRANS.en.signInTo}</div>
+        <img src="/logo.png" alt={C.businessName} style={{ height:96, maxWidth:"100%", objectFit:"contain", display:"block", margin:"4px 0 18px" }} onError={e=>e.target.style.display="none"}/>
+        <div style={{ fontSize:14, fontWeight:600, color:"#5A7A80", marginBottom:26 }}>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.signInTo ?? TRANS.en.signInTo}</div>
         <div style={{ marginBottom:14 }}>
           <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.emailLabel ?? TRANS.en.emailLabel}</div>
           <input type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&signIn()}
@@ -1245,7 +1244,7 @@ export default function App() {
         </div>
         {authError && <div style={{ fontSize:13, color:"#da1e28", marginBottom:14, background:"#FFF0F0", border:"1px solid #F7C1C1", borderRadius:10, padding:"10px 12px" }}>{authError}</div>}
         <button onClick={signIn} disabled={authLoading}
-          style={{ width:"100%", padding:"15px", background: authLoading?"#E8E4DC":"#1B3F45", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor: authLoading?"default":"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+          style={{ width:"100%", padding:"16px", background: authLoading?"#E8E4DC":"#1B3F45", color:"white", border:"none", borderRadius:9999, fontSize:15, fontWeight:800, cursor: authLoading?"default":"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
           {authLoading ? <><div style={{ width:16, height:16, border:"2px solid white", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }}/>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.signingIn ?? TRANS.en.signingIn}</> : (TRANS[localStorage.getItem("ssp_lang")||"en"]?.signInBtn ?? TRANS.en.signInBtn)}
         </button>
       </div>
