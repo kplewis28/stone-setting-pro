@@ -1693,7 +1693,7 @@ export default function App() {
 
           {/* ── ÓRDENES ACTIVAS AGRUPADAS POR PRIORIDAD ── */}
           {(() => {
-            const active = orders.filter(o => o.status !== "done" && o.status !== "invoiced");
+            const active = orders.filter(o => o.status !== "invoiced");
             const groups = PRIORITY_ORDER.map(p => ({
               p,
               meta: PRIORITY_META[p],
@@ -2177,7 +2177,7 @@ export default function App() {
                 <div>
                   <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("ordersHeader")}</div>
                   <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>
-                    {orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}
+                    {orders.filter(o=>o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}
                   </div>
                 </div>
               ) : (
@@ -2231,7 +2231,7 @@ export default function App() {
               <>
                 {/* Urgency filter pills — a lo ancho */}
                 <div style={{ display:"flex", gap:6, marginBottom:16 }}>
-                  {[["all", lang==="de"?"Alle":"All", orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length, null],
+                  {[["all", lang==="de"?"Alle":"All", orders.filter(o=>o.status!=="invoiced").length, null],
                     ...PRIORITY_ORDER.map(p => [p, lang==="de"?PRIORITY_META[p].de:PRIORITY_META[p].en, prioCounts[p], PRIORITY_META[p].color])
                   ].map(([key,label,cnt,dot])=>{
                     const sel = filterPrio===key;
@@ -2834,12 +2834,6 @@ export default function App() {
                 ? (selectedOrder.lineItems).reduce((s,li)=>s+lineTotal(li),0)
                 : parseFloat(selectedOrder.amount)||0;
 
-              /* ── Progress bar helpers ── */
-              const STEPS = [t("receivedStep"),t("inProgressStep"),t("completedStep"),t("invoicedStep")];
-              const activeIdx = { received:1, inprogress:2, done:3, invoiced:-1 }[st] ?? 1;
-              const isCompleted = idx => st==="invoiced" || idx < activeIdx;
-              const isActive    = idx => st!=="invoiced" && idx===activeIdx;
-
               return (
                 <>
                   {/* Photo */}
@@ -2847,73 +2841,18 @@ export default function App() {
                     <img src={selectedOrder.photo} alt="order" style={{ width:"calc(100% - 32px)", margin:"0 16px 12px", borderRadius:14, objectFit:"cover", maxHeight:200, display:"block" }}/>
                   )}
 
-                  {/* ── 1. BANNER DE ESTADO ── */}
-                  {st==="received" && (
-                    <div style={{ margin:"0 16px 10px", background:"#FBF5E8", border:"1.5px solid #E8C97A", borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
-                      <div style={{ width:36, height:36, borderRadius:10, background:"#F0DDB0", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <Icon name="alert" size={18} color="#8A6220"/>
-                      </div>
-                      <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#8A6220", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("pendingStatus")}</div>
-                        <div style={{ fontSize:10, color:"#BA9B55", marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-                          {t("receivedLabel")} {fmtDate(selectedOrder.received)}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {st==="inprogress" && (
-                    <div style={{ margin:"0 16px 10px", background:"#E0EDEF", border:"1.5px solid #9DB5B9", borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
-                      <div style={{ width:36, height:36, borderRadius:10, background:"#C4D8DC", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-                      </div>
-                      <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("inReviewStatus")}</div>
-                        <div style={{ fontSize:10, color:"#5A7A80", marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-                          {t("receivedLabel")} {fmtDate(selectedOrder.received)}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {(st==="done"||st==="invoiced") && (
-                    <div style={{ margin:"0 16px 10px", background:"#E8F3EF", border:"1.5px solid #9FCFBC", borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
-                      <div style={{ width:36, height:36, borderRadius:10, background:"#C0E8D8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <Icon name="checkCircle" size={18} color="#1B6048"/>
-                      </div>
-                      <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B6048", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{st==="invoiced"?t("invoicedLabel"):t("completedLabel")}</div>
-                        <div style={{ fontSize:10, color:"#3B8060", marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{st==="invoiced"?t("invoiceCreatedLabel"):t("readyToInvoice")}</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── 2. BARRA DE PROGRESO ── */}
-                  <div style={{ margin:"0 16px 10px", background:"white", border:"0.5px solid #E8E4DC", borderRadius:12, padding:"12px 14px" }}>
-                    <div style={{ display:"flex", alignItems:"center" }}>
-                      {STEPS.map((label, idx) => (
-                        <React.Fragment key={label}>
-                          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5, flexShrink:0 }}>
-                            <div style={{ width:22, height:22, borderRadius:"50%",
-                              background: isCompleted(idx)?"#1B3F45": isActive(idx)?"#C9933A":"white",
-                              border: (!isCompleted(idx)&&!isActive(idx))?"1.5px solid #E8E4DC":"none",
-                              display:"flex", alignItems:"center", justifyContent:"center" }}>
-                              {isCompleted(idx)
-                                ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                                : isActive(idx)
-                                  ? <div style={{ width:6, height:6, borderRadius:"50%", background:"white" }}/>
-                                  : null
-                              }
-                            </div>
-                            <span style={{ fontSize:10, fontWeight:500, color: isCompleted(idx)?"#1B3F45": isActive(idx)?"#C9933A":"#9DB5B9", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap" }}>{label}</span>
-                          </div>
-                          {idx < STEPS.length-1 && (
-                            <div style={{ flex:1, height:2, background: isCompleted(idx+1)?"#1B3F45":"#E8E4DC", margin:"0 3px", marginBottom:14 }}/>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </div>
+                  {/* ── ESTADO — una sola línea: Pendiente o Facturada ── */}
+                  <div style={{ margin:"0 16px 12px", display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ width:8, height:8, borderRadius:"50%", background: st==="invoiced" ? "#1B6048" : "#C9933A", flexShrink:0 }}/>
+                    <span style={{ fontSize:13, fontWeight:700, color: st==="invoiced" ? "#1B6048" : "#C9933A", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+                      {st==="invoiced" ? t("invoicedLabel") : t("pendingStatus")}
+                    </span>
+                    <span style={{ fontSize:12, color:"#9DB5B9", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+                      · {t("receivedLabel")} {fmtDate(selectedOrder.received)}
+                    </span>
                   </div>
 
-                  {/* ── 3. CARD DE INFORMACIÓN ── */}
+                  {/* ── CARD DE INFORMACIÓN ── */}
                   <div style={{ margin:"0 16px", background:"white", border:"0.5px solid #E8E4DC", borderRadius:12, overflow:"hidden" }}>
 
                     {/* Fila A — Order ID + Entrega */}
@@ -2972,15 +2911,9 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* ── 5. BOTÓN PRINCIPAL FIJO AL FONDO ── */}
+                  {/* ── BOTÓN PRINCIPAL FIJO AL FONDO — directo a factura, sin paso intermedio ── */}
                   <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"#F2EDE4", padding:"12px 20px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
-                    {(st==="received"||st==="inprogress") && (
-                      <button onClick={()=>setConfirmSheet({ type:"done", order:selectedOrder })}
-                        style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                        <Icon name="check" size={18} color="#C9933A"/> {t("markCompletedBtn")}
-                      </button>
-                    )}
-                    {st==="done" && (
+                    {st!=="invoiced" && (
                       <button onClick={()=>setConfirmSheet({ type:"invoice", order:selectedOrder })}
                         style={{ width:"100%", padding:"16px", background:"#C9933A", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                         <Icon name="invoice" size={18} color="white"/> {t("createInvoiceBtn")}
@@ -4034,22 +3967,8 @@ export default function App() {
               </div>
             </button>
 
-            {/* Opción 3 — Marcar como terminada (solo si no está done/invoiced) */}
-            {optionsMenu.status !== "done" && optionsMenu.status !== "invoiced" && (
-              <button onClick={()=>{ setOptionsMenu(null); setConfirmSheet({ type:"done", order:optionsMenu }); }}
-                style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
-                <div style={{ width:38, height:38, borderRadius:10, background:"#E8F3EF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <Icon name="check" size={18} color="#1B6048"/>
-                </div>
-                <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("markCompletedBtn")}</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("workCompletedSub")}</div>
-                </div>
-              </button>
-            )}
-
-            {/* Opción 3 — Generar factura (solo si está done) */}
-            {optionsMenu.status === "done" && (
+            {/* Opción 3 — Generar factura (para cualquier orden no facturada todavía) */}
+            {optionsMenu.status !== "invoiced" && (
               <button onClick={()=>{ setOptionsMenu(null); setConfirmSheet({ type:"invoice", order:optionsMenu }); }}
                 style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
                 <div style={{ width:38, height:38, borderRadius:10, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
