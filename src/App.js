@@ -1028,6 +1028,21 @@ export default function App() {
   // there's nothing to lose, otherwise asks first via the exitConfirm sheet.
   const guardedNav = (fn) => { if (hasUnsavedChanges()) setExitConfirm(()=>fn); else fn(); };
 
+  // Also warn on closing the tab/app, refreshing, or typing a new URL — the
+  // native browser prompt, since our own sheet can't run once the page is
+  // actually unloading. Text is fixed by the browser; can't be customized.
+  const hasUnsavedRef = useRef(false);
+  hasUnsavedRef.current = hasUnsavedChanges();
+  useEffect(() => {
+    const onBeforeUnload = (e) => {
+      if (!hasUnsavedRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
+
   // ── PWA auto-update: tell the service worker whether the user is mid-edit,
   //    so a new version doesn't reload the page and lose an unsaved form ──
   const [swUpdateReady, setSwUpdateReady] = useState(false);
