@@ -93,6 +93,7 @@ const TRANS = {
     statusReceived:"Pending", statusInprogress:"In Review", statusDone:"Approved", statusInvoiced:"Invoiced",
     allFilter:"All", allClients:"All clients",
     thisMonthFilter:"This month",
+    viewAllLink:"View all", viewThisMonthLink:"This month only",
     overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
     workOrderBtn:"Work order", createInvoiceBtn:"Create invoice", printInvoiceBtn:"Print invoice",
     swipeHint:"\u2190 Swipe to mark done \u00a0\u00b7\u00a0 Swipe to delete \u2192",
@@ -246,6 +247,7 @@ const TRANS = {
     statusReceived:"Ausstehend", statusInprogress:"In Bearbeitung", statusDone:"Abgeschlossen", statusInvoiced:"Verrechnet",
     allFilter:"Alle", allClients:"Alle Kunden",
     thisMonthFilter:"Diesen Monat",
+    viewAllLink:"Alle anzeigen", viewThisMonthLink:"Nur diesen Monat",
     overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
     workOrderBtn:"Arbeitsauftrag", createInvoiceBtn:"Rechnung erstellen", printInvoiceBtn:"Rechnung drucken",
     swipeHint:"\u2190 Wischen = Fertig \u00a0\u00b7\u00a0 \u2192 Wischen = L\u00f6schen",
@@ -2273,8 +2275,11 @@ export default function App() {
               {view==="list" ? (
                 <div>
                   <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("ordersHeader")}</div>
-                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>
-                    {monthScopedOrders.filter(o=>o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}{filterOrderScope==="month" ? ` · ${t("thisMonthFilter")}` : ""}
+                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                    <span>{monthScopedOrders.filter(o=>o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}{filterOrderScope==="month" ? ` · ${t("thisMonthFilter")}` : ""}</span>
+                    <button onClick={()=>setFilterOrderScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
+                      {filterOrderScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -2326,18 +2331,6 @@ export default function App() {
             {/* ── LIST ── */}
             {view==="list" && (
               <>
-                {/* Alcance: este mes (default) vs. todas — evita listas infinitas */}
-                <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:10 }}>
-                  <div style={{ display:"inline-flex", background:"#fff", borderRadius:100, padding:3, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-                    {["month","all"].map(k=>(
-                      <button key={k} onClick={()=>setFilterOrderScope(k)}
-                        style={{ padding:"7px 14px", borderRadius:100, border:"none", background: filterOrderScope===k?"#1B3F45":"transparent", color: filterOrderScope===k?"white":"#5A7A80", fontSize:12.5, fontWeight:700, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-                        {k==="month"?t("thisMonthFilter"):t("allFilter")}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Urgency filter pills — a lo ancho */}
                 <div style={{ display:"flex", gap:6, marginBottom:16 }}>
                   {[["all", lang==="de"?"Alle":"All", monthScopedOrders.filter(o=>o.status!=="invoiced").length, null],
@@ -3087,7 +3080,14 @@ export default function App() {
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
-                      {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{filtered.length} invoice{filtered.length!==1?"s":""}{filterInvScope==="month" ? ` · ${t("thisMonthFilter")}` : ""} · {filtered.filter(i=>!i.printed).length} unprinted</div>}
+                      {invoices.length > 0 && (
+                        <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                          <span>{filtered.length} invoice{filtered.length!==1?"s":""}{filterInvScope==="month" ? ` · ${t("thisMonthFilter")}` : ""} · {filtered.filter(i=>!i.printed).length} unprinted</span>
+                          <button onClick={()=>setFilterInvScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
+                            {filterInvScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
                       style={{ display:"flex", alignItems:"center", gap:5, background:"#C9933A", color:"white", border:"none", borderRadius:100, padding:"9px 15px", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", flexShrink:0 }}>
@@ -3101,18 +3101,6 @@ export default function App() {
 
                   {invoices.length > 0 && (
                     <>
-                      {/* Alcance: este mes (default) vs. todas — evita listas infinitas */}
-                      <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:10 }}>
-                        <div style={{ display:"inline-flex", background:"#fff", borderRadius:100, padding:3, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-                          {["month","all"].map(k=>(
-                            <button key={k} onClick={()=>setFilterInvScope(k)}
-                              style={{ padding:"7px 14px", borderRadius:100, border:"none", background: filterInvScope===k?"#1B3F45":"transparent", color: filterInvScope===k?"white":"#5A7A80", fontSize:12.5, fontWeight:700, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-                              {k==="month"?t("thisMonthFilter"):t("allFilter")}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
                       {/* Status pills — a lo ancho */}
                       <div style={{ display:"flex", gap:6, marginBottom:10 }}>
                         {[
