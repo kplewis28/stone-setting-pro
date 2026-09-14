@@ -131,6 +131,7 @@ const TRANS = {
     discardChangesTitle:"Discard changes?",
     discardChangesMsg:"You have unsaved changes. If you leave now, they'll be lost.",
     discardBtn:"Discard", keepEditingBtn:"Keep editing",
+    undoBtn:"Undo", pieceDeletedMsg:"Piece deleted", stoneDeletedMsg:"Stone removed",
     donePromptBtn:"Confirm \u2014 order completed",
     noOrdersYet:"No orders yet",
     noOrdersDesc:"Your orders will appear here.",
@@ -281,6 +282,7 @@ const TRANS = {
     discardChangesTitle:"\u00c4nderungen verwerfen?",
     discardChangesMsg:"Sie haben ungespeicherte \u00c4nderungen. Wenn Sie jetzt verlassen, gehen sie verloren.",
     discardBtn:"Verwerfen", keepEditingBtn:"Weiter bearbeiten",
+    undoBtn:"Rückgängig", pieceDeletedMsg:"Stück gelöscht", stoneDeletedMsg:"Stein entfernt",
     donePromptBtn:"Best\u00e4tigen \u2014 Auftrag abgeschlossen",
     noOrdersYet:"Noch keine Auftr\u00e4ge",
     noOrdersDesc:"Ihre Auftr\u00e4ge erscheinen hier.",
@@ -623,7 +625,27 @@ const SectionTitle = ({ children }) => (
 const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList = [], priceFor }) => {
   const upd = (id, patch) => onChange(stones.map(s => s.id === id ? { ...s, ...patch } : s));
   const setTypeSize = (s, patch) => upd(s.id, priceFor ? { ...patch, price: String(priceFor({ ...s, ...patch }.type, { ...s, ...patch }.size)) } : patch);
-  const del = (id) => onChange(stones.filter(x => x.id !== id));
+  // Deleting a stone is one small tap next to the size field — easy to hit by
+  // accident — so it's recoverable for a few seconds via an inline "Undo".
+  const [lastDeleted, setLastDeleted] = useState(null); // { stone, index }
+  const undoTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(undoTimerRef.current), []);
+  const del = (id) => {
+    const idx = stones.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    clearTimeout(undoTimerRef.current);
+    setLastDeleted({ stone: stones[idx], index: idx });
+    onChange(stones.filter(x => x.id !== id));
+    undoTimerRef.current = setTimeout(() => setLastDeleted(null), 5000);
+  };
+  const undoDelete = () => {
+    if (!lastDeleted) return;
+    clearTimeout(undoTimerRef.current);
+    const arr = [...stones];
+    arr.splice(Math.min(lastDeleted.index, arr.length), 0, lastDeleted.stone);
+    onChange(arr);
+    setLastDeleted(null);
+  };
   const dup = (s) => { const i = stones.findIndex(x => x.id === s.id); const arr = [...stones]; arr.splice(i+1, 0, { ...s, id: Date.now()+Math.random() }); onChange(arr); };
   const inp = { padding:"10px 11px", border:"1.5px solid #E8E4DC", borderRadius:11, fontSize:14, color:"#1B3F45", outline:"none", background:"#fff", minWidth:0, boxSizing:"border-box", fontFamily:"inherit" };
   const iconBtn = { background:"none", border:"none", cursor:"pointer", padding:5, flexShrink:0, display:"flex" };
@@ -681,6 +703,13 @@ const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList 
           </div>
         ))}
       </>)}
+
+      {lastDeleted && (
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, background:"#FBF5E8", border:"1px solid #E8C97A", borderRadius:11, padding:"8px 8px 8px 12px", marginBottom:9 }}>
+          <span style={{ fontSize:12, color:"#8A6220", fontWeight:600 }}>{t("stoneDeletedMsg")}</span>
+          <button onClick={undoDelete} style={{ background:"#F0DDB0", border:"none", borderRadius:100, padding:"6px 13px", color:"#5C4515", fontWeight:800, fontSize:12, cursor:"pointer", flexShrink:0 }}>{t("undoBtn")}</button>
+        </div>
+      )}
 
       <button onClick={()=>onChange([...stones, newStone()])} style={{ display:"flex", alignItems:"center", gap:7, padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:100, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", marginTop:4 }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -856,7 +885,14 @@ export default function App() {
   const [invNumber, setInvNumber] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [toast, setToast] = useState(null);
-  const showToast = (msg, color="#198038") => { setToast({msg,color}); setTimeout(()=>setToast(null), 2000); };
+  const toastTimerRef = useRef(null);
+  // onUndo: optional — when given, the toast stays up longer and shows an
+  // "Undo" button that runs it (used to recover an accidental delete).
+  const showToast = (msg, color="#198038", onUndo=null) => {
+    clearTimeout(toastTimerRef.current);
+    setToast({ msg, color, onUndo });
+    toastTimerRef.current = setTimeout(()=>setToast(null), onUndo ? 5000 : 2000);
+  };
   const [clients, setClients]     = useState(() => { try { const s = localStorage.getItem("ssp_clients"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [clientView, setClientView] = useState("list"); // "list" | "new" | "edit" | "detail"
   const [selectedClientId, setSelectedClientId] = useState(null);
@@ -2505,7 +2541,15 @@ export default function App() {
                 const arr = [...items]; arr.splice(idx+1,0,copy);
                 setDraft(d=>({...d,lineItems:arr}));
               };
-              const delItem = (id) => setDraft(d=>({...d,lineItems:d.lineItems.filter(i=>i.id!==id)}));
+              const delItem = (id) => {
+                const idx = items.findIndex(i=>i.id===id);
+                if (idx === -1) return;
+                const removed = items[idx];
+                setDraft(d=>({...d,lineItems:d.lineItems.filter(i=>i.id!==id)}));
+                showToast(t("pieceDeletedMsg"), "#1B3F45", () => {
+                  setDraft(d=>{ const arr=[...d.lineItems]; arr.splice(Math.min(idx,arr.length),0,removed); return {...d,lineItems:arr}; });
+                });
+              };
               const updItem = (id, patch) => setDraft(d=>({...d,lineItems:d.lineItems.map(i=>i.id===id?{...i,...patch}:i)}));
               const onHandleTouchStart = (e, idx) => { dragTouchStartY.current = e.touches[0].clientY; setDragIdx(idx); };
               const onHandleTouchMove = (e) => {
@@ -4163,8 +4207,13 @@ export default function App() {
 
       {/* ── TOAST ── */}
       {toast && (
-        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 14px 12px 24px", borderRadius:100, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
           <Icon name="check" size={15} color="white"/> {toast.msg}
+          {toast.onUndo && (
+            <button onClick={()=>{ toast.onUndo(); setToast(null); }} style={{ background:"rgba(255,255,255,0.22)", border:"none", borderRadius:100, padding:"6px 14px", color:"white", fontWeight:800, fontSize:13, cursor:"pointer", marginLeft:2, fontFamily:"inherit" }}>
+              {t("undoBtn")}
+            </button>
+          )}
         </div>
       )}
 
