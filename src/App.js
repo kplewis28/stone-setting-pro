@@ -92,6 +92,9 @@ const TRANS = {
     needsAttention:"Needs attention",
     statusReceived:"Pending", statusInprogress:"In Review", statusDone:"Approved", statusInvoiced:"Invoiced",
     allFilter:"All", allClients:"All clients",
+    thisMonthFilter:"This month",
+    viewAllLink:"View all", viewThisMonthLink:"This month only",
+    fromDateLabel:"From", toDateLabel:"To",
     overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
     workOrderBtn:"Work order", createInvoiceBtn:"Create invoice", printInvoiceBtn:"Print invoice",
     swipeHint:"\u2190 Swipe to mark done \u00a0\u00b7\u00a0 Swipe to delete \u2192",
@@ -128,6 +131,10 @@ const TRANS = {
     orderSaved:"Order saved", orderUpdated:"Order updated",
     deleteOrderConfirm:"Delete order",
     areYouSure:"Are you sure?",
+    discardChangesTitle:"Discard changes?",
+    discardChangesMsg:"You have unsaved changes. If you leave now, they'll be lost.",
+    discardBtn:"Discard", keepEditingBtn:"Keep editing",
+    undoBtn:"Undo", pieceDeletedMsg:"Piece deleted", stoneDeletedMsg:"Stone removed",
     donePromptBtn:"Confirm \u2014 order completed",
     noOrdersYet:"No orders yet",
     noOrdersDesc:"Your orders will appear here.",
@@ -155,6 +162,7 @@ const TRANS = {
     savedStatus:"Saved",
     newBtn:"+ New",
     noInvoicesMatch:"No invoices match this filter",
+    noOrdersMatch:"No orders match this filter",
     editClientTitle:"Edit Client",
     noClientsDesc:"Add your clients to assign them to orders and invoices automatically.",
     addClientBtn:"+ Add client",
@@ -239,6 +247,9 @@ const TRANS = {
     needsAttention:"Dringend",
     statusReceived:"Ausstehend", statusInprogress:"In Bearbeitung", statusDone:"Abgeschlossen", statusInvoiced:"Verrechnet",
     allFilter:"Alle", allClients:"Alle Kunden",
+    thisMonthFilter:"Diesen Monat",
+    viewAllLink:"Alle anzeigen", viewThisMonthLink:"Nur diesen Monat",
+    fromDateLabel:"Von", toDateLabel:"Bis",
     overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
     workOrderBtn:"Arbeitsauftrag", createInvoiceBtn:"Rechnung erstellen", printInvoiceBtn:"Rechnung drucken",
     swipeHint:"\u2190 Wischen = Fertig \u00a0\u00b7\u00a0 \u2192 Wischen = L\u00f6schen",
@@ -275,6 +286,10 @@ const TRANS = {
     orderSaved:"Auftrag gespeichert", orderUpdated:"Auftrag aktualisiert",
     deleteOrderConfirm:"Auftrag l\u00f6schen",
     areYouSure:"Sind Sie sicher?",
+    discardChangesTitle:"\u00c4nderungen verwerfen?",
+    discardChangesMsg:"Sie haben ungespeicherte \u00c4nderungen. Wenn Sie jetzt verlassen, gehen sie verloren.",
+    discardBtn:"Verwerfen", keepEditingBtn:"Weiter bearbeiten",
+    undoBtn:"Rückgängig", pieceDeletedMsg:"Stück gelöscht", stoneDeletedMsg:"Stein entfernt",
     donePromptBtn:"Best\u00e4tigen \u2014 Auftrag abgeschlossen",
     noOrdersYet:"Noch keine Auftr\u00e4ge",
     noOrdersDesc:"Ihre Auftr\u00e4ge erscheinen hier.",
@@ -302,6 +317,7 @@ const TRANS = {
     savedStatus:"Gespeichert",
     newBtn:"+ Neu",
     noInvoicesMatch:"Keine Rechnungen f\u00fcr diesen Filter",
+    noOrdersMatch:"Keine Auftr\u00e4ge f\u00fcr diesen Filter",
     editClientTitle:"Kunde bearbeiten",
     noClientsDesc:"F\u00fcgen Sie Kunden hinzu, um sie automatisch Auftr\u00e4gen und Rechnungen zuzuordnen.",
     addClientBtn:"+ Kunde hinzuf\u00fcgen",
@@ -614,10 +630,36 @@ const SectionTitle = ({ children }) => (
 
 // ─── STONES EDITOR ──────────────────────────────────────────────────────
 // Order phase: type + size only. Invoice phase (showPrice): + qty × price.
+// Stone sizes are always "N.N mm" — auto-insert the decimal point right
+// after the first digit so the user doesn't have to reach for the "." key.
+// Only fires while typing forward (never fights a backspace/delete).
+const autoDotSize = (prev, raw) => (raw.length > (prev||"").length && /^\d$/.test(raw)) ? raw + "." : raw;
+
 const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList = [], priceFor }) => {
   const upd = (id, patch) => onChange(stones.map(s => s.id === id ? { ...s, ...patch } : s));
   const setTypeSize = (s, patch) => upd(s.id, priceFor ? { ...patch, price: String(priceFor({ ...s, ...patch }.type, { ...s, ...patch }.size)) } : patch);
-  const del = (id) => onChange(stones.filter(x => x.id !== id));
+  // Deleting a stone is one small tap next to the size field — easy to hit by
+  // accident — so it's recoverable for a few seconds via an inline "Undo".
+  const [lastDeleted, setLastDeleted] = useState(null); // { stone, index }
+  const undoTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(undoTimerRef.current), []);
+  const del = (id) => {
+    const idx = stones.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    clearTimeout(undoTimerRef.current);
+    setLastDeleted({ stone: stones[idx], index: idx });
+    onChange(stones.filter(x => x.id !== id));
+    undoTimerRef.current = setTimeout(() => setLastDeleted(null), 9000);
+  };
+  const undoDelete = () => {
+    if (!lastDeleted) return;
+    clearTimeout(undoTimerRef.current);
+    const arr = [...stones];
+    arr.splice(Math.min(lastDeleted.index, arr.length), 0, lastDeleted.stone);
+    onChange(arr);
+    setLastDeleted(null);
+  };
+  const dismissUndo = () => { clearTimeout(undoTimerRef.current); setLastDeleted(null); };
   const dup = (s) => { const i = stones.findIndex(x => x.id === s.id); const arr = [...stones]; arr.splice(i+1, 0, { ...s, id: Date.now()+Math.random() }); onChange(arr); };
   const inp = { padding:"10px 11px", border:"1.5px solid #E8E4DC", borderRadius:11, fontSize:14, color:"#1B3F45", outline:"none", background:"#fff", minWidth:0, boxSizing:"border-box", fontFamily:"inherit" };
   const iconBtn = { background:"none", border:"none", cursor:"pointer", padding:5, flexShrink:0, display:"flex" };
@@ -637,7 +679,7 @@ const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList 
             {/* Stone + size + actions */}
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:11 }}>
               <input list="ssp-stonetypes" value={s.type} onChange={e=>setTypeSize(s,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1, fontWeight:600 }}/>
-              <input value={s.size} onChange={e=>setTypeSize(s,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:72, textAlign:"center", padding:"10px 4px" }}/>
+              <input value={s.size} onChange={e=>setTypeSize(s,{size:autoDotSize(s.size,e.target.value)})} placeholder={t("stoneSizePh")} style={{ ...inp, width:72, textAlign:"center", padding:"10px 4px" }}/>
               <button onClick={()=>dup(s)} style={iconBtn} aria-label="duplicate">{copyIcon}</button>
               <button onClick={()=>del(s.id)} style={iconBtn} aria-label="delete">{delIcon}</button>
             </div>
@@ -669,12 +711,22 @@ const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList 
         {stones.map(s => (
           <div key={s.id} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
             <input list="ssp-stonetypes" value={s.type} onChange={e=>upd(s.id,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1 }}/>
-            <input value={s.size} onChange={e=>upd(s.id,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:64, textAlign:"center", padding:"10px 4px" }}/>
+            <input value={s.size} onChange={e=>upd(s.id,{size:autoDotSize(s.size,e.target.value)})} placeholder={t("stoneSizePh")} style={{ ...inp, width:64, textAlign:"center", padding:"10px 4px" }}/>
             <button onClick={()=>dup(s)} style={iconBtn}>{copyIcon}</button>
             <button onClick={()=>del(s.id)} style={iconBtn}>{delIcon}</button>
           </div>
         ))}
       </>)}
+
+      {lastDeleted && (
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, background:"#FBF5E8", border:"1px solid #E8C97A", borderRadius:11, padding:"8px 6px 8px 12px", marginBottom:9 }}>
+          <span style={{ fontSize:12, color:"#8A6220", fontWeight:600, flex:1 }}>{t("stoneDeletedMsg")}</span>
+          <button onClick={undoDelete} style={{ background:"#F0DDB0", border:"none", borderRadius:100, padding:"6px 13px", color:"#5C4515", fontWeight:800, fontSize:12, cursor:"pointer", flexShrink:0 }}>{t("undoBtn")}</button>
+          <button onClick={dismissUndo} aria-label="dismiss" style={{ background:"none", border:"none", padding:6, cursor:"pointer", display:"flex", flexShrink:0 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8A6220" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      )}
 
       <button onClick={()=>onChange([...stones, newStone()])} style={{ display:"flex", alignItems:"center", gap:7, padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:100, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", marginTop:4 }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -818,7 +870,10 @@ export default function App() {
   const [tab, setTab]           = useState("home");
   const [homePrio, setHomePrio] = useState("urgent"); // Home priority tab
   const [filterPrio, setFilterPrio] = useState("all"); // Orders tab: filter by urgency
-  const [filterDate, setFilterDate]   = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo]     = useState("");
+  const [filterOrderScope, setFilterOrderScope] = useState("month"); // Orders tab: "month" (default) | "all"
+  const [filterInvScope, setFilterInvScope] = useState("month"); // Invoices tab: "month" (default) | "all"
   const [orders, setOrders]     = useState(() => { try { const s = localStorage.getItem("ssp_orders"); return s ? JSON.parse(s) : SAMPLE_ORDERS; } catch { return SAMPLE_ORDERS; } });
   const [view, setView]         = useState("list");
   const [selectedId, setSelectedId] = useState(null);
@@ -843,25 +898,36 @@ export default function App() {
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
-  const [filterInvDate, setFilterInvDate] = useState("");
+  const [filterInvDateFrom, setFilterInvDateFrom] = useState("");
+  const [filterInvDateTo, setFilterInvDateTo]     = useState("");
   const [invClientPickerOpen, setInvClientPickerOpen] = useState(false);
-  const [invDatePickerOpen, setInvDatePickerOpen] = useState(false);
+  const [invDateFromPickerOpen, setInvDateFromPickerOpen] = useState(false);
+  const [invDateToPickerOpen, setInvDateToPickerOpen]     = useState(false);
   const [invClientAddress, setInvClientAddress] = useState("");
   const [invNumber, setInvNumber] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [toast, setToast] = useState(null);
-  const showToast = (msg, color="#198038") => { setToast({msg,color}); setTimeout(()=>setToast(null), 2000); };
+  const toastTimerRef = useRef(null);
+  // onUndo: optional — when given, the toast stays up longer and shows an
+  // "Undo" button that runs it (used to recover an accidental delete).
+  const showToast = (msg, color="#198038", onUndo=null) => {
+    clearTimeout(toastTimerRef.current);
+    setToast({ msg, color, onUndo });
+    toastTimerRef.current = setTimeout(()=>setToast(null), onUndo ? 9000 : 2000);
+  };
   const [clients, setClients]     = useState(() => { try { const s = localStorage.getItem("ssp_clients"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [clientView, setClientView] = useState("list"); // "list" | "new" | "edit" | "detail"
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [clientDraft, setClientDraft] = useState(newClient());
   const [filterClient, setFilterClient] = useState("all");
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [dateFromPickerOpen, setDateFromPickerOpen] = useState(false);
+  const [dateToPickerOpen, setDateToPickerOpen]     = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
   const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
   const showConfirm = (message, onConfirm) => setConfirmModal({ message, onConfirm });
+  const [exitConfirm, setExitConfirm] = useState(null); // pending nav fn while "discard changes?" is shown
   const [workOrderPreview, setWorkOrderPreview] = useState(null);
   const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
@@ -994,6 +1060,48 @@ export default function App() {
     dbSet('clients', clients).catch(e => { console.error('[cloud] save failed: clients', e); setCloudError(true); });
   }, [clients, dbLoaded]);
 
+  // ── Exit guard: if the user has actually typed something in a draft
+  //    (new/edit order, new invoice, new/edit client) and then hits back,
+  //    switches tabs, etc., confirm before throwing it away. An empty,
+  //    untouched form navigates away silently — only real input is guarded.
+  const orderDraftDirty = () => !!(
+    (draft.client||"").trim() || (draft.description||"").trim() || draft.photo ||
+    (draft.lineItems||[]).some(li => (li.desc||"").trim() || (li.stones||[]).some(s=>(s.type||"").trim()||(s.size||"").trim()))
+  );
+  const invoiceDraftDirty = () => !!(
+    (invClient||"").trim() ||
+    items.some(it => (it.desc||"").trim() || it.unitPrice || it.price || (it.stones||[]).some(s=>(s.type||"").trim()||(s.size||"").trim()||s.qty||s.price))
+  );
+  const clientDraftDirty = () => !!(
+    (clientDraft.name||"").trim() || (clientDraft.company||"").trim() || (clientDraft.address||"").trim() ||
+    (clientDraft.phone||"").trim() || (clientDraft.email||"").trim()
+  );
+  const hasUnsavedChanges = () => {
+    if (tab==="orders"  && (view==="new"||view==="edit")) return orderDraftDirty();
+    if (tab==="invoice" && invView==="new") return invoiceDraftDirty();
+    if (tab==="clients" && (clientView==="new"||clientView==="edit")) return clientDraftDirty();
+    if (tab==="scan" && photoStep==="review") return true; // a captured/extracted photo pending confirmation
+    return false;
+  };
+  // Wrap any "leave the draft" navigation in this — runs fn immediately if
+  // there's nothing to lose, otherwise asks first via the exitConfirm sheet.
+  const guardedNav = (fn) => { if (hasUnsavedChanges()) setExitConfirm(()=>fn); else fn(); };
+
+  // Also warn on closing the tab/app, refreshing, or typing a new URL — the
+  // native browser prompt, since our own sheet can't run once the page is
+  // actually unloading. Text is fixed by the browser; can't be customized.
+  const hasUnsavedRef = useRef(false);
+  hasUnsavedRef.current = hasUnsavedChanges();
+  useEffect(() => {
+    const onBeforeUnload = (e) => {
+      if (!hasUnsavedRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
+
   // ── PWA auto-update: tell the service worker whether the user is mid-edit,
   //    so a new version doesn't reload the page and lose an unsaved form ──
   const [swUpdateReady, setSwUpdateReady] = useState(false);
@@ -1011,10 +1119,20 @@ export default function App() {
     return () => window.removeEventListener("ssp-update-ready", onUpdate);
   }, []);
 
-  const filteredOrders = orders
-    .filter(o => { const prioOk = filterPrio === "all" || orderPriority(o) === filterPrio; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return prioOk && dateOk && clientOk; })
+  const curMonthKey = new Date().toISOString().slice(0,7); // "YYYY-MM"
+  // An explicit From/To range is the user's own scope choice — it overrides "this month".
+  const monthScopedOrders = (filterOrderScope==="all" || filterDateFrom || filterDateTo)
+    ? orders
+    : orders.filter(o => (o.received||"").startsWith(curMonthKey));
+  const filteredOrders = monthScopedOrders
+    .filter(o => {
+      const prioOk = filterPrio === "all" || orderPriority(o) === filterPrio;
+      const dateOk = (!filterDateFrom || o.received >= filterDateFrom) && (!filterDateTo || o.received <= filterDateTo);
+      const clientOk = filterClient === "all" || o.client === filterClient;
+      return prioOk && dateOk && clientOk;
+    })
     .sort((a,b) => PRIORITY_ORDER.indexOf(orderPriority(a)) - PRIORITY_ORDER.indexOf(orderPriority(b)) || (b.received||"").localeCompare(a.received||""));
-  const prioCounts = PRIORITY_ORDER.reduce((a,p) => ({...a,[p]:orders.filter(o=>orderPriority(o)===p).length}),{});
+  const prioCounts = PRIORITY_ORDER.reduce((a,p) => ({...a,[p]:monthScopedOrders.filter(o=>orderPriority(o)===p).length}),{});
 
   // "what is this order" — piece count + first-piece description (fallbacks: instructions, stone·setting)
   const orderSummary = (o) => {
@@ -1560,7 +1678,7 @@ export default function App() {
             { key:"clients", icon:"person",  label:t("tabClients") },
             { key:"invoice", icon:"invoice", label:t("tabInvoice") },
           ].map(({ key, icon, label }) => (
-            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); if(key==="clients")setClientView("list"); }}
+            <button key={key} onClick={()=>guardedNav(()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); if(key==="clients")setClientView("list"); })}
               style={{ width:"100%", background: tab===key ? "rgba(201,147,58,0.18)" : "none", borderLeft: tab===key ? `3px solid #C9933A` : "3px solid transparent", borderTop:"none", borderRight:"none", borderBottom:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:12, padding:"14px 20px", transition:"all 0.1s" }}>
               <Icon name={icon} size={20} color={tab===key ? "#C9933A" : "rgba(255,255,255,0.55)"}/>
               <span style={{ fontSize:"0.875rem", fontWeight: tab===key ? 600 : 400, color: tab===key ? "#ffffff" : "rgba(255,255,255,0.55)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{label}</span>
@@ -1693,7 +1811,7 @@ export default function App() {
 
           {/* ── ÓRDENES ACTIVAS AGRUPADAS POR PRIORIDAD ── */}
           {(() => {
-            const active = orders.filter(o => o.status !== "done" && o.status !== "invoiced");
+            const active = orders.filter(o => o.status !== "invoiced");
             const groups = PRIORITY_ORDER.map(p => ({
               p,
               meta: PRIORITY_META[p],
@@ -2176,13 +2294,18 @@ export default function App() {
               {view==="list" ? (
                 <div>
                   <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("ordersHeader")}</div>
-                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>
-                    {orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}
+                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                    <span>{monthScopedOrders.filter(o=>o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}{(filterOrderScope==="month" && !filterDateFrom && !filterDateTo) ? ` · ${t("thisMonthFilter")}` : ""}</span>
+                    {!filterDateFrom && !filterDateTo && (
+                      <button onClick={()=>setFilterOrderScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
+                        {filterOrderScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (
                 <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <button onClick={()=>{ if(view==="edit") setView("detail"); else if(view==="new" && newOrderStep>1) setNewOrderStep(s=>s-1); else setView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+                  <button onClick={()=>{ if(view==="new" && newOrderStep>1){ setNewOrderStep(s=>s-1); return; } guardedNav(()=>{ if(view==="edit") setView("detail"); else setView("list"); }); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                   <div>
                     <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
                       {view==="new" ? t("newOrderTitle") : view==="edit" ? t("editOrderTitle") : view==="detail" ? selectedOrder?.client : t("ordersHeader")}
@@ -2231,7 +2354,7 @@ export default function App() {
               <>
                 {/* Urgency filter pills — a lo ancho */}
                 <div style={{ display:"flex", gap:6, marginBottom:16 }}>
-                  {[["all", lang==="de"?"Alle":"All", orders.filter(o=>o.status!=="done"&&o.status!=="invoiced").length, null],
+                  {[["all", lang==="de"?"Alle":"All", monthScopedOrders.filter(o=>o.status!=="invoiced").length, null],
                     ...PRIORITY_ORDER.map(p => [p, lang==="de"?PRIORITY_META[p].de:PRIORITY_META[p].en, prioCounts[p], PRIORITY_META[p].color])
                   ].map(([key,label,cnt,dot])=>{
                     const sel = filterPrio===key;
@@ -2246,29 +2369,28 @@ export default function App() {
                   })}
                 </div>
 
-                {/* Cliente + Fecha, uno al lado del otro — pickers propios */}
+                {/* Cliente + rango de fechas (desde/hasta), uno al lado del otro — pickers propios */}
                 {(() => {
                   const clientList = [...new Set(orders.map(o=>o.client).filter(Boolean))].sort();
-                  const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
-                  const chev = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>;
-                  const dLabel = filterDate ? new Date(filterDate+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short",year:"numeric"}) : (lang==="de"?"Datum":"Date");
+                  const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, padding:"12px 10px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
+                  const shortD = d => new Date(d+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"});
+                  const dateField = (value, onOpen, onClear, placeholder) => (
+                    <button className="ssp-sq" onClick={onOpen} style={fieldStyle}>
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: value?"#1B3F45":"#5A7A80" }}>{value ? shortD(value) : placeholder}</span>
+                      {value && <span onClick={e=>{ e.stopPropagation(); onClear(); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>}
+                    </button>
+                  );
                   return (
-                    <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
+                    <div style={{ display:"flex", gap:6, marginBottom:14, alignItems:"center" }}>
                       {clientList.length > 1 && (
-                        <button className="ssp-sq" onClick={()=>setClientPickerOpen(true)} style={fieldStyle}>
+                        <button className="ssp-sq" onClick={()=>setClientPickerOpen(true)} style={{ ...fieldStyle, padding:"12px 14px" }}>
                           <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>{filterClient==="all" ? t("allClients") : filterClient}</span>
-                          {chev}
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>
                         </button>
                       )}
-                      <button className="ssp-sq" onClick={()=>setDatePickerOpen(true)} style={fieldStyle}>
-                        <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color: filterDate?"#1B3F45":"#5A7A80" }}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={filterDate?"#C9933A":"#9DB5B9"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                          <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dLabel}</span>
-                        </span>
-                        {filterDate
-                          ? <span onClick={e=>{ e.stopPropagation(); setFilterDate(""); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>
-                          : chev}
-                      </button>
+                      {dateField(filterDateFrom, ()=>setDateFromPickerOpen(true), ()=>setFilterDateFrom(""), t("fromDateLabel"))}
+                      <span style={{ color:"#9DB5B9", fontWeight:800, flexShrink:0 }}>→</span>
+                      {dateField(filterDateTo, ()=>setDateToPickerOpen(true), ()=>setFilterDateTo(""), t("toDateLabel"))}
                     </div>
                   );
                 })()}
@@ -2300,6 +2422,10 @@ export default function App() {
                   <div style={{ textAlign:"center", fontSize:9, color:"#9DB5B9", fontWeight:500, letterSpacing:"0.04em", marginBottom:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                     ← Swipe to mark done &nbsp;·&nbsp; Swipe to delete →
                   </div>
+                )}
+
+                {orders.length > 0 && filteredOrders.length === 0 && (
+                  <div style={{ textAlign:"center", padding:"40px 24px", color:"#9DB5B9", fontSize:14 }}>{t("noOrdersMatch")}</div>
                 )}
 
                 {/* Order rows */}
@@ -2456,7 +2582,15 @@ export default function App() {
                 const arr = [...items]; arr.splice(idx+1,0,copy);
                 setDraft(d=>({...d,lineItems:arr}));
               };
-              const delItem = (id) => setDraft(d=>({...d,lineItems:d.lineItems.filter(i=>i.id!==id)}));
+              const delItem = (id) => {
+                const idx = items.findIndex(i=>i.id===id);
+                if (idx === -1) return;
+                const removed = items[idx];
+                setDraft(d=>({...d,lineItems:d.lineItems.filter(i=>i.id!==id)}));
+                showToast(t("pieceDeletedMsg"), "#1B3F45", () => {
+                  setDraft(d=>{ const arr=[...d.lineItems]; arr.splice(Math.min(idx,arr.length),0,removed); return {...d,lineItems:arr}; });
+                });
+              };
               const updItem = (id, patch) => setDraft(d=>({...d,lineItems:d.lineItems.map(i=>i.id===id?{...i,...patch}:i)}));
               const onHandleTouchStart = (e, idx) => { dragTouchStartY.current = e.touches[0].clientY; setDragIdx(idx); };
               const onHandleTouchMove = (e) => {
@@ -2834,12 +2968,6 @@ export default function App() {
                 ? (selectedOrder.lineItems).reduce((s,li)=>s+lineTotal(li),0)
                 : parseFloat(selectedOrder.amount)||0;
 
-              /* ── Progress bar helpers ── */
-              const STEPS = [t("receivedStep"),t("inProgressStep"),t("completedStep"),t("invoicedStep")];
-              const activeIdx = { received:1, inprogress:2, done:3, invoiced:-1 }[st] ?? 1;
-              const isCompleted = idx => st==="invoiced" || idx < activeIdx;
-              const isActive    = idx => st!=="invoiced" && idx===activeIdx;
-
               return (
                 <>
                   {/* Photo */}
@@ -2847,73 +2975,18 @@ export default function App() {
                     <img src={selectedOrder.photo} alt="order" style={{ width:"calc(100% - 32px)", margin:"0 16px 12px", borderRadius:14, objectFit:"cover", maxHeight:200, display:"block" }}/>
                   )}
 
-                  {/* ── 1. BANNER DE ESTADO ── */}
-                  {st==="received" && (
-                    <div style={{ margin:"0 16px 10px", background:"#FBF5E8", border:"1.5px solid #E8C97A", borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
-                      <div style={{ width:36, height:36, borderRadius:10, background:"#F0DDB0", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <Icon name="alert" size={18} color="#8A6220"/>
-                      </div>
-                      <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#8A6220", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("pendingStatus")}</div>
-                        <div style={{ fontSize:10, color:"#BA9B55", marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-                          {t("receivedLabel")} {fmtDate(selectedOrder.received)}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {st==="inprogress" && (
-                    <div style={{ margin:"0 16px 10px", background:"#E0EDEF", border:"1.5px solid #9DB5B9", borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
-                      <div style={{ width:36, height:36, borderRadius:10, background:"#C4D8DC", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-                      </div>
-                      <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("inReviewStatus")}</div>
-                        <div style={{ fontSize:10, color:"#5A7A80", marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-                          {t("receivedLabel")} {fmtDate(selectedOrder.received)}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {(st==="done"||st==="invoiced") && (
-                    <div style={{ margin:"0 16px 10px", background:"#E8F3EF", border:"1.5px solid #9FCFBC", borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
-                      <div style={{ width:36, height:36, borderRadius:10, background:"#C0E8D8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <Icon name="checkCircle" size={18} color="#1B6048"/>
-                      </div>
-                      <div>
-                        <div style={{ fontSize:13, fontWeight:500, color:"#1B6048", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{st==="invoiced"?t("invoicedLabel"):t("completedLabel")}</div>
-                        <div style={{ fontSize:10, color:"#3B8060", marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{st==="invoiced"?t("invoiceCreatedLabel"):t("readyToInvoice")}</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── 2. BARRA DE PROGRESO ── */}
-                  <div style={{ margin:"0 16px 10px", background:"white", border:"0.5px solid #E8E4DC", borderRadius:12, padding:"12px 14px" }}>
-                    <div style={{ display:"flex", alignItems:"center" }}>
-                      {STEPS.map((label, idx) => (
-                        <React.Fragment key={label}>
-                          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5, flexShrink:0 }}>
-                            <div style={{ width:22, height:22, borderRadius:"50%",
-                              background: isCompleted(idx)?"#1B3F45": isActive(idx)?"#C9933A":"white",
-                              border: (!isCompleted(idx)&&!isActive(idx))?"1.5px solid #E8E4DC":"none",
-                              display:"flex", alignItems:"center", justifyContent:"center" }}>
-                              {isCompleted(idx)
-                                ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                                : isActive(idx)
-                                  ? <div style={{ width:6, height:6, borderRadius:"50%", background:"white" }}/>
-                                  : null
-                              }
-                            </div>
-                            <span style={{ fontSize:10, fontWeight:500, color: isCompleted(idx)?"#1B3F45": isActive(idx)?"#C9933A":"#9DB5B9", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap" }}>{label}</span>
-                          </div>
-                          {idx < STEPS.length-1 && (
-                            <div style={{ flex:1, height:2, background: isCompleted(idx+1)?"#1B3F45":"#E8E4DC", margin:"0 3px", marginBottom:14 }}/>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </div>
+                  {/* ── ESTADO — una sola línea: Pendiente o Facturada ── */}
+                  <div style={{ margin:"0 16px 12px", display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ width:8, height:8, borderRadius:"50%", background: st==="invoiced" ? "#1B6048" : "#C9933A", flexShrink:0 }}/>
+                    <span style={{ fontSize:13, fontWeight:700, color: st==="invoiced" ? "#1B6048" : "#C9933A", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+                      {st==="invoiced" ? t("invoicedLabel") : t("pendingStatus")}
+                    </span>
+                    <span style={{ fontSize:12, color:"#9DB5B9", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+                      · {t("receivedLabel")} {fmtDate(selectedOrder.received)}
+                    </span>
                   </div>
 
-                  {/* ── 3. CARD DE INFORMACIÓN ── */}
+                  {/* ── CARD DE INFORMACIÓN ── */}
                   <div style={{ margin:"0 16px", background:"white", border:"0.5px solid #E8E4DC", borderRadius:12, overflow:"hidden" }}>
 
                     {/* Fila A — Order ID + Entrega */}
@@ -2972,15 +3045,9 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* ── 5. BOTÓN PRINCIPAL FIJO AL FONDO ── */}
+                  {/* ── BOTÓN PRINCIPAL FIJO AL FONDO — directo a factura, sin paso intermedio ── */}
                   <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"#F2EDE4", padding:"12px 20px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
-                    {(st==="received"||st==="inprogress") && (
-                      <button onClick={()=>setConfirmSheet({ type:"done", order:selectedOrder })}
-                        style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                        <Icon name="check" size={18} color="#C9933A"/> {t("markCompletedBtn")}
-                      </button>
-                    )}
-                    {st==="done" && (
+                    {st!=="invoiced" && (
                       <button onClick={()=>setConfirmSheet({ type:"invoice", order:selectedOrder })}
                         style={{ width:"100%", padding:"16px", background:"#C9933A", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                         <Icon name="invoice" size={18} color="white"/> {t("createInvoiceBtn")}
@@ -3016,11 +3083,17 @@ export default function App() {
           {/* ── LIST VIEW ── */}
           {invView==="list" && (()=>{
             const invClients = [...new Set(invoices.map(i=>i.client).filter(Boolean))].sort();
-            const filtered = [...invoices].reverse().filter(inv => {
+            const invCurMonthKey = new Date().toISOString().slice(0,7);
+            // An explicit From/To range is the user's own scope choice — it overrides "this month".
+            const monthScopedInvoices = (filterInvScope==="all" || filterInvDateFrom || filterInvDateTo)
+              ? invoices
+              : invoices.filter(inv => (inv.date||"").startsWith(invCurMonthKey));
+            const filtered = [...monthScopedInvoices].reverse().filter(inv => {
               if(filterInvStatus === "printed" && !inv.printed) return false;
               if(filterInvStatus === "unprinted" && inv.printed) return false;
               if(filterInvClient !== "all" && inv.client !== filterInvClient) return false;
-              if(filterInvDate && inv.date !== filterInvDate) return false;
+              if(filterInvDateFrom && inv.date < filterInvDateFrom) return false;
+              if(filterInvDateTo && inv.date > filterInvDateTo) return false;
               return true;
             });
             const totalFiltered = filtered.reduce((s,inv)=>s+(inv.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(inv.porto)||0)),0);
@@ -3031,7 +3104,16 @@ export default function App() {
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
-                      {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
+                      {invoices.length > 0 && (
+                        <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                          <span>{filtered.length} invoice{filtered.length!==1?"s":""}{(filterInvScope==="month" && !filterInvDateFrom && !filterInvDateTo) ? ` · ${t("thisMonthFilter")}` : ""} · {filtered.filter(i=>!i.printed).length} unprinted</span>
+                          {!filterInvDateFrom && !filterInvDateTo && (
+                            <button onClick={()=>setFilterInvScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
+                              {filterInvScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
                       style={{ display:"flex", alignItems:"center", gap:5, background:"#C9933A", color:"white", border:"none", borderRadius:100, padding:"9px 15px", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", flexShrink:0 }}>
@@ -3048,9 +3130,9 @@ export default function App() {
                       {/* Status pills — a lo ancho */}
                       <div style={{ display:"flex", gap:6, marginBottom:10 }}>
                         {[
-                          { key:"all",       label:t("allFilter"),           count: invoices.length },
-                          { key:"unprinted", label:t("unprintedFilter"),   count: invoices.filter(i=>!i.printed).length },
-                          { key:"printed",   label:t("printedFilter"),     count: invoices.filter(i=>i.printed).length  },
+                          { key:"all",       label:t("allFilter"),           count: monthScopedInvoices.length },
+                          { key:"unprinted", label:t("unprintedFilter"),   count: monthScopedInvoices.filter(i=>!i.printed).length },
+                          { key:"printed",   label:t("printedFilter"),     count: monthScopedInvoices.filter(i=>i.printed).length  },
                         ].map(({key, label, count}) => (
                           <button key={key} onClick={()=>setFilterInvStatus(key)}
                             style={{ flex:1, minWidth:0, padding:"9px 6px", borderRadius:100, border:"none", background: filterInvStatus===key?"#1B3F45":"white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterInvStatus===key?"white":"#5A7A80", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:5, overflow:"hidden" }}>
@@ -3060,34 +3142,33 @@ export default function App() {
                         ))}
                       </div>
 
-                      {/* Cliente + Fecha */}
+                      {/* Cliente + rango de fechas (desde/hasta) */}
                       {(() => {
-                        const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
-                        const chev = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>;
-                        const dLabel = filterInvDate ? new Date(filterInvDate+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short",year:"numeric"}) : (lang==="de"?"Datum":"Date");
+                        const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, padding:"12px 10px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
+                        const shortD = d => new Date(d+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"});
+                        const dateField = (value, onOpen, onClear, placeholder) => (
+                          <button className="ssp-sq" onClick={onOpen} style={fieldStyle}>
+                            <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: value?"#1B3F45":"#5A7A80" }}>{value ? shortD(value) : placeholder}</span>
+                            {value && <span onClick={e=>{ e.stopPropagation(); onClear(); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>}
+                          </button>
+                        );
                         return (
-                          <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
+                          <div style={{ display:"flex", gap:6, marginBottom:14, alignItems:"center" }}>
                             {invClients.length > 1 && (
-                              <button className="ssp-sq" onClick={()=>setInvClientPickerOpen(true)} style={fieldStyle}>
+                              <button className="ssp-sq" onClick={()=>setInvClientPickerOpen(true)} style={{ ...fieldStyle, padding:"12px 14px" }}>
                                 <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: filterInvClient!=="all"?"#1B3F45":"#5A7A80" }}>{filterInvClient==="all" ? t("allClients") : filterInvClient}</span>
-                                {chev}
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>
                               </button>
                             )}
-                            <button className="ssp-sq" onClick={()=>setInvDatePickerOpen(true)} style={fieldStyle}>
-                              <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color: filterInvDate?"#1B3F45":"#5A7A80" }}>
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={filterInvDate?"#C9933A":"#9DB5B9"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dLabel}</span>
-                              </span>
-                              {filterInvDate
-                                ? <span onClick={e=>{ e.stopPropagation(); setFilterInvDate(""); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>
-                                : chev}
-                            </button>
+                            {dateField(filterInvDateFrom, ()=>setInvDateFromPickerOpen(true), ()=>setFilterInvDateFrom(""), t("fromDateLabel"))}
+                            <span style={{ color:"#9DB5B9", fontWeight:800, flexShrink:0 }}>→</span>
+                            {dateField(filterInvDateTo, ()=>setInvDateToPickerOpen(true), ()=>setFilterInvDateTo(""), t("toDateLabel"))}
                           </div>
                         );
                       })()}
 
-                      {/* Results summary */}
-                      {(filterInvStatus!=="all" || filterInvClient!=="all" || filterInvDate) && filtered.length > 0 && (
+                      {/* Results summary — always visible: "aware of what's invoiced so far" */}
+                      {filtered.length > 0 && (
                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, padding:"0 2px" }}>
                           <span style={{ fontSize:12, color:"#9DB5B9", fontWeight:500 }}>{filtered.length} result{filtered.length!==1?"s":""}</span>
                           <span style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{C.currency} {fmt(totalFiltered)}</span>
@@ -3209,7 +3290,7 @@ export default function App() {
                 {/* Header with live total */}
                 <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                    <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+                    <button onClick={()=>guardedNav(()=>setInvView("list"))} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>New Invoice</div>
                       {invClient && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{invClient}</div>}
@@ -3391,7 +3472,7 @@ export default function App() {
               <>
                 <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                    <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+                    <button onClick={()=>guardedNav(()=>{ setSelectedInvoice(null); setInvView("list"); })} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{inv.number}</div>
                       {inv.client && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{inv.client}</div>}
@@ -3519,7 +3600,7 @@ export default function App() {
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {clientView!=="list" && (
-                  <button onClick={()=>setClientView("list")} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+                  <button onClick={()=>guardedNav(()=>setClientView("list"))} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                 )}
                 <div>
                   <div style={{ fontSize: clientView==="list"?24:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
@@ -3780,7 +3861,7 @@ export default function App() {
             { key:"clients", icon:"person",  label:t("tabClients") },
             { key:"invoice", icon:"invoice", label:t("tabInvoice") },
           ].map(({ key, icon, label }) => (
-            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice"){ setInvView("list"); setSelectedInvoice(null); } if(key==="clients"){ setClientView("list"); } }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"4px 0" }}>
+            <button key={key} onClick={()=>guardedNav(()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice"){ setInvView("list"); setSelectedInvoice(null); } if(key==="clients"){ setClientView("list"); } })} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"4px 0" }}>
               <div style={{ width:44, height:32, background:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <Icon name={icon} size={20} color={tab===key ? "#1B3F45" : "#5A7A80"}/>
               </div>
@@ -3897,12 +3978,20 @@ export default function App() {
         options={[{ value:"all", label:t("allClients") }, ...[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=>({ value:c, label:c }))]}
       />
       <DateSheet
-        open={datePickerOpen}
-        value={filterDate}
+        open={dateFromPickerOpen}
+        value={filterDateFrom}
         lang={lang}
         maxW={SHEET_MAX}
-        onSelect={setFilterDate}
-        onClose={()=>setDatePickerOpen(false)}
+        onSelect={setFilterDateFrom}
+        onClose={()=>setDateFromPickerOpen(false)}
+      />
+      <DateSheet
+        open={dateToPickerOpen}
+        value={filterDateTo}
+        lang={lang}
+        maxW={SHEET_MAX}
+        onSelect={setFilterDateTo}
+        onClose={()=>setDateToPickerOpen(false)}
       />
       <SelectSheet
         open={invClientPickerOpen}
@@ -3914,12 +4003,20 @@ export default function App() {
         options={[{ value:"all", label:t("allClients") }, ...[...new Set(invoices.map(i=>i.client).filter(Boolean))].sort().map(c=>({ value:c, label:c }))]}
       />
       <DateSheet
-        open={invDatePickerOpen}
-        value={filterInvDate}
+        open={invDateFromPickerOpen}
+        value={filterInvDateFrom}
         lang={lang}
         maxW={SHEET_MAX}
-        onSelect={setFilterInvDate}
-        onClose={()=>setInvDatePickerOpen(false)}
+        onSelect={setFilterInvDateFrom}
+        onClose={()=>setInvDateFromPickerOpen(false)}
+      />
+      <DateSheet
+        open={invDateToPickerOpen}
+        value={filterInvDateTo}
+        lang={lang}
+        maxW={SHEET_MAX}
+        onSelect={setFilterInvDateTo}
+        onClose={()=>setInvDateToPickerOpen(false)}
       />
       <SelectSheet
         open={statsClientPickerOpen}
@@ -4034,22 +4131,8 @@ export default function App() {
               </div>
             </button>
 
-            {/* Opción 3 — Marcar como terminada (solo si no está done/invoiced) */}
-            {optionsMenu.status !== "done" && optionsMenu.status !== "invoiced" && (
-              <button onClick={()=>{ setOptionsMenu(null); setConfirmSheet({ type:"done", order:optionsMenu }); }}
-                style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
-                <div style={{ width:38, height:38, borderRadius:10, background:"#E8F3EF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <Icon name="check" size={18} color="#1B6048"/>
-                </div>
-                <div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("markCompletedBtn")}</div>
-                  <div style={{ fontSize:11, color:"#9DB5B9", marginTop:1, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("workCompletedSub")}</div>
-                </div>
-              </button>
-            )}
-
-            {/* Opción 3 — Generar factura (solo si está done) */}
-            {optionsMenu.status === "done" && (
+            {/* Opción 3 — Generar factura (para cualquier orden no facturada todavía) */}
+            {optionsMenu.status !== "invoiced" && (
               <button onClick={()=>{ setOptionsMenu(null); setConfirmSheet({ type:"invoice", order:optionsMenu }); }}
                 style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
                 <div style={{ width:38, height:38, borderRadius:10, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -4195,8 +4278,16 @@ export default function App() {
 
       {/* ── TOAST ── */}
       {toast && (
-        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 24px", borderRadius:100, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 14px 12px 24px", borderRadius:100, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
           <Icon name="check" size={15} color="white"/> {toast.msg}
+          {toast.onUndo && (<>
+            <button onClick={()=>{ toast.onUndo(); setToast(null); }} style={{ background:"rgba(255,255,255,0.22)", border:"none", borderRadius:100, padding:"6px 14px", color:"white", fontWeight:800, fontSize:13, cursor:"pointer", marginLeft:2, fontFamily:"inherit" }}>
+              {t("undoBtn")}
+            </button>
+            <button onClick={()=>setToast(null)} aria-label="dismiss" style={{ background:"none", border:"none", padding:6, cursor:"pointer", display:"flex", flexShrink:0 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </>)}
         </div>
       )}
 
@@ -4246,6 +4337,27 @@ export default function App() {
             </button>
             <button onClick={()=>setConfirmModal(null)} style={{ width:"100%", padding:"15px", background:"#F0F6F7", color:"#1B3F45", border:"none", borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:600, cursor:"pointer" }}>
               {t("cancelBtn")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── EXIT GUARD — "discard changes?" before leaving a draft with real input ── */}
+      {exitConfirm && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:3600, display:"flex", alignItems:"flex-end", justifyContent:"center", padding:"0 16px 32px" }}
+             onClick={()=>setExitConfirm(null)}>
+          <div style={{ background:"white", borderRadius:24, padding:"24px 24px 20px", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease", textAlign:"left" }}
+               onClick={e=>e.stopPropagation()}>
+            <div style={{ width:40, height:40, borderRadius:12, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
+              <Icon name="alert" size={20} color="#8A6220"/>
+            </div>
+            <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", marginBottom:8, textAlign:"center", letterSpacing:"-0.01em" }}>{t("discardChangesTitle")}</div>
+            <div style={{ fontSize:14, color:"#5A7A80", textAlign:"center", lineHeight:1.5, marginBottom:24 }}>{t("discardChangesMsg")}</div>
+            <button onClick={()=>setExitConfirm(null)} style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:10 }}>
+              {t("keepEditingBtn")}
+            </button>
+            <button onClick={()=>{ const fn=exitConfirm; setExitConfirm(null); fn(); }} style={{ width:"100%", padding:"15px", background:"#F0F6F7", color:"#da1e28", border:"none", borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:600, cursor:"pointer" }}>
+              {t("discardBtn")}
             </button>
           </div>
         </div>
