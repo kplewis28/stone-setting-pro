@@ -96,6 +96,12 @@ const TRANS = {
     statusReceived:"Pending", statusInprogress:"In Review", statusDone:"Approved", statusInvoiced:"Invoiced",
     allFilter:"All", allClients:"All clients",
     thisMonthFilter:"This month",
+    todayFilter:"Today", lastMonthFilter:"Last month",
+    stoneTallyBtn:"Stones", stoneTallyTitle:"Stones Used",
+    stoneTallyTotal:"Total stones", stoneTallyTypes:"Types",
+    stoneTallyEmpty:"No stones invoiced in this period",
+    allTypesFilter:"All types",
+    dateFilterTitle:"Filter by date", allDatesFilter:"All dates",
     viewAllLink:"View all", viewThisMonthLink:"This month only",
     fromDateLabel:"From", toDateLabel:"To",
     overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
@@ -251,6 +257,12 @@ const TRANS = {
     statusReceived:"Ausstehend", statusInprogress:"In Bearbeitung", statusDone:"Abgeschlossen", statusInvoiced:"Verrechnet",
     allFilter:"Alle", allClients:"Alle Kunden",
     thisMonthFilter:"Diesen Monat",
+    todayFilter:"Heute", lastMonthFilter:"Letzten Monat",
+    stoneTallyBtn:"Steine", stoneTallyTitle:"Verwendete Steine",
+    stoneTallyTotal:"Steine gesamt", stoneTallyTypes:"Arten",
+    stoneTallyEmpty:"Keine Steine in diesem Zeitraum verrechnet",
+    allTypesFilter:"Alle Arten",
+    dateFilterTitle:"Nach Datum filtern", allDatesFilter:"Alle Daten",
     viewAllLink:"Alle anzeigen", viewThisMonthLink:"Nur diesen Monat",
     fromDateLabel:"Von", toDateLabel:"Bis",
     overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
@@ -828,6 +840,68 @@ const DateSheet = ({ open, value, onSelect, onClose, maxW, lang }) => {
   );
 };
 
+// ── Date range: one friendly, unified control ──────────────────────────
+// Replaces a separate quick-chip row + two boxed From/To fields + arrow
+// with a single trigger button (shows "Today"/"This month"/"12 Sep – 20
+// Sep"/...) that opens ONE sheet: quick presets up top, From/To as two
+// plain rows below (no arrow — each just opens the existing DateSheet
+// calendar). from/to are never both truly "unset" in normal use — callers
+// default them to the current month — so empty really means "cleared to
+// show everything".
+const dateRangePreset = (key) => {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const iso = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+  const monthBounds = (y, m) => ({ from: iso(y, m, 1), to: iso(y, m, new Date(y, m + 1, 0).getDate()) });
+  if (key === "today") { const d = iso(now.getFullYear(), now.getMonth(), now.getDate()); return { from: d, to: d }; }
+  if (key === "month") return monthBounds(now.getFullYear(), now.getMonth());
+  if (key === "lastMonth") { const d = new Date(now.getFullYear(), now.getMonth() - 1, 1); return monthBounds(d.getFullYear(), d.getMonth()); }
+  return { from: "", to: "" };
+};
+// Recognizes a range that matches a preset exactly and names it; otherwise
+// "12 Sep – 20 Sep" (en dash, no arrow icon), a single "12 Sep", or the
+// "All dates" placeholder when both ends are cleared.
+const dateRangeLabel = (from, to, lang, t) => {
+  if (!from && !to) return t("allDatesFilter");
+  const shortD = d => new Date(d + "T12:00:00").toLocaleDateString(lang === "de" ? "de-CH" : "en-GB", { day: "numeric", month: "short" });
+  for (const key of ["today", "month", "lastMonth"]) {
+    const p = dateRangePreset(key);
+    if (p.from === from && p.to === to) return t(key === "today" ? "todayFilter" : key === "month" ? "thisMonthFilter" : "lastMonthFilter");
+  }
+  if (from && to) return from === to ? shortD(from) : `${shortD(from)} – ${shortD(to)}`;
+  return from ? `${t("fromDateLabel")} ${shortD(from)}` : `${t("toDateLabel")} ${shortD(to)}`;
+};
+const DateRangeSheet = ({ open, from, to, onPickFrom, onPickTo, onApplyPreset, onClear, onClose, maxW, lang, t }) => {
+  if (!open) return null;
+  const shortD = d => new Date(d + "T12:00:00").toLocaleDateString(lang === "de" ? "de-CH" : "en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const chipStyle = { flex: 1, padding: "11px 6px", borderRadius: 100, border: "none", background: "#F7F5F0", fontSize: 12.5, fontWeight: 700, color: "#1B3F45", cursor: "pointer", fontFamily: "inherit" };
+  const rowStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "15px 4px", borderBottom: "0.5px solid #F0EDE8", cursor: "pointer", width: "100%", background: "none", border: "none", textAlign: "left", fontFamily: "inherit" };
+  return (
+    <SheetShell maxW={maxW} onClose={onClose}>
+      <div style={{ padding: "2px 18px 4px" }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "#1B3F45", marginBottom: 14 }}>{t("dateFilterTitle")}</div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <button style={chipStyle} onClick={() => onApplyPreset("today")}>{t("todayFilter")}</button>
+          <button style={chipStyle} onClick={() => onApplyPreset("month")}>{t("thisMonthFilter")}</button>
+          <button style={chipStyle} onClick={() => onApplyPreset("lastMonth")}>{t("lastMonthFilter")}</button>
+        </div>
+        <button style={rowStyle} onClick={onPickFrom}>
+          <span style={{ fontSize: 13, color: "#5A7A80", fontWeight: 600 }}>{t("fromDateLabel")}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: from ? "#1B3F45" : "#C8C4BC" }}>{from ? shortD(from) : "—"}</span>
+        </button>
+        <button style={rowStyle} onClick={onPickTo}>
+          <span style={{ fontSize: 13, color: "#5A7A80", fontWeight: 600 }}>{t("toDateLabel")}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: to ? "#1B3F45" : "#C8C4BC" }}>{to ? shortD(to) : "—"}</span>
+        </button>
+      </div>
+      <div style={{ display: "flex", gap: 8, padding: "18px 18px 4px" }}>
+        {(from || to) && <button onClick={onClear} style={{ flex: 1, padding: "12px", borderRadius: 100, border: "none", background: "#FFF0F0", fontSize: 14, fontWeight: 700, color: "#da1e28", cursor: "pointer" }}>{lang === "de" ? "Löschen" : "Clear"}</button>}
+        <button onClick={onClose} style={{ flex: 1, padding: "12px", borderRadius: 100, border: "1.5px solid #E8E4DC", background: "#fff", fontSize: 14, fontWeight: 700, color: "#1B3F45", cursor: "pointer" }}>{lang === "de" ? "Fertig" : "Done"}</button>
+      </div>
+    </SheetShell>
+  );
+};
+
 // Month/year picker — value is "YYYY-MM"
 const MonthSheet = ({ open, value, onSelect, onClose, maxW, lang }) => {
   const nowY = new Date().getFullYear();
@@ -873,10 +947,11 @@ export default function App() {
   const [tab, setTab]           = useState("home");
   const [homePrio, setHomePrio] = useState("urgent"); // Home priority tab
   const [filterPrio, setFilterPrio] = useState("all"); // Orders tab: filter by urgency
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo]     = useState("");
-  const [filterOrderScope, setFilterOrderScope] = useState("month"); // Orders tab: "month" (default) | "all"
-  const [filterInvScope, setFilterInvScope] = useState("month"); // Invoices tab: "month" (default) | "all"
+  // Defaults to the current month (same starting point as before) — cleared
+  // means "all dates", set via the DateRangeSheet's Clear button.
+  const [filterDateFrom, setFilterDateFrom] = useState(() => dateRangePreset("month").from);
+  const [filterDateTo, setFilterDateTo]     = useState(() => dateRangePreset("month").to);
+  const [dateRangeSheetOpen, setDateRangeSheetOpen] = useState(false);
   const [orders, setOrders]     = useState(() => { try { const s = localStorage.getItem("ssp_orders"); return s ? JSON.parse(s) : SAMPLE_ORDERS; } catch { return SAMPLE_ORDERS; } });
   const [view, setView]         = useState("list");
   const [selectedId, setSelectedId] = useState(null);
@@ -898,11 +973,22 @@ export default function App() {
   const [statsToOpen, setStatsToOpen] = useState(false);
   const [statsMetric, setStatsMetric] = useState("revenue"); // "orders"|"revenue"|"units"|"clients"
   const [statsWeek, setStatsWeek] = useState(null); // tapped week/segment index within the period
+  const [stoneTallyOpen, setStoneTallyOpen] = useState(false); // stone-usage report overlay
+  const [stoneTallyDateFrom, setStoneTallyDateFrom] = useState(() => dateRangePreset("month").from);
+  const [stoneTallyDateTo, setStoneTallyDateTo]     = useState(() => dateRangePreset("month").to);
+  const [stoneTallyDateRangeSheetOpen, setStoneTallyDateRangeSheetOpen] = useState(false);
+  const [stoneTallyClient, setStoneTallyClient] = useState("all");
+  const [stoneTallyType, setStoneTallyType]     = useState("all");
+  const [stoneTallyClientPickerOpen, setStoneTallyClientPickerOpen] = useState(false);
+  const [stoneTallyTypePickerOpen, setStoneTallyTypePickerOpen]     = useState(false);
+  const [stoneTallyFromOpen, setStoneTallyFromOpen] = useState(false);
+  const [stoneTallyToOpen, setStoneTallyToOpen]     = useState(false);
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
-  const [filterInvDateFrom, setFilterInvDateFrom] = useState("");
-  const [filterInvDateTo, setFilterInvDateTo]     = useState("");
+  const [filterInvDateFrom, setFilterInvDateFrom] = useState(() => dateRangePreset("month").from);
+  const [filterInvDateTo, setFilterInvDateTo]     = useState(() => dateRangePreset("month").to);
+  const [invDateRangeSheetOpen, setInvDateRangeSheetOpen] = useState(false);
   const [invClientPickerOpen, setInvClientPickerOpen] = useState(false);
   const [invDateFromPickerOpen, setInvDateFromPickerOpen] = useState(false);
   const [invDateToPickerOpen, setInvDateToPickerOpen]     = useState(false);
@@ -1090,6 +1176,31 @@ export default function App() {
   // there's nothing to lose, otherwise asks first via the exitConfirm sheet.
   const guardedNav = (fn) => { if (hasUnsavedChanges()) setExitConfirm(()=>fn); else fn(); };
 
+  // ── Scroll memory: leaving a screen (e.g. an order you were reviewing) and
+  //    coming back — via the back arrow, a tab switch, whatever — lands
+  //    exactly where you left off instead of jumping to the top. Detail
+  //    screens are keyed by the specific record so a long order doesn't
+  //    leave a short one scrolled past its own content.
+  const scrollMemory = useRef({});
+  const screenKey =
+    tab==="orders"  ? `orders:${view}${view==="detail"&&selectedId ? ":"+selectedId : ""}` :
+    tab==="invoice" ? `invoice:${invView}${invView==="detail"&&selectedInvoice ? ":"+selectedInvoice.id : ""}` :
+    tab==="clients" ? `clients:${clientView}${clientView==="detail"&&selectedClientId ? ":"+selectedClientId : ""}` :
+    tab;
+  useEffect(() => {
+    const onScroll = () => { scrollMemory.current[screenKey] = window.scrollY; };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenKey]);
+  useEffect(() => {
+    const saved = scrollMemory.current[screenKey] || 0;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(() => window.scrollTo(0, saved)); });
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenKey]);
+
   // Also warn on closing the tab/app, refreshing, or typing a new URL — the
   // native browser prompt, since our own sheet can't run once the page is
   // actually unloading. Text is fixed by the browser; can't be customized.
@@ -1122,20 +1233,17 @@ export default function App() {
     return () => window.removeEventListener("ssp-update-ready", onUpdate);
   }, []);
 
-  const curMonthKey = new Date().toISOString().slice(0,7); // "YYYY-MM"
-  // An explicit From/To range is the user's own scope choice — it overrides "this month".
-  const monthScopedOrders = (filterOrderScope==="all" || filterDateFrom || filterDateTo)
-    ? orders
-    : orders.filter(o => (o.received||"").startsWith(curMonthKey));
-  const filteredOrders = monthScopedOrders
+  // filterDateFrom/To default to the current month and stay meaningful at
+  // all times — cleared (both "") just means "every date".
+  const dateScopedOrders = orders.filter(o => (!filterDateFrom || o.received >= filterDateFrom) && (!filterDateTo || o.received <= filterDateTo));
+  const filteredOrders = dateScopedOrders
     .filter(o => {
       const prioOk = filterPrio === "all" || orderPriority(o) === filterPrio;
-      const dateOk = (!filterDateFrom || o.received >= filterDateFrom) && (!filterDateTo || o.received <= filterDateTo);
       const clientOk = filterClient === "all" || o.client === filterClient;
-      return prioOk && dateOk && clientOk;
+      return prioOk && clientOk;
     })
     .sort((a,b) => PRIORITY_ORDER.indexOf(orderPriority(a)) - PRIORITY_ORDER.indexOf(orderPriority(b)) || (b.received||"").localeCompare(a.received||""));
-  const prioCounts = PRIORITY_ORDER.reduce((a,p) => ({...a,[p]:monthScopedOrders.filter(o=>orderPriority(o)===p).length}),{});
+  const prioCounts = PRIORITY_ORDER.reduce((a,p) => ({...a,[p]:dateScopedOrders.filter(o=>orderPriority(o)===p).length}),{});
 
   // "what is this order" — piece count + first-piece description (fallbacks: instructions, stone·setting)
   const orderSummary = (o) => {
@@ -2072,9 +2180,14 @@ export default function App() {
         return (
           <div style={{ animation:"fadeUp 0.3s ease" }}>
             {/* Header — same structure as Orders/Invoice */}
-            <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
-              <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
-              <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{monthLabel}</div>
+            <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div>
+                <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
+                <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{monthLabel}</div>
+              </div>
+              <button onClick={()=>setStoneTallyOpen(true)} style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", flexShrink:0 }}>
+                <Icon name="gem" size={15} color="#1B3F45"/> {t("stoneTallyBtn")}
+              </button>
             </div>
 
             <div style={{ padding: isDesktop?"16px 40px 0":isTablet?"16px 32px 0":"14px 22px 0" }}>
@@ -2297,13 +2410,8 @@ export default function App() {
               {view==="list" ? (
                 <div>
                   <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("ordersHeader")}</div>
-                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                    <span>{monthScopedOrders.filter(o=>o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}{(filterOrderScope==="month" && !filterDateFrom && !filterDateTo) ? ` · ${t("thisMonthFilter")}` : ""}</span>
-                    {!filterDateFrom && !filterDateTo && (
-                      <button onClick={()=>setFilterOrderScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
-                        {filterOrderScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
-                      </button>
-                    )}
+                  <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>
+                    {dateScopedOrders.filter(o=>o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"} · {dateRangeLabel(filterDateFrom, filterDateTo, lang, t)}
                   </div>
                 </div>
               ) : (
@@ -2357,7 +2465,7 @@ export default function App() {
               <>
                 {/* Urgency filter pills — a lo ancho */}
                 <div style={{ display:"flex", gap:6, marginBottom:16 }}>
-                  {[["all", lang==="de"?"Alle":"All", monthScopedOrders.filter(o=>o.status!=="invoiced").length, null],
+                  {[["all", lang==="de"?"Alle":"All", dateScopedOrders.filter(o=>o.status!=="invoiced").length, null],
                     ...PRIORITY_ORDER.map(p => [p, lang==="de"?PRIORITY_META[p].de:PRIORITY_META[p].en, prioCounts[p], PRIORITY_META[p].color])
                   ].map(([key,label,cnt,dot])=>{
                     const sel = filterPrio===key;
@@ -2372,28 +2480,24 @@ export default function App() {
                   })}
                 </div>
 
-                {/* Cliente + rango de fechas (desde/hasta), uno al lado del otro — pickers propios */}
+                {/* Cliente + un solo botón de fecha (abre el DateRangeSheet: atajos + desde/hasta, sin flechita) */}
                 {(() => {
                   const clientList = [...new Set(orders.map(o=>o.client).filter(Boolean))].sort();
-                  const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, padding:"12px 10px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
-                  const shortD = d => new Date(d+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"});
-                  const dateField = (value, onOpen, onClear, placeholder) => (
-                    <button className="ssp-sq" onClick={onOpen} style={fieldStyle}>
-                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: value?"#1B3F45":"#5A7A80" }}>{value ? shortD(value) : placeholder}</span>
-                      {value && <span onClick={e=>{ e.stopPropagation(); onClear(); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>}
-                    </button>
-                  );
+                  const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
                   return (
                     <div style={{ display:"flex", gap:6, marginBottom:14, alignItems:"center" }}>
                       {clientList.length > 1 && (
-                        <button className="ssp-sq" onClick={()=>setClientPickerOpen(true)} style={{ ...fieldStyle, padding:"12px 14px" }}>
+                        <button className="ssp-sq" onClick={()=>setClientPickerOpen(true)} style={fieldStyle}>
                           <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>{filterClient==="all" ? t("allClients") : filterClient}</span>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>
                         </button>
                       )}
-                      {dateField(filterDateFrom, ()=>setDateFromPickerOpen(true), ()=>setFilterDateFrom(""), t("fromDateLabel"))}
-                      <span style={{ color:"#9DB5B9", fontWeight:800, flexShrink:0 }}>→</span>
-                      {dateField(filterDateTo, ()=>setDateToPickerOpen(true), ()=>setFilterDateTo(""), t("toDateLabel"))}
+                      <button className="ssp-sq" onClick={()=>setDateRangeSheetOpen(true)} style={fieldStyle}>
+                        <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color: (filterDateFrom||filterDateTo)?"#1B3F45":"#5A7A80" }}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={(filterDateFrom||filterDateTo)?"#C9933A":"#9DB5B9"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dateRangeLabel(filterDateFrom, filterDateTo, lang, t)}</span>
+                        </span>
+                      </button>
                     </div>
                   );
                 })()}
@@ -3086,17 +3190,13 @@ export default function App() {
           {/* ── LIST VIEW ── */}
           {invView==="list" && (()=>{
             const invClients = [...new Set(invoices.map(i=>i.client).filter(Boolean))].sort();
-            const invCurMonthKey = new Date().toISOString().slice(0,7);
-            // An explicit From/To range is the user's own scope choice — it overrides "this month".
-            const monthScopedInvoices = (filterInvScope==="all" || filterInvDateFrom || filterInvDateTo)
-              ? invoices
-              : invoices.filter(inv => (inv.date||"").startsWith(invCurMonthKey));
-            const filtered = [...monthScopedInvoices].reverse().filter(inv => {
+            // filterInvDateFrom/To default to the current month and stay meaningful —
+            // cleared (both "") just means "every date".
+            const dateScopedInvoices = invoices.filter(inv => (!filterInvDateFrom || inv.date >= filterInvDateFrom) && (!filterInvDateTo || inv.date <= filterInvDateTo));
+            const filtered = [...dateScopedInvoices].reverse().filter(inv => {
               if(filterInvStatus === "printed" && !inv.printed) return false;
               if(filterInvStatus === "unprinted" && inv.printed) return false;
               if(filterInvClient !== "all" && inv.client !== filterInvClient) return false;
-              if(filterInvDateFrom && inv.date < filterInvDateFrom) return false;
-              if(filterInvDateTo && inv.date > filterInvDateTo) return false;
               return true;
             });
             const totalFiltered = filtered.reduce((s,inv)=>s+(inv.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(inv.porto)||0)),0);
@@ -3108,13 +3208,8 @@ export default function App() {
                     <div>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
                       {invoices.length > 0 && (
-                        <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                          <span>{filtered.length} invoice{filtered.length!==1?"s":""}{(filterInvScope==="month" && !filterInvDateFrom && !filterInvDateTo) ? ` · ${t("thisMonthFilter")}` : ""} · {filtered.filter(i=>!i.printed).length} unprinted</span>
-                          {!filterInvDateFrom && !filterInvDateTo && (
-                            <button onClick={()=>setFilterInvScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
-                              {filterInvScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
-                            </button>
-                          )}
+                        <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>
+                          {filtered.length} invoice{filtered.length!==1?"s":""} · {dateRangeLabel(filterInvDateFrom, filterInvDateTo, lang, t)} · {filtered.filter(i=>!i.printed).length} unprinted
                         </div>
                       )}
                     </div>
@@ -3133,9 +3228,9 @@ export default function App() {
                       {/* Status pills — a lo ancho */}
                       <div style={{ display:"flex", gap:6, marginBottom:10 }}>
                         {[
-                          { key:"all",       label:t("allFilter"),           count: monthScopedInvoices.length },
-                          { key:"unprinted", label:t("unprintedFilter"),   count: monthScopedInvoices.filter(i=>!i.printed).length },
-                          { key:"printed",   label:t("printedFilter"),     count: monthScopedInvoices.filter(i=>i.printed).length  },
+                          { key:"all",       label:t("allFilter"),           count: dateScopedInvoices.length },
+                          { key:"unprinted", label:t("unprintedFilter"),   count: dateScopedInvoices.filter(i=>!i.printed).length },
+                          { key:"printed",   label:t("printedFilter"),     count: dateScopedInvoices.filter(i=>i.printed).length  },
                         ].map(({key, label, count}) => (
                           <button key={key} onClick={()=>setFilterInvStatus(key)}
                             style={{ flex:1, minWidth:0, padding:"9px 6px", borderRadius:100, border:"none", background: filterInvStatus===key?"#1B3F45":"white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterInvStatus===key?"white":"#5A7A80", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:5, overflow:"hidden" }}>
@@ -3145,27 +3240,23 @@ export default function App() {
                         ))}
                       </div>
 
-                      {/* Cliente + rango de fechas (desde/hasta) */}
+                      {/* Cliente + un solo botón de fecha */}
                       {(() => {
-                        const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, padding:"12px 10px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
-                        const shortD = d => new Date(d+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"});
-                        const dateField = (value, onOpen, onClear, placeholder) => (
-                          <button className="ssp-sq" onClick={onOpen} style={fieldStyle}>
-                            <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: value?"#1B3F45":"#5A7A80" }}>{value ? shortD(value) : placeholder}</span>
-                            {value && <span onClick={e=>{ e.stopPropagation(); onClear(); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>}
-                          </button>
-                        );
+                        const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
                         return (
                           <div style={{ display:"flex", gap:6, marginBottom:14, alignItems:"center" }}>
                             {invClients.length > 1 && (
-                              <button className="ssp-sq" onClick={()=>setInvClientPickerOpen(true)} style={{ ...fieldStyle, padding:"12px 14px" }}>
+                              <button className="ssp-sq" onClick={()=>setInvClientPickerOpen(true)} style={fieldStyle}>
                                 <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: filterInvClient!=="all"?"#1B3F45":"#5A7A80" }}>{filterInvClient==="all" ? t("allClients") : filterInvClient}</span>
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>
                               </button>
                             )}
-                            {dateField(filterInvDateFrom, ()=>setInvDateFromPickerOpen(true), ()=>setFilterInvDateFrom(""), t("fromDateLabel"))}
-                            <span style={{ color:"#9DB5B9", fontWeight:800, flexShrink:0 }}>→</span>
-                            {dateField(filterInvDateTo, ()=>setInvDateToPickerOpen(true), ()=>setFilterInvDateTo(""), t("toDateLabel"))}
+                            <button className="ssp-sq" onClick={()=>setInvDateRangeSheetOpen(true)} style={fieldStyle}>
+                              <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color: (filterInvDateFrom||filterInvDateTo)?"#1B3F45":"#5A7A80" }}>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={(filterInvDateFrom||filterInvDateTo)?"#C9933A":"#9DB5B9"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dateRangeLabel(filterInvDateFrom, filterInvDateTo, lang, t)}</span>
+                              </span>
+                            </button>
                           </div>
                         );
                       })()}
@@ -3876,6 +3967,138 @@ export default function App() {
       </div>{/* end content wrapper */}
 
       {/* ── WORK ORDER PREVIEW OVERLAY ── */}
+      {/* ── STONE TALLY — count of stones/types/sizes rescued from invoice data ── */}
+      {stoneTallyOpen && (() => {
+        const allTallyClients = [...new Set(invoices.map(i=>i.client).filter(Boolean))].sort();
+        const allTallyTypes = [...new Set(
+          invoices.flatMap(inv => (inv.items||[]).flatMap(it => (it.stones||[]).map(s => (s.type||"").trim()).filter(Boolean)))
+        )].sort((a,b)=>a.localeCompare(b));
+        const scopedInvoices = invoices.filter(inv => {
+          if (stoneTallyClient!=="all" && inv.client !== stoneTallyClient) return false;
+          if (stoneTallyDateFrom && inv.date < stoneTallyDateFrom) return false;
+          if (stoneTallyDateTo && inv.date > stoneTallyDateTo) return false;
+          return true;
+        });
+        const tally = {};
+        scopedInvoices.forEach(inv => {
+          (inv.items||[]).forEach(it => {
+            const cnt = parseFloat(it.count) || 1;
+            (it.stones||[]).forEach(s => {
+              const qty = (parseFloat(s.qty)||0) * cnt;
+              if (!qty) return;
+              const type = (s.type||"").trim() || (lang==="de"?"Unbekannt":"Unknown");
+              if (stoneTallyType!=="all" && type.toLowerCase()!==stoneTallyType.toLowerCase()) return;
+              const size = (s.size||"").trim();
+              const key = `${type.toLowerCase()}|${size}`;
+              if (!tally[key]) tally[key] = { type, size, qty: 0 };
+              tally[key].qty += qty;
+            });
+          });
+        });
+        const rows = Object.values(tally).sort((a,b) => b.qty - a.qty);
+        const totalStones = rows.reduce((s,r) => s + r.qty, 0);
+        const totalTypes = new Set(rows.map(r => r.type.toLowerCase())).size;
+        const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" };
+        const chev = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>;
+        return (
+          <div style={{ position:"fixed", inset:0, background:"#F7F5F0", zIndex:1000, overflowY:"auto" }}>
+            <div style={{ padding:"max(16px, env(safe-area-inset-top, 16px)) 22px 16px", borderBottom:"1px solid #E8E4DC", background:"#fff", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <button onClick={()=>setStoneTallyOpen(false)} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+              <span style={{ fontSize:16, fontWeight:800, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("stoneTallyTitle")}</span>
+              <div style={{ width:36 }}/>
+            </div>
+            <div style={{ padding:"18px 22px 60px", maxWidth:560, margin:"0 auto" }}>
+              {/* Cliente + Tipo de piedra */}
+              <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+                <button onClick={()=>setStoneTallyClientPickerOpen(true)} style={fieldStyle}>
+                  <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: stoneTallyClient!=="all"?"#1B3F45":"#5A7A80" }}>{stoneTallyClient==="all" ? t("allClients") : stoneTallyClient}</span>
+                  {chev}
+                </button>
+                <button onClick={()=>setStoneTallyTypePickerOpen(true)} style={fieldStyle}>
+                  <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: stoneTallyType!=="all"?"#1B3F45":"#5A7A80" }}>{stoneTallyType==="all" ? t("allTypesFilter") : stoneTallyType}</span>
+                  {chev}
+                </button>
+              </div>
+
+              {/* Un solo botón de fecha — abre atajos + desde/hasta, sin flechita */}
+              <button onClick={()=>setStoneTallyDateRangeSheetOpen(true)} style={{ ...fieldStyle, width:"100%", marginBottom:16 }}>
+                <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color: (stoneTallyDateFrom||stoneTallyDateTo)?"#1B3F45":"#5A7A80" }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={(stoneTallyDateFrom||stoneTallyDateTo)?"#C9933A":"#9DB5B9"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dateRangeLabel(stoneTallyDateFrom, stoneTallyDateTo, lang, t)}</span>
+                </span>
+              </button>
+              <div style={{ display:"flex", gap:10, marginBottom:18 }}>
+                <div style={{ flex:1, background:"#fff", border:"0.5px solid #E8E4DC", borderRadius:14, padding:"14px" }}>
+                  <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", fontWeight:700, marginBottom:4 }}>{t("stoneTallyTotal")}</div>
+                  <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45" }}>{totalStones}</div>
+                </div>
+                <div style={{ flex:1, background:"#fff", border:"0.5px solid #E8E4DC", borderRadius:14, padding:"14px" }}>
+                  <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", fontWeight:700, marginBottom:4 }}>{t("stoneTallyTypes")}</div>
+                  <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45" }}>{totalTypes}</div>
+                </div>
+              </div>
+              {rows.length === 0 ? (
+                <div style={{ textAlign:"center", padding:"40px 24px", color:"#9DB5B9", fontSize:14 }}>{t("stoneTallyEmpty")}</div>
+              ) : rows.map((r,i) => (
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"#fff", border:"0.5px solid #E8E4DC", borderRadius:12, padding:"13px 14px", marginBottom:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, minWidth:0 }}>
+                    <div style={{ width:34, height:34, borderRadius:10, background:"#E0ECED", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <Icon name="gem" size={16} color="#5A7A80"/>
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.type}{r.size ? ` · ${r.size} mm` : ""}</div>
+                  </div>
+                  <div style={{ fontSize:17, fontWeight:900, color:"#C9933A", flexShrink:0 }}>{r.qty}×</div>
+                </div>
+              ))}
+            </div>
+            <SelectSheet
+              open={stoneTallyClientPickerOpen}
+              title={lang==="de" ? "Kunde" : "Client"}
+              maxW={SHEET_MAX}
+              value={stoneTallyClient}
+              onSelect={setStoneTallyClient}
+              onClose={()=>setStoneTallyClientPickerOpen(false)}
+              options={[{ value:"all", label:t("allClients") }, ...allTallyClients.map(c=>({ value:c, label:c }))]}
+            />
+            <SelectSheet
+              open={stoneTallyTypePickerOpen}
+              title={lang==="de" ? "Steinart" : "Stone type"}
+              maxW={SHEET_MAX}
+              value={stoneTallyType}
+              onSelect={setStoneTallyType}
+              onClose={()=>setStoneTallyTypePickerOpen(false)}
+              options={[{ value:"all", label:t("allTypesFilter") }, ...allTallyTypes.map(ty=>({ value:ty, label:ty }))]}
+            />
+            <DateRangeSheet
+              open={stoneTallyDateRangeSheetOpen}
+              from={stoneTallyDateFrom} to={stoneTallyDateTo}
+              onPickFrom={()=>{ setStoneTallyDateRangeSheetOpen(false); setStoneTallyFromOpen(true); }}
+              onPickTo={()=>{ setStoneTallyDateRangeSheetOpen(false); setStoneTallyToOpen(true); }}
+              onApplyPreset={(key)=>{ const p=dateRangePreset(key); setStoneTallyDateFrom(p.from); setStoneTallyDateTo(p.to); setStoneTallyDateRangeSheetOpen(false); }}
+              onClear={()=>{ setStoneTallyDateFrom(""); setStoneTallyDateTo(""); setStoneTallyDateRangeSheetOpen(false); }}
+              onClose={()=>setStoneTallyDateRangeSheetOpen(false)}
+              maxW={SHEET_MAX} lang={lang} t={t}
+            />
+            <DateSheet
+              open={stoneTallyFromOpen}
+              value={stoneTallyDateFrom}
+              lang={lang}
+              maxW={SHEET_MAX}
+              onSelect={setStoneTallyDateFrom}
+              onClose={()=>{ setStoneTallyFromOpen(false); setStoneTallyDateRangeSheetOpen(true); }}
+            />
+            <DateSheet
+              open={stoneTallyToOpen}
+              value={stoneTallyDateTo}
+              lang={lang}
+              maxW={SHEET_MAX}
+              onSelect={setStoneTallyDateTo}
+              onClose={()=>{ setStoneTallyToOpen(false); setStoneTallyDateRangeSheetOpen(true); }}
+            />
+          </div>
+        );
+      })()}
+
       {workOrderPreview && (() => {
         const o = workOrderPreview;
         const GOLD = "#B8960C";
@@ -3980,13 +4203,23 @@ export default function App() {
         onClose={()=>setClientPickerOpen(false)}
         options={[{ value:"all", label:t("allClients") }, ...[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=>({ value:c, label:c }))]}
       />
+      <DateRangeSheet
+        open={dateRangeSheetOpen}
+        from={filterDateFrom} to={filterDateTo}
+        onPickFrom={()=>{ setDateRangeSheetOpen(false); setDateFromPickerOpen(true); }}
+        onPickTo={()=>{ setDateRangeSheetOpen(false); setDateToPickerOpen(true); }}
+        onApplyPreset={(key)=>{ const p=dateRangePreset(key); setFilterDateFrom(p.from); setFilterDateTo(p.to); setDateRangeSheetOpen(false); }}
+        onClear={()=>{ setFilterDateFrom(""); setFilterDateTo(""); setDateRangeSheetOpen(false); }}
+        onClose={()=>setDateRangeSheetOpen(false)}
+        maxW={SHEET_MAX} lang={lang} t={t}
+      />
       <DateSheet
         open={dateFromPickerOpen}
         value={filterDateFrom}
         lang={lang}
         maxW={SHEET_MAX}
         onSelect={setFilterDateFrom}
-        onClose={()=>setDateFromPickerOpen(false)}
+        onClose={()=>{ setDateFromPickerOpen(false); setDateRangeSheetOpen(true); }}
       />
       <DateSheet
         open={dateToPickerOpen}
@@ -3994,7 +4227,7 @@ export default function App() {
         lang={lang}
         maxW={SHEET_MAX}
         onSelect={setFilterDateTo}
-        onClose={()=>setDateToPickerOpen(false)}
+        onClose={()=>{ setDateToPickerOpen(false); setDateRangeSheetOpen(true); }}
       />
       <SelectSheet
         open={invClientPickerOpen}
@@ -4005,13 +4238,23 @@ export default function App() {
         onClose={()=>setInvClientPickerOpen(false)}
         options={[{ value:"all", label:t("allClients") }, ...[...new Set(invoices.map(i=>i.client).filter(Boolean))].sort().map(c=>({ value:c, label:c }))]}
       />
+      <DateRangeSheet
+        open={invDateRangeSheetOpen}
+        from={filterInvDateFrom} to={filterInvDateTo}
+        onPickFrom={()=>{ setInvDateRangeSheetOpen(false); setInvDateFromPickerOpen(true); }}
+        onPickTo={()=>{ setInvDateRangeSheetOpen(false); setInvDateToPickerOpen(true); }}
+        onApplyPreset={(key)=>{ const p=dateRangePreset(key); setFilterInvDateFrom(p.from); setFilterInvDateTo(p.to); setInvDateRangeSheetOpen(false); }}
+        onClear={()=>{ setFilterInvDateFrom(""); setFilterInvDateTo(""); setInvDateRangeSheetOpen(false); }}
+        onClose={()=>setInvDateRangeSheetOpen(false)}
+        maxW={SHEET_MAX} lang={lang} t={t}
+      />
       <DateSheet
         open={invDateFromPickerOpen}
         value={filterInvDateFrom}
         lang={lang}
         maxW={SHEET_MAX}
         onSelect={setFilterInvDateFrom}
-        onClose={()=>setInvDateFromPickerOpen(false)}
+        onClose={()=>{ setInvDateFromPickerOpen(false); setInvDateRangeSheetOpen(true); }}
       />
       <DateSheet
         open={invDateToPickerOpen}
@@ -4019,7 +4262,7 @@ export default function App() {
         lang={lang}
         maxW={SHEET_MAX}
         onSelect={setFilterInvDateTo}
-        onClose={()=>setInvDateToPickerOpen(false)}
+        onClose={()=>{ setInvDateToPickerOpen(false); setInvDateRangeSheetOpen(true); }}
       />
       <SelectSheet
         open={statsClientPickerOpen}
