@@ -96,6 +96,7 @@ const TRANS = {
     statusReceived:"Pending", statusInprogress:"In Review", statusDone:"Approved", statusInvoiced:"Invoiced",
     allFilter:"All", allClients:"All clients",
     thisMonthFilter:"This month",
+    todayFilter:"Today", lastMonthFilter:"Last month",
     viewAllLink:"View all", viewThisMonthLink:"This month only",
     fromDateLabel:"From", toDateLabel:"To",
     overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
@@ -251,6 +252,7 @@ const TRANS = {
     statusReceived:"Ausstehend", statusInprogress:"In Bearbeitung", statusDone:"Abgeschlossen", statusInvoiced:"Verrechnet",
     allFilter:"Alle", allClients:"Alle Kunden",
     thisMonthFilter:"Diesen Monat",
+    todayFilter:"Heute", lastMonthFilter:"Letzten Monat",
     viewAllLink:"Alle anzeigen", viewThisMonthLink:"Nur diesen Monat",
     fromDateLabel:"Von", toDateLabel:"Bis",
     overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
@@ -825,6 +827,26 @@ const DateSheet = ({ open, value, onSelect, onClose, maxW, lang }) => {
         {value && <button onClick={()=>{ onSelect(""); onClose(); }} style={{ flex:1, padding:"12px", borderRadius:100, border:"none", background:"#FFF0F0", fontSize:14, fontWeight:700, color:"#da1e28", cursor:"pointer" }}>{lang==="de"?"Löschen":"Clear"}</button>}
       </div>
     </SheetShell>
+  );
+};
+
+// Quick one-tap date-range shortcuts (Today / This month / Last month) —
+// sits above a From/To field row so the common cases never need the
+// calendar at all. onPick receives {from, to} (both the same day for "Today").
+const QuickDateChips = ({ lang, onPick, t }) => {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const iso = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+  const todayIso = iso(now.getFullYear(), now.getMonth(), now.getDate());
+  const monthBounds = (y, m) => ({ from: iso(y, m, 1), to: iso(y, m, new Date(y, m + 1, 0).getDate()) });
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const chipStyle = { background: "none", border: "none", padding: 0, color: "#C9933A", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit" };
+  return (
+    <div style={{ display: "flex", gap: 14, marginBottom: 10, flexWrap: "wrap" }}>
+      <button style={chipStyle} onClick={() => onPick({ from: todayIso, to: todayIso })}>{t("todayFilter")}</button>
+      <button style={chipStyle} onClick={() => onPick(monthBounds(now.getFullYear(), now.getMonth()))}>{t("thisMonthFilter")}</button>
+      <button style={chipStyle} onClick={() => onPick(monthBounds(lastMonth.getFullYear(), lastMonth.getMonth()))}>{t("lastMonthFilter")}</button>
+    </div>
   );
 };
 
@@ -2397,6 +2419,9 @@ export default function App() {
                   })}
                 </div>
 
+                {/* Atajos rápidos de fecha — Hoy / Este mes / Mes pasado, un solo toque */}
+                <QuickDateChips lang={lang} t={t} onPick={({from,to})=>{ setFilterDateFrom(from); setFilterDateTo(to); }}/>
+
                 {/* Cliente + rango de fechas (desde/hasta), uno al lado del otro — pickers propios */}
                 {(() => {
                   const clientList = [...new Set(orders.map(o=>o.client).filter(Boolean))].sort();
@@ -3169,6 +3194,9 @@ export default function App() {
                           </button>
                         ))}
                       </div>
+
+                      {/* Atajos rápidos de fecha — Hoy / Este mes / Mes pasado, un solo toque */}
+                      <QuickDateChips lang={lang} t={t} onPick={({from,to})=>{ setFilterInvDateFrom(from); setFilterInvDateTo(to); }}/>
 
                       {/* Cliente + rango de fechas (desde/hasta) */}
                       {(() => {
