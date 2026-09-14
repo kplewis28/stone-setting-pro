@@ -630,6 +630,11 @@ const SectionTitle = ({ children }) => (
 
 // ─── STONES EDITOR ──────────────────────────────────────────────────────
 // Order phase: type + size only. Invoice phase (showPrice): + qty × price.
+// Stone sizes are always "N.N mm" — auto-insert the decimal point right
+// after the first digit so the user doesn't have to reach for the "." key.
+// Only fires while typing forward (never fights a backspace/delete).
+const autoDotSize = (prev, raw) => (raw.length > (prev||"").length && /^\d$/.test(raw)) ? raw + "." : raw;
+
 const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList = [], priceFor }) => {
   const upd = (id, patch) => onChange(stones.map(s => s.id === id ? { ...s, ...patch } : s));
   const setTypeSize = (s, patch) => upd(s.id, priceFor ? { ...patch, price: String(priceFor({ ...s, ...patch }.type, { ...s, ...patch }.size)) } : patch);
@@ -674,7 +679,7 @@ const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList 
             {/* Stone + size + actions */}
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:11 }}>
               <input list="ssp-stonetypes" value={s.type} onChange={e=>setTypeSize(s,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1, fontWeight:600 }}/>
-              <input value={s.size} onChange={e=>setTypeSize(s,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:72, textAlign:"center", padding:"10px 4px" }}/>
+              <input value={s.size} onChange={e=>setTypeSize(s,{size:autoDotSize(s.size,e.target.value)})} placeholder={t("stoneSizePh")} style={{ ...inp, width:72, textAlign:"center", padding:"10px 4px" }}/>
               <button onClick={()=>dup(s)} style={iconBtn} aria-label="duplicate">{copyIcon}</button>
               <button onClick={()=>del(s.id)} style={iconBtn} aria-label="delete">{delIcon}</button>
             </div>
@@ -706,7 +711,7 @@ const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList 
         {stones.map(s => (
           <div key={s.id} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
             <input list="ssp-stonetypes" value={s.type} onChange={e=>upd(s.id,{type:e.target.value})} placeholder={t("stoneTypePh")} style={{ ...inp, flex:1 }}/>
-            <input value={s.size} onChange={e=>upd(s.id,{size:e.target.value})} placeholder={t("stoneSizePh")} style={{ ...inp, width:64, textAlign:"center", padding:"10px 4px" }}/>
+            <input value={s.size} onChange={e=>upd(s.id,{size:autoDotSize(s.size,e.target.value)})} placeholder={t("stoneSizePh")} style={{ ...inp, width:64, textAlign:"center", padding:"10px 4px" }}/>
             <button onClick={()=>dup(s)} style={iconBtn}>{copyIcon}</button>
             <button onClick={()=>del(s.id)} style={iconBtn}>{delIcon}</button>
           </div>
