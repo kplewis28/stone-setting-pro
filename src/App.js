@@ -92,6 +92,7 @@ const TRANS = {
     needsAttention:"Needs attention",
     statusReceived:"Pending", statusInprogress:"In Review", statusDone:"Approved", statusInvoiced:"Invoiced",
     allFilter:"All", allClients:"All clients",
+    thisMonthFilter:"This month",
     overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
     workOrderBtn:"Work order", createInvoiceBtn:"Create invoice", printInvoiceBtn:"Print invoice",
     swipeHint:"\u2190 Swipe to mark done \u00a0\u00b7\u00a0 Swipe to delete \u2192",
@@ -159,6 +160,7 @@ const TRANS = {
     savedStatus:"Saved",
     newBtn:"+ New",
     noInvoicesMatch:"No invoices match this filter",
+    noOrdersMatch:"No orders match this filter",
     editClientTitle:"Edit Client",
     noClientsDesc:"Add your clients to assign them to orders and invoices automatically.",
     addClientBtn:"+ Add client",
@@ -243,6 +245,7 @@ const TRANS = {
     needsAttention:"Dringend",
     statusReceived:"Ausstehend", statusInprogress:"In Bearbeitung", statusDone:"Abgeschlossen", statusInvoiced:"Verrechnet",
     allFilter:"Alle", allClients:"Alle Kunden",
+    thisMonthFilter:"Diesen Monat",
     overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
     workOrderBtn:"Arbeitsauftrag", createInvoiceBtn:"Rechnung erstellen", printInvoiceBtn:"Rechnung drucken",
     swipeHint:"\u2190 Wischen = Fertig \u00a0\u00b7\u00a0 \u2192 Wischen = L\u00f6schen",
@@ -310,6 +313,7 @@ const TRANS = {
     savedStatus:"Gespeichert",
     newBtn:"+ Neu",
     noInvoicesMatch:"Keine Rechnungen f\u00fcr diesen Filter",
+    noOrdersMatch:"Keine Auftr\u00e4ge f\u00fcr diesen Filter",
     editClientTitle:"Kunde bearbeiten",
     noClientsDesc:"F\u00fcgen Sie Kunden hinzu, um sie automatisch Auftr\u00e4gen und Rechnungen zuzuordnen.",
     addClientBtn:"+ Kunde hinzuf\u00fcgen",
@@ -858,6 +862,8 @@ export default function App() {
   const [homePrio, setHomePrio] = useState("urgent"); // Home priority tab
   const [filterPrio, setFilterPrio] = useState("all"); // Orders tab: filter by urgency
   const [filterDate, setFilterDate]   = useState("");
+  const [filterOrderScope, setFilterOrderScope] = useState("month"); // Orders tab: "month" (default) | "all"
+  const [filterInvScope, setFilterInvScope] = useState("month"); // Invoices tab: "month" (default) | "all"
   const [orders, setOrders]     = useState(() => { try { const s = localStorage.getItem("ssp_orders"); return s ? JSON.parse(s) : SAMPLE_ORDERS; } catch { return SAMPLE_ORDERS; } });
   const [view, setView]         = useState("list");
   const [selectedId, setSelectedId] = useState(null);
@@ -1100,10 +1106,12 @@ export default function App() {
     return () => window.removeEventListener("ssp-update-ready", onUpdate);
   }, []);
 
-  const filteredOrders = orders
+  const curMonthKey = new Date().toISOString().slice(0,7); // "YYYY-MM"
+  const monthScopedOrders = filterOrderScope==="all" ? orders : orders.filter(o => (o.received||"").startsWith(curMonthKey));
+  const filteredOrders = monthScopedOrders
     .filter(o => { const prioOk = filterPrio === "all" || orderPriority(o) === filterPrio; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return prioOk && dateOk && clientOk; })
     .sort((a,b) => PRIORITY_ORDER.indexOf(orderPriority(a)) - PRIORITY_ORDER.indexOf(orderPriority(b)) || (b.received||"").localeCompare(a.received||""));
-  const prioCounts = PRIORITY_ORDER.reduce((a,p) => ({...a,[p]:orders.filter(o=>orderPriority(o)===p).length}),{});
+  const prioCounts = PRIORITY_ORDER.reduce((a,p) => ({...a,[p]:monthScopedOrders.filter(o=>orderPriority(o)===p).length}),{});
 
   // "what is this order" — piece count + first-piece description (fallbacks: instructions, stone·setting)
   const orderSummary = (o) => {
@@ -2266,7 +2274,7 @@ export default function App() {
                 <div>
                   <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("ordersHeader")}</div>
                   <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>
-                    {orders.filter(o=>o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}
+                    {monthScopedOrders.filter(o=>o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}{filterOrderScope==="month" ? ` · ${t("thisMonthFilter")}` : ""}
                   </div>
                 </div>
               ) : (
@@ -2318,9 +2326,21 @@ export default function App() {
             {/* ── LIST ── */}
             {view==="list" && (
               <>
+                {/* Alcance: este mes (default) vs. todas — evita listas infinitas */}
+                <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:10 }}>
+                  <div style={{ display:"inline-flex", background:"#fff", borderRadius:100, padding:3, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                    {["month","all"].map(k=>(
+                      <button key={k} onClick={()=>setFilterOrderScope(k)}
+                        style={{ padding:"7px 14px", borderRadius:100, border:"none", background: filterOrderScope===k?"#1B3F45":"transparent", color: filterOrderScope===k?"white":"#5A7A80", fontSize:12.5, fontWeight:700, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+                        {k==="month"?t("thisMonthFilter"):t("allFilter")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Urgency filter pills — a lo ancho */}
                 <div style={{ display:"flex", gap:6, marginBottom:16 }}>
-                  {[["all", lang==="de"?"Alle":"All", orders.filter(o=>o.status!=="invoiced").length, null],
+                  {[["all", lang==="de"?"Alle":"All", monthScopedOrders.filter(o=>o.status!=="invoiced").length, null],
                     ...PRIORITY_ORDER.map(p => [p, lang==="de"?PRIORITY_META[p].de:PRIORITY_META[p].en, prioCounts[p], PRIORITY_META[p].color])
                   ].map(([key,label,cnt,dot])=>{
                     const sel = filterPrio===key;
@@ -2389,6 +2409,10 @@ export default function App() {
                   <div style={{ textAlign:"center", fontSize:9, color:"#9DB5B9", fontWeight:500, letterSpacing:"0.04em", marginBottom:12, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
                     ← Swipe to mark done &nbsp;·&nbsp; Swipe to delete →
                   </div>
+                )}
+
+                {orders.length > 0 && filteredOrders.length === 0 && (
+                  <div style={{ textAlign:"center", padding:"40px 24px", color:"#9DB5B9", fontSize:14 }}>{t("noOrdersMatch")}</div>
                 )}
 
                 {/* Order rows */}
@@ -3046,7 +3070,9 @@ export default function App() {
           {/* ── LIST VIEW ── */}
           {invView==="list" && (()=>{
             const invClients = [...new Set(invoices.map(i=>i.client).filter(Boolean))].sort();
-            const filtered = [...invoices].reverse().filter(inv => {
+            const invCurMonthKey = new Date().toISOString().slice(0,7);
+            const monthScopedInvoices = filterInvScope==="all" ? invoices : invoices.filter(inv => (inv.date||"").startsWith(invCurMonthKey));
+            const filtered = [...monthScopedInvoices].reverse().filter(inv => {
               if(filterInvStatus === "printed" && !inv.printed) return false;
               if(filterInvStatus === "unprinted" && inv.printed) return false;
               if(filterInvClient !== "all" && inv.client !== filterInvClient) return false;
@@ -3061,7 +3087,7 @@ export default function App() {
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
-                      {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{invoices.length} invoice{invoices.length!==1?"s":""} · {invoices.filter(i=>!i.printed).length} unprinted</div>}
+                      {invoices.length > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{filtered.length} invoice{filtered.length!==1?"s":""}{filterInvScope==="month" ? ` · ${t("thisMonthFilter")}` : ""} · {filtered.filter(i=>!i.printed).length} unprinted</div>}
                     </div>
                     <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
                       style={{ display:"flex", alignItems:"center", gap:5, background:"#C9933A", color:"white", border:"none", borderRadius:100, padding:"9px 15px", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", flexShrink:0 }}>
@@ -3075,12 +3101,24 @@ export default function App() {
 
                   {invoices.length > 0 && (
                     <>
+                      {/* Alcance: este mes (default) vs. todas — evita listas infinitas */}
+                      <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:10 }}>
+                        <div style={{ display:"inline-flex", background:"#fff", borderRadius:100, padding:3, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                          {["month","all"].map(k=>(
+                            <button key={k} onClick={()=>setFilterInvScope(k)}
+                              style={{ padding:"7px 14px", borderRadius:100, border:"none", background: filterInvScope===k?"#1B3F45":"transparent", color: filterInvScope===k?"white":"#5A7A80", fontSize:12.5, fontWeight:700, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+                              {k==="month"?t("thisMonthFilter"):t("allFilter")}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Status pills — a lo ancho */}
                       <div style={{ display:"flex", gap:6, marginBottom:10 }}>
                         {[
-                          { key:"all",       label:t("allFilter"),           count: invoices.length },
-                          { key:"unprinted", label:t("unprintedFilter"),   count: invoices.filter(i=>!i.printed).length },
-                          { key:"printed",   label:t("printedFilter"),     count: invoices.filter(i=>i.printed).length  },
+                          { key:"all",       label:t("allFilter"),           count: monthScopedInvoices.length },
+                          { key:"unprinted", label:t("unprintedFilter"),   count: monthScopedInvoices.filter(i=>!i.printed).length },
+                          { key:"printed",   label:t("printedFilter"),     count: monthScopedInvoices.filter(i=>i.printed).length  },
                         ].map(({key, label, count}) => (
                           <button key={key} onClick={()=>setFilterInvStatus(key)}
                             style={{ flex:1, minWidth:0, padding:"9px 6px", borderRadius:100, border:"none", background: filterInvStatus===key?"#1B3F45":"white", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", color: filterInvStatus===key?"white":"#5A7A80", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", gap:5, overflow:"hidden" }}>
@@ -3116,8 +3154,8 @@ export default function App() {
                         );
                       })()}
 
-                      {/* Results summary */}
-                      {(filterInvStatus!=="all" || filterInvClient!=="all" || filterInvDate) && filtered.length > 0 && (
+                      {/* Results summary — always visible: "aware of what's invoiced so far" */}
+                      {filtered.length > 0 && (
                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, padding:"0 2px" }}>
                           <span style={{ fontSize:12, color:"#9DB5B9", fontWeight:500 }}>{filtered.length} result{filtered.length!==1?"s":""}</span>
                           <span style={{ fontSize:13, fontWeight:800, color:"#1B3F45" }}>{C.currency} {fmt(totalFiltered)}</span>
