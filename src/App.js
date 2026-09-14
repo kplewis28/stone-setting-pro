@@ -1090,6 +1090,31 @@ export default function App() {
   // there's nothing to lose, otherwise asks first via the exitConfirm sheet.
   const guardedNav = (fn) => { if (hasUnsavedChanges()) setExitConfirm(()=>fn); else fn(); };
 
+  // ── Scroll memory: leaving a screen (e.g. an order you were reviewing) and
+  //    coming back — via the back arrow, a tab switch, whatever — lands
+  //    exactly where you left off instead of jumping to the top. Detail
+  //    screens are keyed by the specific record so a long order doesn't
+  //    leave a short one scrolled past its own content.
+  const scrollMemory = useRef({});
+  const screenKey =
+    tab==="orders"  ? `orders:${view}${view==="detail"&&selectedId ? ":"+selectedId : ""}` :
+    tab==="invoice" ? `invoice:${invView}${invView==="detail"&&selectedInvoice ? ":"+selectedInvoice.id : ""}` :
+    tab==="clients" ? `clients:${clientView}${clientView==="detail"&&selectedClientId ? ":"+selectedClientId : ""}` :
+    tab;
+  useEffect(() => {
+    const onScroll = () => { scrollMemory.current[screenKey] = window.scrollY; };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenKey]);
+  useEffect(() => {
+    const saved = scrollMemory.current[screenKey] || 0;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(() => window.scrollTo(0, saved)); });
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenKey]);
+
   // Also warn on closing the tab/app, refreshing, or typing a new URL — the
   // native browser prompt, since our own sheet can't run once the page is
   // actually unloading. Text is fixed by the browser; can't be customized.
