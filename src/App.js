@@ -52,11 +52,14 @@ const CONFIG = {
   fieldLabel: "Stone",
   subFieldLabel: "Setting",
   piecesLabel: "Pieces",
+  // Only two states exist from the user's point of view: an order sits
+  // pending until it's invoiced, then it's completed. received/inprogress/
+  // done are all still "pending" here — they're internal bookkeeping only.
   statuses: {
     received:   { label: "Pending",    color: "#C9933A" },
-    inprogress: { label: "In Review",  color: "#1B3F45" },
-    done:       { label: "Approved",   color: "#198038" },
-    invoiced:   { label: "Invoiced",   color: "#5A7A80" },
+    inprogress: { label: "Pending",    color: "#C9933A" },
+    done:       { label: "Pending",    color: "#C9933A" },
+    invoiced:   { label: "Completed",  color: "#198038" },
   },
 };
 
@@ -532,9 +535,9 @@ const Icon = ({ name, size=22, color="#1B3F45" }) => {
 // ─── SHARED COMPONENTS ──────────────────────────────────
 const SA_BADGE = {
   received:   { bg:"#FBF5E8", color:"#C9933A", border:"#E8BE7A" },
-  inprogress: { bg:"#E0EDEF", color:"#1B3F45", border:"#2A5F68" },
-  done:       { bg:"#defbe6", color:"#198038", border:"#82cfaa" },
-  invoiced:   { bg:"#F0F6F7", color:"#5A7A80", border:"#c1c7cd" },
+  inprogress: { bg:"#FBF5E8", color:"#C9933A", border:"#E8BE7A" },
+  done:       { bg:"#FBF5E8", color:"#C9933A", border:"#E8BE7A" },
+  invoiced:   { bg:"#defbe6", color:"#198038", border:"#82cfaa" },
 };
 const StatusPill = ({ status }) => {
   const st = C.statuses[status];
