@@ -94,6 +94,7 @@ const TRANS = {
     allFilter:"All", allClients:"All clients",
     thisMonthFilter:"This month",
     viewAllLink:"View all", viewThisMonthLink:"This month only",
+    fromDateLabel:"From", toDateLabel:"To",
     overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
     workOrderBtn:"Work order", createInvoiceBtn:"Create invoice", printInvoiceBtn:"Print invoice",
     swipeHint:"\u2190 Swipe to mark done \u00a0\u00b7\u00a0 Swipe to delete \u2192",
@@ -248,6 +249,7 @@ const TRANS = {
     allFilter:"Alle", allClients:"Alle Kunden",
     thisMonthFilter:"Diesen Monat",
     viewAllLink:"Alle anzeigen", viewThisMonthLink:"Nur diesen Monat",
+    fromDateLabel:"Von", toDateLabel:"Bis",
     overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
     workOrderBtn:"Arbeitsauftrag", createInvoiceBtn:"Rechnung erstellen", printInvoiceBtn:"Rechnung drucken",
     swipeHint:"\u2190 Wischen = Fertig \u00a0\u00b7\u00a0 \u2192 Wischen = L\u00f6schen",
@@ -863,7 +865,8 @@ export default function App() {
   const [tab, setTab]           = useState("home");
   const [homePrio, setHomePrio] = useState("urgent"); // Home priority tab
   const [filterPrio, setFilterPrio] = useState("all"); // Orders tab: filter by urgency
-  const [filterDate, setFilterDate]   = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo]     = useState("");
   const [filterOrderScope, setFilterOrderScope] = useState("month"); // Orders tab: "month" (default) | "all"
   const [filterInvScope, setFilterInvScope] = useState("month"); // Invoices tab: "month" (default) | "all"
   const [orders, setOrders]     = useState(() => { try { const s = localStorage.getItem("ssp_orders"); return s ? JSON.parse(s) : SAMPLE_ORDERS; } catch { return SAMPLE_ORDERS; } });
@@ -890,9 +893,11 @@ export default function App() {
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
-  const [filterInvDate, setFilterInvDate] = useState("");
+  const [filterInvDateFrom, setFilterInvDateFrom] = useState("");
+  const [filterInvDateTo, setFilterInvDateTo]     = useState("");
   const [invClientPickerOpen, setInvClientPickerOpen] = useState(false);
-  const [invDatePickerOpen, setInvDatePickerOpen] = useState(false);
+  const [invDateFromPickerOpen, setInvDateFromPickerOpen] = useState(false);
+  const [invDateToPickerOpen, setInvDateToPickerOpen]     = useState(false);
   const [invClientAddress, setInvClientAddress] = useState("");
   const [invNumber, setInvNumber] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -911,7 +916,8 @@ export default function App() {
   const [clientDraft, setClientDraft] = useState(newClient());
   const [filterClient, setFilterClient] = useState("all");
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [dateFromPickerOpen, setDateFromPickerOpen] = useState(false);
+  const [dateToPickerOpen, setDateToPickerOpen]     = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
   const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
@@ -1109,9 +1115,17 @@ export default function App() {
   }, []);
 
   const curMonthKey = new Date().toISOString().slice(0,7); // "YYYY-MM"
-  const monthScopedOrders = filterOrderScope==="all" ? orders : orders.filter(o => (o.received||"").startsWith(curMonthKey));
+  // An explicit From/To range is the user's own scope choice — it overrides "this month".
+  const monthScopedOrders = (filterOrderScope==="all" || filterDateFrom || filterDateTo)
+    ? orders
+    : orders.filter(o => (o.received||"").startsWith(curMonthKey));
   const filteredOrders = monthScopedOrders
-    .filter(o => { const prioOk = filterPrio === "all" || orderPriority(o) === filterPrio; const dateOk = !filterDate || o.received === filterDate; const clientOk = filterClient === "all" || o.client === filterClient; return prioOk && dateOk && clientOk; })
+    .filter(o => {
+      const prioOk = filterPrio === "all" || orderPriority(o) === filterPrio;
+      const dateOk = (!filterDateFrom || o.received >= filterDateFrom) && (!filterDateTo || o.received <= filterDateTo);
+      const clientOk = filterClient === "all" || o.client === filterClient;
+      return prioOk && dateOk && clientOk;
+    })
     .sort((a,b) => PRIORITY_ORDER.indexOf(orderPriority(a)) - PRIORITY_ORDER.indexOf(orderPriority(b)) || (b.received||"").localeCompare(a.received||""));
   const prioCounts = PRIORITY_ORDER.reduce((a,p) => ({...a,[p]:monthScopedOrders.filter(o=>orderPriority(o)===p).length}),{});
 
@@ -2276,10 +2290,12 @@ export default function App() {
                 <div>
                   <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("ordersHeader")}</div>
                   <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                    <span>{monthScopedOrders.filter(o=>o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}{filterOrderScope==="month" ? ` · ${t("thisMonthFilter")}` : ""}</span>
-                    <button onClick={()=>setFilterOrderScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
-                      {filterOrderScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
-                    </button>
+                    <span>{monthScopedOrders.filter(o=>o.status!=="invoiced").length} {lang==="de"?"aktiv":"active"}{(filterOrderScope==="month" && !filterDateFrom && !filterDateTo) ? ` · ${t("thisMonthFilter")}` : ""}</span>
+                    {!filterDateFrom && !filterDateTo && (
+                      <button onClick={()=>setFilterOrderScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
+                        {filterOrderScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -2348,29 +2364,28 @@ export default function App() {
                   })}
                 </div>
 
-                {/* Cliente + Fecha, uno al lado del otro — pickers propios */}
+                {/* Cliente + rango de fechas (desde/hasta), uno al lado del otro — pickers propios */}
                 {(() => {
                   const clientList = [...new Set(orders.map(o=>o.client).filter(Boolean))].sort();
-                  const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
-                  const chev = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>;
-                  const dLabel = filterDate ? new Date(filterDate+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short",year:"numeric"}) : (lang==="de"?"Datum":"Date");
+                  const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, padding:"12px 10px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
+                  const shortD = d => new Date(d+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"});
+                  const dateField = (value, onOpen, onClear, placeholder) => (
+                    <button className="ssp-sq" onClick={onOpen} style={fieldStyle}>
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: value?"#1B3F45":"#5A7A80" }}>{value ? shortD(value) : placeholder}</span>
+                      {value && <span onClick={e=>{ e.stopPropagation(); onClear(); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>}
+                    </button>
+                  );
                   return (
-                    <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
+                    <div style={{ display:"flex", gap:6, marginBottom:14, alignItems:"center" }}>
                       {clientList.length > 1 && (
-                        <button className="ssp-sq" onClick={()=>setClientPickerOpen(true)} style={fieldStyle}>
+                        <button className="ssp-sq" onClick={()=>setClientPickerOpen(true)} style={{ ...fieldStyle, padding:"12px 14px" }}>
                           <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: filterClient!=="all"?"#1B3F45":"#5A7A80" }}>{filterClient==="all" ? t("allClients") : filterClient}</span>
-                          {chev}
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>
                         </button>
                       )}
-                      <button className="ssp-sq" onClick={()=>setDatePickerOpen(true)} style={fieldStyle}>
-                        <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color: filterDate?"#1B3F45":"#5A7A80" }}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={filterDate?"#C9933A":"#9DB5B9"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                          <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dLabel}</span>
-                        </span>
-                        {filterDate
-                          ? <span onClick={e=>{ e.stopPropagation(); setFilterDate(""); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>
-                          : chev}
-                      </button>
+                      {dateField(filterDateFrom, ()=>setDateFromPickerOpen(true), ()=>setFilterDateFrom(""), t("fromDateLabel"))}
+                      <span style={{ color:"#9DB5B9", fontWeight:800, flexShrink:0 }}>→</span>
+                      {dateField(filterDateTo, ()=>setDateToPickerOpen(true), ()=>setFilterDateTo(""), t("toDateLabel"))}
                     </div>
                   );
                 })()}
@@ -3064,12 +3079,16 @@ export default function App() {
           {invView==="list" && (()=>{
             const invClients = [...new Set(invoices.map(i=>i.client).filter(Boolean))].sort();
             const invCurMonthKey = new Date().toISOString().slice(0,7);
-            const monthScopedInvoices = filterInvScope==="all" ? invoices : invoices.filter(inv => (inv.date||"").startsWith(invCurMonthKey));
+            // An explicit From/To range is the user's own scope choice — it overrides "this month".
+            const monthScopedInvoices = (filterInvScope==="all" || filterInvDateFrom || filterInvDateTo)
+              ? invoices
+              : invoices.filter(inv => (inv.date||"").startsWith(invCurMonthKey));
             const filtered = [...monthScopedInvoices].reverse().filter(inv => {
               if(filterInvStatus === "printed" && !inv.printed) return false;
               if(filterInvStatus === "unprinted" && inv.printed) return false;
               if(filterInvClient !== "all" && inv.client !== filterInvClient) return false;
-              if(filterInvDate && inv.date !== filterInvDate) return false;
+              if(filterInvDateFrom && inv.date < filterInvDateFrom) return false;
+              if(filterInvDateTo && inv.date > filterInvDateTo) return false;
               return true;
             });
             const totalFiltered = filtered.reduce((s,inv)=>s+(inv.items.reduce((ss,it)=>ss+lineTotal(it),0)*(1+C.taxRate)+(parseFloat(inv.porto)||0)),0);
@@ -3082,10 +3101,12 @@ export default function App() {
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("invoicesTitle")}</div>
                       {invoices.length > 0 && (
                         <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                          <span>{filtered.length} invoice{filtered.length!==1?"s":""}{filterInvScope==="month" ? ` · ${t("thisMonthFilter")}` : ""} · {filtered.filter(i=>!i.printed).length} unprinted</span>
-                          <button onClick={()=>setFilterInvScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
-                            {filterInvScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
-                          </button>
+                          <span>{filtered.length} invoice{filtered.length!==1?"s":""}{(filterInvScope==="month" && !filterInvDateFrom && !filterInvDateTo) ? ` · ${t("thisMonthFilter")}` : ""} · {filtered.filter(i=>!i.printed).length} unprinted</span>
+                          {!filterInvDateFrom && !filterInvDateTo && (
+                            <button onClick={()=>setFilterInvScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
+                              {filterInvScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -3116,28 +3137,27 @@ export default function App() {
                         ))}
                       </div>
 
-                      {/* Cliente + Fecha */}
+                      {/* Cliente + rango de fechas (desde/hasta) */}
                       {(() => {
-                        const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"12px 14px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
-                        const chev = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>;
-                        const dLabel = filterInvDate ? new Date(filterInvDate+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short",year:"numeric"}) : (lang==="de"?"Datum":"Date");
+                        const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, padding:"12px 10px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600 };
+                        const shortD = d => new Date(d+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"});
+                        const dateField = (value, onOpen, onClear, placeholder) => (
+                          <button className="ssp-sq" onClick={onOpen} style={fieldStyle}>
+                            <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: value?"#1B3F45":"#5A7A80" }}>{value ? shortD(value) : placeholder}</span>
+                            {value && <span onClick={e=>{ e.stopPropagation(); onClear(); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>}
+                          </button>
+                        );
                         return (
-                          <div style={{ display:"flex", gap:8, marginBottom:14, alignItems:"center" }}>
+                          <div style={{ display:"flex", gap:6, marginBottom:14, alignItems:"center" }}>
                             {invClients.length > 1 && (
-                              <button className="ssp-sq" onClick={()=>setInvClientPickerOpen(true)} style={fieldStyle}>
+                              <button className="ssp-sq" onClick={()=>setInvClientPickerOpen(true)} style={{ ...fieldStyle, padding:"12px 14px" }}>
                                 <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: filterInvClient!=="all"?"#1B3F45":"#5A7A80" }}>{filterInvClient==="all" ? t("allClients") : filterInvClient}</span>
-                                {chev}
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>
                               </button>
                             )}
-                            <button className="ssp-sq" onClick={()=>setInvDatePickerOpen(true)} style={fieldStyle}>
-                              <span style={{ display:"flex", alignItems:"center", gap:7, overflow:"hidden", color: filterInvDate?"#1B3F45":"#5A7A80" }}>
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={filterInvDate?"#C9933A":"#9DB5B9"} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dLabel}</span>
-                              </span>
-                              {filterInvDate
-                                ? <span onClick={e=>{ e.stopPropagation(); setFilterInvDate(""); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>
-                                : chev}
-                            </button>
+                            {dateField(filterInvDateFrom, ()=>setInvDateFromPickerOpen(true), ()=>setFilterInvDateFrom(""), t("fromDateLabel"))}
+                            <span style={{ color:"#9DB5B9", fontWeight:800, flexShrink:0 }}>→</span>
+                            {dateField(filterInvDateTo, ()=>setInvDateToPickerOpen(true), ()=>setFilterInvDateTo(""), t("toDateLabel"))}
                           </div>
                         );
                       })()}
@@ -3953,12 +3973,20 @@ export default function App() {
         options={[{ value:"all", label:t("allClients") }, ...[...new Set(orders.map(o=>o.client).filter(Boolean))].sort().map(c=>({ value:c, label:c }))]}
       />
       <DateSheet
-        open={datePickerOpen}
-        value={filterDate}
+        open={dateFromPickerOpen}
+        value={filterDateFrom}
         lang={lang}
         maxW={SHEET_MAX}
-        onSelect={setFilterDate}
-        onClose={()=>setDatePickerOpen(false)}
+        onSelect={setFilterDateFrom}
+        onClose={()=>setDateFromPickerOpen(false)}
+      />
+      <DateSheet
+        open={dateToPickerOpen}
+        value={filterDateTo}
+        lang={lang}
+        maxW={SHEET_MAX}
+        onSelect={setFilterDateTo}
+        onClose={()=>setDateToPickerOpen(false)}
       />
       <SelectSheet
         open={invClientPickerOpen}
@@ -3970,12 +3998,20 @@ export default function App() {
         options={[{ value:"all", label:t("allClients") }, ...[...new Set(invoices.map(i=>i.client).filter(Boolean))].sort().map(c=>({ value:c, label:c }))]}
       />
       <DateSheet
-        open={invDatePickerOpen}
-        value={filterInvDate}
+        open={invDateFromPickerOpen}
+        value={filterInvDateFrom}
         lang={lang}
         maxW={SHEET_MAX}
-        onSelect={setFilterInvDate}
-        onClose={()=>setInvDatePickerOpen(false)}
+        onSelect={setFilterInvDateFrom}
+        onClose={()=>setInvDateFromPickerOpen(false)}
+      />
+      <DateSheet
+        open={invDateToPickerOpen}
+        value={filterInvDateTo}
+        lang={lang}
+        maxW={SHEET_MAX}
+        onSelect={setFilterInvDateTo}
+        onClose={()=>setInvDateToPickerOpen(false)}
       />
       <SelectSheet
         open={statsClientPickerOpen}
