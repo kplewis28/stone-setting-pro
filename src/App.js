@@ -128,6 +128,9 @@ const TRANS = {
     orderSaved:"Order saved", orderUpdated:"Order updated",
     deleteOrderConfirm:"Delete order",
     areYouSure:"Are you sure?",
+    discardChangesTitle:"Discard changes?",
+    discardChangesMsg:"You have unsaved changes. If you leave now, they'll be lost.",
+    discardBtn:"Discard", keepEditingBtn:"Keep editing",
     donePromptBtn:"Confirm \u2014 order completed",
     noOrdersYet:"No orders yet",
     noOrdersDesc:"Your orders will appear here.",
@@ -275,6 +278,9 @@ const TRANS = {
     orderSaved:"Auftrag gespeichert", orderUpdated:"Auftrag aktualisiert",
     deleteOrderConfirm:"Auftrag l\u00f6schen",
     areYouSure:"Sind Sie sicher?",
+    discardChangesTitle:"\u00c4nderungen verwerfen?",
+    discardChangesMsg:"Sie haben ungespeicherte \u00c4nderungen. Wenn Sie jetzt verlassen, gehen sie verloren.",
+    discardBtn:"Verwerfen", keepEditingBtn:"Weiter bearbeiten",
     donePromptBtn:"Best\u00e4tigen \u2014 Auftrag abgeschlossen",
     noOrdersYet:"Noch keine Auftr\u00e4ge",
     noOrdersDesc:"Ihre Auftr\u00e4ge erscheinen hier.",
@@ -862,6 +868,7 @@ export default function App() {
   const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
   const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
   const showConfirm = (message, onConfirm) => setConfirmModal({ message, onConfirm });
+  const [exitConfirm, setExitConfirm] = useState(null); // pending nav fn while "discard changes?" is shown
   const [workOrderPreview, setWorkOrderPreview] = useState(null);
   const [doneModal, setDoneModal] = useState(null); // order to prompt invoice creation
   const [rechnungData, setRechnungData] = useState(null);
@@ -993,6 +1000,33 @@ export default function App() {
     try { localStorage.setItem("ssp_clients", JSON.stringify(clients)); } catch(_) {}
     dbSet('clients', clients).catch(e => { console.error('[cloud] save failed: clients', e); setCloudError(true); });
   }, [clients, dbLoaded]);
+
+  // ── Exit guard: if the user has actually typed something in a draft
+  //    (new/edit order, new invoice, new/edit client) and then hits back,
+  //    switches tabs, etc., confirm before throwing it away. An empty,
+  //    untouched form navigates away silently — only real input is guarded.
+  const orderDraftDirty = () => !!(
+    (draft.client||"").trim() || (draft.description||"").trim() || draft.photo ||
+    (draft.lineItems||[]).some(li => (li.desc||"").trim() || (li.stones||[]).some(s=>(s.type||"").trim()||(s.size||"").trim()))
+  );
+  const invoiceDraftDirty = () => !!(
+    (invClient||"").trim() ||
+    items.some(it => (it.desc||"").trim() || it.unitPrice || it.price || (it.stones||[]).some(s=>(s.type||"").trim()||(s.size||"").trim()||s.qty||s.price))
+  );
+  const clientDraftDirty = () => !!(
+    (clientDraft.name||"").trim() || (clientDraft.company||"").trim() || (clientDraft.address||"").trim() ||
+    (clientDraft.phone||"").trim() || (clientDraft.email||"").trim()
+  );
+  const hasUnsavedChanges = () => {
+    if (tab==="orders"  && (view==="new"||view==="edit")) return orderDraftDirty();
+    if (tab==="invoice" && invView==="new") return invoiceDraftDirty();
+    if (tab==="clients" && (clientView==="new"||clientView==="edit")) return clientDraftDirty();
+    if (tab==="scan" && photoStep==="review") return true; // a captured/extracted photo pending confirmation
+    return false;
+  };
+  // Wrap any "leave the draft" navigation in this — runs fn immediately if
+  // there's nothing to lose, otherwise asks first via the exitConfirm sheet.
+  const guardedNav = (fn) => { if (hasUnsavedChanges()) setExitConfirm(()=>fn); else fn(); };
 
   // ── PWA auto-update: tell the service worker whether the user is mid-edit,
   //    so a new version doesn't reload the page and lose an unsaved form ──
@@ -1560,7 +1594,7 @@ export default function App() {
             { key:"clients", icon:"person",  label:t("tabClients") },
             { key:"invoice", icon:"invoice", label:t("tabInvoice") },
           ].map(({ key, icon, label }) => (
-            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); if(key==="clients")setClientView("list"); }}
+            <button key={key} onClick={()=>guardedNav(()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); if(key==="clients")setClientView("list"); })}
               style={{ width:"100%", background: tab===key ? "rgba(201,147,58,0.18)" : "none", borderLeft: tab===key ? `3px solid #C9933A` : "3px solid transparent", borderTop:"none", borderRight:"none", borderBottom:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:12, padding:"14px 20px", transition:"all 0.1s" }}>
               <Icon name={icon} size={20} color={tab===key ? "#C9933A" : "rgba(255,255,255,0.55)"}/>
               <span style={{ fontSize:"0.875rem", fontWeight: tab===key ? 600 : 400, color: tab===key ? "#ffffff" : "rgba(255,255,255,0.55)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{label}</span>
@@ -2182,7 +2216,7 @@ export default function App() {
                 </div>
               ) : (
                 <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <button onClick={()=>{ if(view==="edit") setView("detail"); else if(view==="new" && newOrderStep>1) setNewOrderStep(s=>s-1); else setView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+                  <button onClick={()=>{ if(view==="new" && newOrderStep>1){ setNewOrderStep(s=>s-1); return; } guardedNav(()=>{ if(view==="edit") setView("detail"); else setView("list"); }); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                   <div>
                     <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
                       {view==="new" ? t("newOrderTitle") : view==="edit" ? t("editOrderTitle") : view==="detail" ? selectedOrder?.client : t("ordersHeader")}
@@ -3142,7 +3176,7 @@ export default function App() {
                 {/* Header with live total */}
                 <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                    <button onClick={()=>{ setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+                    <button onClick={()=>guardedNav(()=>setInvView("list"))} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>New Invoice</div>
                       {invClient && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{invClient}</div>}
@@ -3324,7 +3358,7 @@ export default function App() {
               <>
                 <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                    <button onClick={()=>{ setSelectedInvoice(null); setInvView("list"); }} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+                    <button onClick={()=>guardedNav(()=>{ setSelectedInvoice(null); setInvView("list"); })} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{inv.number}</div>
                       {inv.client && <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{inv.client}</div>}
@@ -3452,7 +3486,7 @@ export default function App() {
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {clientView!=="list" && (
-                  <button onClick={()=>setClientView("list")} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+                  <button onClick={()=>guardedNav(()=>setClientView("list"))} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
                 )}
                 <div>
                   <div style={{ fontSize: clientView==="list"?24:22, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em", lineHeight:1.1 }}>
@@ -3713,7 +3747,7 @@ export default function App() {
             { key:"clients", icon:"person",  label:t("tabClients") },
             { key:"invoice", icon:"invoice", label:t("tabInvoice") },
           ].map(({ key, icon, label }) => (
-            <button key={key} onClick={()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice"){ setInvView("list"); setSelectedInvoice(null); } if(key==="clients"){ setClientView("list"); } }} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"4px 0" }}>
+            <button key={key} onClick={()=>guardedNav(()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders"){ setView("list"); } if(key==="invoice"){ setInvView("list"); setSelectedInvoice(null); } if(key==="clients"){ setClientView("list"); } })} style={{ flex:1, background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"4px 0" }}>
               <div style={{ width:44, height:32, background:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <Icon name={icon} size={20} color={tab===key ? "#1B3F45" : "#5A7A80"}/>
               </div>
@@ -4165,6 +4199,27 @@ export default function App() {
             </button>
             <button onClick={()=>setConfirmModal(null)} style={{ width:"100%", padding:"15px", background:"#F0F6F7", color:"#1B3F45", border:"none", borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:600, cursor:"pointer" }}>
               {t("cancelBtn")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── EXIT GUARD — "discard changes?" before leaving a draft with real input ── */}
+      {exitConfirm && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:3600, display:"flex", alignItems:"flex-end", justifyContent:"center", padding:"0 16px 32px" }}
+             onClick={()=>setExitConfirm(null)}>
+          <div style={{ background:"white", borderRadius:24, padding:"24px 24px 20px", width:"100%", maxWidth:SHEET_MAX, animation:"fadeUp 0.2s ease", textAlign:"left" }}
+               onClick={e=>e.stopPropagation()}>
+            <div style={{ width:40, height:40, borderRadius:12, background:"#FBF5E8", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
+              <Icon name="alert" size={20} color="#8A6220"/>
+            </div>
+            <div style={{ fontSize:16, fontWeight:700, color:"#1B3F45", marginBottom:8, textAlign:"center", letterSpacing:"-0.01em" }}>{t("discardChangesTitle")}</div>
+            <div style={{ fontSize:14, color:"#5A7A80", textAlign:"center", lineHeight:1.5, marginBottom:24 }}>{t("discardChangesMsg")}</div>
+            <button onClick={()=>setExitConfirm(null)} style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:10 }}>
+              {t("keepEditingBtn")}
+            </button>
+            <button onClick={()=>{ const fn=exitConfirm; setExitConfirm(null); fn(); }} style={{ width:"100%", padding:"15px", background:"#F0F6F7", color:"#da1e28", border:"none", borderRadius:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:15, fontWeight:600, cursor:"pointer" }}>
+              {t("discardBtn")}
             </button>
           </div>
         </div>
