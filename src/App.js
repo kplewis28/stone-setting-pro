@@ -100,6 +100,7 @@ const TRANS = {
     stoneTallyBtn:"Stones", stoneTallyTitle:"Stones Used",
     stoneTallyTotal:"Total stones", stoneTallyTypes:"Types",
     stoneTallyEmpty:"No stones invoiced in this period",
+    allTypesFilter:"All types",
     viewAllLink:"View all", viewThisMonthLink:"This month only",
     fromDateLabel:"From", toDateLabel:"To",
     overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
@@ -259,6 +260,7 @@ const TRANS = {
     stoneTallyBtn:"Steine", stoneTallyTitle:"Verwendete Steine",
     stoneTallyTotal:"Steine gesamt", stoneTallyTypes:"Arten",
     stoneTallyEmpty:"Keine Steine in diesem Zeitraum verrechnet",
+    allTypesFilter:"Alle Arten",
     viewAllLink:"Alle anzeigen", viewThisMonthLink:"Nur diesen Monat",
     fromDateLabel:"Von", toDateLabel:"Bis",
     overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
@@ -927,7 +929,15 @@ export default function App() {
   const [statsMetric, setStatsMetric] = useState("revenue"); // "orders"|"revenue"|"units"|"clients"
   const [statsWeek, setStatsWeek] = useState(null); // tapped week/segment index within the period
   const [stoneTallyOpen, setStoneTallyOpen] = useState(false); // stone-usage report overlay
-  const [stoneTallyScope, setStoneTallyScope] = useState("month"); // "month" (default) | "all"
+  const [stoneTallyScope, setStoneTallyScope] = useState("month"); // "month" (default) | "all" — only while no explicit date range
+  const [stoneTallyDateFrom, setStoneTallyDateFrom] = useState("");
+  const [stoneTallyDateTo, setStoneTallyDateTo]     = useState("");
+  const [stoneTallyClient, setStoneTallyClient] = useState("all");
+  const [stoneTallyType, setStoneTallyType]     = useState("all");
+  const [stoneTallyClientPickerOpen, setStoneTallyClientPickerOpen] = useState(false);
+  const [stoneTallyTypePickerOpen, setStoneTallyTypePickerOpen]     = useState(false);
+  const [stoneTallyFromOpen, setStoneTallyFromOpen] = useState(false);
+  const [stoneTallyToOpen, setStoneTallyToOpen]     = useState(false);
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
@@ -3945,7 +3955,19 @@ export default function App() {
       {/* ── STONE TALLY — count of stones/types/sizes rescued from invoice data ── */}
       {stoneTallyOpen && (() => {
         const curMonthKey = new Date().toISOString().slice(0,7);
-        const scopedInvoices = stoneTallyScope==="all" ? invoices : invoices.filter(inv => (inv.date||"").startsWith(curMonthKey));
+        const hasRange = stoneTallyDateFrom || stoneTallyDateTo;
+        const allTallyClients = [...new Set(invoices.map(i=>i.client).filter(Boolean))].sort();
+        const allTallyTypes = [...new Set(
+          invoices.flatMap(inv => (inv.items||[]).flatMap(it => (it.stones||[]).map(s => (s.type||"").trim()).filter(Boolean)))
+        )].sort((a,b)=>a.localeCompare(b));
+        const scopedInvoices = invoices.filter(inv => {
+          if (stoneTallyClient!=="all" && inv.client !== stoneTallyClient) return false;
+          if (hasRange) {
+            if (stoneTallyDateFrom && inv.date < stoneTallyDateFrom) return false;
+            if (stoneTallyDateTo && inv.date > stoneTallyDateTo) return false;
+          } else if (stoneTallyScope==="month" && !(inv.date||"").startsWith(curMonthKey)) return false;
+          return true;
+        });
         const tally = {};
         scopedInvoices.forEach(inv => {
           (inv.items||[]).forEach(it => {
@@ -3954,6 +3976,7 @@ export default function App() {
               const qty = (parseFloat(s.qty)||0) * cnt;
               if (!qty) return;
               const type = (s.type||"").trim() || (lang==="de"?"Unbekannt":"Unknown");
+              if (stoneTallyType!=="all" && type.toLowerCase()!==stoneTallyType.toLowerCase()) return;
               const size = (s.size||"").trim();
               const key = `${type.toLowerCase()}|${size}`;
               if (!tally[key]) tally[key] = { type, size, qty: 0 };
@@ -3964,6 +3987,15 @@ export default function App() {
         const rows = Object.values(tally).sort((a,b) => b.qty - a.qty);
         const totalStones = rows.reduce((s,r) => s + r.qty, 0);
         const totalTypes = new Set(rows.map(r => r.type.toLowerCase())).size;
+        const fieldStyle = { flex:1, minWidth:0, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, padding:"12px 10px", background:"#fff", border:"1.5px solid #E8E4DC", borderRadius:14, cursor:"pointer", fontSize:13, fontWeight:600, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" };
+        const chev = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DB5B9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M6 9l6 6 6-6"/></svg>;
+        const shortD = d => new Date(d+"T12:00:00").toLocaleDateString(lang==="de"?"de-CH":"en-GB",{day:"numeric",month:"short"});
+        const dateField = (value, onOpen, onClear, placeholder) => (
+          <button onClick={onOpen} style={{ ...fieldStyle, padding:"12px 10px" }}>
+            <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: value?"#1B3F45":"#5A7A80" }}>{value ? shortD(value) : placeholder}</span>
+            {value && <span onClick={e=>{ e.stopPropagation(); onClear(); }} style={{ flexShrink:0, color:"#9DB5B9", fontSize:16, lineHeight:1, padding:"0 2px" }}>×</span>}
+          </button>
+        );
         return (
           <div style={{ position:"fixed", inset:0, background:"#F7F5F0", zIndex:1000, overflowY:"auto" }}>
             <div style={{ padding:"max(16px, env(safe-area-inset-top, 16px)) 22px 16px", borderBottom:"1px solid #E8E4DC", background:"#fff", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -3972,11 +4004,34 @@ export default function App() {
               <div style={{ width:36 }}/>
             </div>
             <div style={{ padding:"18px 22px 60px", maxWidth:560, margin:"0 auto" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-                <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{stoneTallyScope==="month" ? t("thisMonthFilter") : t("allFilter")}</span>
-                <button onClick={()=>setStoneTallyScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
-                  {stoneTallyScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
+              <QuickDateChips lang={lang} t={t} onPick={({from,to})=>{ setStoneTallyDateFrom(from); setStoneTallyDateTo(to); }}/>
+
+              {/* Cliente + Tipo de piedra */}
+              <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+                <button onClick={()=>setStoneTallyClientPickerOpen(true)} style={fieldStyle}>
+                  <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: stoneTallyClient!=="all"?"#1B3F45":"#5A7A80" }}>{stoneTallyClient==="all" ? t("allClients") : stoneTallyClient}</span>
+                  {chev}
                 </button>
+                <button onClick={()=>setStoneTallyTypePickerOpen(true)} style={fieldStyle}>
+                  <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color: stoneTallyType!=="all"?"#1B3F45":"#5A7A80" }}>{stoneTallyType==="all" ? t("allTypesFilter") : stoneTallyType}</span>
+                  {chev}
+                </button>
+              </div>
+
+              {/* Rango de fechas (desde/hasta) */}
+              <div style={{ display:"flex", gap:6, marginBottom:8, alignItems:"center" }}>
+                {dateField(stoneTallyDateFrom, ()=>setStoneTallyFromOpen(true), ()=>setStoneTallyDateFrom(""), t("fromDateLabel"))}
+                <span style={{ color:"#9DB5B9", fontWeight:800, flexShrink:0 }}>→</span>
+                {dateField(stoneTallyDateTo, ()=>setStoneTallyToOpen(true), ()=>setStoneTallyDateTo(""), t("toDateLabel"))}
+              </div>
+
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+                <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{(!hasRange && stoneTallyScope==="month") ? t("thisMonthFilter") : t("allFilter")}</span>
+                {!hasRange && (
+                  <button onClick={()=>setStoneTallyScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
+                    {stoneTallyScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
+                  </button>
+                )}
               </div>
               <div style={{ display:"flex", gap:10, marginBottom:18 }}>
                 <div style={{ flex:1, background:"#fff", border:"0.5px solid #E8E4DC", borderRadius:14, padding:"14px" }}>
@@ -4002,6 +4057,40 @@ export default function App() {
                 </div>
               ))}
             </div>
+            <SelectSheet
+              open={stoneTallyClientPickerOpen}
+              title={lang==="de" ? "Kunde" : "Client"}
+              maxW={SHEET_MAX}
+              value={stoneTallyClient}
+              onSelect={setStoneTallyClient}
+              onClose={()=>setStoneTallyClientPickerOpen(false)}
+              options={[{ value:"all", label:t("allClients") }, ...allTallyClients.map(c=>({ value:c, label:c }))]}
+            />
+            <SelectSheet
+              open={stoneTallyTypePickerOpen}
+              title={lang==="de" ? "Steinart" : "Stone type"}
+              maxW={SHEET_MAX}
+              value={stoneTallyType}
+              onSelect={setStoneTallyType}
+              onClose={()=>setStoneTallyTypePickerOpen(false)}
+              options={[{ value:"all", label:t("allTypesFilter") }, ...allTallyTypes.map(ty=>({ value:ty, label:ty }))]}
+            />
+            <DateSheet
+              open={stoneTallyFromOpen}
+              value={stoneTallyDateFrom}
+              lang={lang}
+              maxW={SHEET_MAX}
+              onSelect={setStoneTallyDateFrom}
+              onClose={()=>setStoneTallyFromOpen(false)}
+            />
+            <DateSheet
+              open={stoneTallyToOpen}
+              value={stoneTallyDateTo}
+              lang={lang}
+              maxW={SHEET_MAX}
+              onSelect={setStoneTallyDateTo}
+              onClose={()=>setStoneTallyToOpen(false)}
+            />
           </div>
         );
       })()}
