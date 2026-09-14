@@ -97,6 +97,9 @@ const TRANS = {
     allFilter:"All", allClients:"All clients",
     thisMonthFilter:"This month",
     todayFilter:"Today", lastMonthFilter:"Last month",
+    stoneTallyBtn:"Stones", stoneTallyTitle:"Stones Used",
+    stoneTallyTotal:"Total stones", stoneTallyTypes:"Types",
+    stoneTallyEmpty:"No stones invoiced in this period",
     viewAllLink:"View all", viewThisMonthLink:"This month only",
     fromDateLabel:"From", toDateLabel:"To",
     overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
@@ -253,6 +256,9 @@ const TRANS = {
     allFilter:"Alle", allClients:"Alle Kunden",
     thisMonthFilter:"Diesen Monat",
     todayFilter:"Heute", lastMonthFilter:"Letzten Monat",
+    stoneTallyBtn:"Steine", stoneTallyTitle:"Verwendete Steine",
+    stoneTallyTotal:"Steine gesamt", stoneTallyTypes:"Arten",
+    stoneTallyEmpty:"Keine Steine in diesem Zeitraum verrechnet",
     viewAllLink:"Alle anzeigen", viewThisMonthLink:"Nur diesen Monat",
     fromDateLabel:"Von", toDateLabel:"Bis",
     overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
@@ -920,6 +926,8 @@ export default function App() {
   const [statsToOpen, setStatsToOpen] = useState(false);
   const [statsMetric, setStatsMetric] = useState("revenue"); // "orders"|"revenue"|"units"|"clients"
   const [statsWeek, setStatsWeek] = useState(null); // tapped week/segment index within the period
+  const [stoneTallyOpen, setStoneTallyOpen] = useState(false); // stone-usage report overlay
+  const [stoneTallyScope, setStoneTallyScope] = useState("month"); // "month" (default) | "all"
   const [invPorto, setInvPorto] = useState("");
   const [filterInvStatus, setFilterInvStatus] = useState("all"); // "all" | "printed" | "unprinted"
   const [filterInvClient, setFilterInvClient] = useState("all");
@@ -2119,9 +2127,14 @@ export default function App() {
         return (
           <div style={{ animation:"fadeUp 0.3s ease" }}>
             {/* Header — same structure as Orders/Invoice */}
-            <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC" }}>
-              <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
-              <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{monthLabel}</div>
+            <div style={{ padding: isDesktop?"26px 40px 20px":isTablet?"max(18px, env(safe-area-inset-top, 18px)) 32px 20px":"max(16px, env(safe-area-inset-top, 16px)) 22px 20px", borderBottom:"1px solid #E8E4DC", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div>
+                <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45", letterSpacing:"-0.02em" }}>{t("statsTitle")}</div>
+                <div style={{ fontSize:13, color:"#5A7A80", marginTop:6, fontWeight:500 }}>{monthLabel}</div>
+              </div>
+              <button onClick={()=>setStoneTallyOpen(true)} style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer", fontSize:13, fontWeight:700, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", flexShrink:0 }}>
+                <Icon name="gem" size={15} color="#1B3F45"/> {t("stoneTallyBtn")}
+              </button>
             </div>
 
             <div style={{ padding: isDesktop?"16px 40px 0":isTablet?"16px 32px 0":"14px 22px 0" }}>
@@ -3929,6 +3942,70 @@ export default function App() {
       </div>{/* end content wrapper */}
 
       {/* ── WORK ORDER PREVIEW OVERLAY ── */}
+      {/* ── STONE TALLY — count of stones/types/sizes rescued from invoice data ── */}
+      {stoneTallyOpen && (() => {
+        const curMonthKey = new Date().toISOString().slice(0,7);
+        const scopedInvoices = stoneTallyScope==="all" ? invoices : invoices.filter(inv => (inv.date||"").startsWith(curMonthKey));
+        const tally = {};
+        scopedInvoices.forEach(inv => {
+          (inv.items||[]).forEach(it => {
+            const cnt = parseFloat(it.count) || 1;
+            (it.stones||[]).forEach(s => {
+              const qty = (parseFloat(s.qty)||0) * cnt;
+              if (!qty) return;
+              const type = (s.type||"").trim() || (lang==="de"?"Unbekannt":"Unknown");
+              const size = (s.size||"").trim();
+              const key = `${type.toLowerCase()}|${size}`;
+              if (!tally[key]) tally[key] = { type, size, qty: 0 };
+              tally[key].qty += qty;
+            });
+          });
+        });
+        const rows = Object.values(tally).sort((a,b) => b.qty - a.qty);
+        const totalStones = rows.reduce((s,r) => s + r.qty, 0);
+        const totalTypes = new Set(rows.map(r => r.type.toLowerCase())).size;
+        return (
+          <div style={{ position:"fixed", inset:0, background:"#F7F5F0", zIndex:1000, overflowY:"auto" }}>
+            <div style={{ padding:"max(16px, env(safe-area-inset-top, 16px)) 22px 16px", borderBottom:"1px solid #E8E4DC", background:"#fff", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <button onClick={()=>setStoneTallyOpen(false)} style={{ width:36, height:36, borderRadius:11, background:"#F0F6F7", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon name="back" size={18} color="#1B3F45"/></button>
+              <span style={{ fontSize:16, fontWeight:800, color:"#1B3F45", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{t("stoneTallyTitle")}</span>
+              <div style={{ width:36 }}/>
+            </div>
+            <div style={{ padding:"18px 22px 60px", maxWidth:560, margin:"0 auto" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+                <span style={{ fontSize:13, color:"#5A7A80", fontWeight:500 }}>{stoneTallyScope==="month" ? t("thisMonthFilter") : t("allFilter")}</span>
+                <button onClick={()=>setStoneTallyScope(s=>s==="month"?"all":"month")} style={{ background:"none", border:"none", padding:0, color:"#C9933A", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
+                  {stoneTallyScope==="month" ? t("viewAllLink") : t("viewThisMonthLink")}
+                </button>
+              </div>
+              <div style={{ display:"flex", gap:10, marginBottom:18 }}>
+                <div style={{ flex:1, background:"#fff", border:"0.5px solid #E8E4DC", borderRadius:14, padding:"14px" }}>
+                  <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", fontWeight:700, marginBottom:4 }}>{t("stoneTallyTotal")}</div>
+                  <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45" }}>{totalStones}</div>
+                </div>
+                <div style={{ flex:1, background:"#fff", border:"0.5px solid #E8E4DC", borderRadius:14, padding:"14px" }}>
+                  <div style={{ fontSize:11, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.06em", fontWeight:700, marginBottom:4 }}>{t("stoneTallyTypes")}</div>
+                  <div style={{ fontSize:24, fontWeight:900, color:"#1B3F45" }}>{totalTypes}</div>
+                </div>
+              </div>
+              {rows.length === 0 ? (
+                <div style={{ textAlign:"center", padding:"40px 24px", color:"#9DB5B9", fontSize:14 }}>{t("stoneTallyEmpty")}</div>
+              ) : rows.map((r,i) => (
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"#fff", border:"0.5px solid #E8E4DC", borderRadius:12, padding:"13px 14px", marginBottom:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, minWidth:0 }}>
+                    <div style={{ width:34, height:34, borderRadius:10, background:"#E0ECED", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <Icon name="gem" size={16} color="#5A7A80"/>
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.type}{r.size ? ` · ${r.size} mm` : ""}</div>
+                  </div>
+                  <div style={{ fontSize:17, fontWeight:900, color:"#C9933A", flexShrink:0 }}>{r.qty}×</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {workOrderPreview && (() => {
         const o = workOrderPreview;
         const GOLD = "#B8960C";
