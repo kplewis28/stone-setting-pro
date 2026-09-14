@@ -636,7 +636,7 @@ const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList 
     clearTimeout(undoTimerRef.current);
     setLastDeleted({ stone: stones[idx], index: idx });
     onChange(stones.filter(x => x.id !== id));
-    undoTimerRef.current = setTimeout(() => setLastDeleted(null), 5000);
+    undoTimerRef.current = setTimeout(() => setLastDeleted(null), 9000);
   };
   const undoDelete = () => {
     if (!lastDeleted) return;
@@ -646,6 +646,7 @@ const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList 
     onChange(arr);
     setLastDeleted(null);
   };
+  const dismissUndo = () => { clearTimeout(undoTimerRef.current); setLastDeleted(null); };
   const dup = (s) => { const i = stones.findIndex(x => x.id === s.id); const arr = [...stones]; arr.splice(i+1, 0, { ...s, id: Date.now()+Math.random() }); onChange(arr); };
   const inp = { padding:"10px 11px", border:"1.5px solid #E8E4DC", borderRadius:11, fontSize:14, color:"#1B3F45", outline:"none", background:"#fff", minWidth:0, boxSizing:"border-box", fontFamily:"inherit" };
   const iconBtn = { background:"none", border:"none", cursor:"pointer", padding:5, flexShrink:0, display:"flex" };
@@ -705,9 +706,12 @@ const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList 
       </>)}
 
       {lastDeleted && (
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, background:"#FBF5E8", border:"1px solid #E8C97A", borderRadius:11, padding:"8px 8px 8px 12px", marginBottom:9 }}>
-          <span style={{ fontSize:12, color:"#8A6220", fontWeight:600 }}>{t("stoneDeletedMsg")}</span>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:6, background:"#FBF5E8", border:"1px solid #E8C97A", borderRadius:11, padding:"8px 6px 8px 12px", marginBottom:9 }}>
+          <span style={{ fontSize:12, color:"#8A6220", fontWeight:600, flex:1 }}>{t("stoneDeletedMsg")}</span>
           <button onClick={undoDelete} style={{ background:"#F0DDB0", border:"none", borderRadius:100, padding:"6px 13px", color:"#5C4515", fontWeight:800, fontSize:12, cursor:"pointer", flexShrink:0 }}>{t("undoBtn")}</button>
+          <button onClick={dismissUndo} aria-label="dismiss" style={{ background:"none", border:"none", padding:6, cursor:"pointer", display:"flex", flexShrink:0 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8A6220" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
         </div>
       )}
 
@@ -891,7 +895,7 @@ export default function App() {
   const showToast = (msg, color="#198038", onUndo=null) => {
     clearTimeout(toastTimerRef.current);
     setToast({ msg, color, onUndo });
-    toastTimerRef.current = setTimeout(()=>setToast(null), onUndo ? 5000 : 2000);
+    toastTimerRef.current = setTimeout(()=>setToast(null), onUndo ? 9000 : 2000);
   };
   const [clients, setClients]     = useState(() => { try { const s = localStorage.getItem("ssp_clients"); return s ? JSON.parse(s) : []; } catch { return []; } });
   const [clientView, setClientView] = useState("list"); // "list" | "new" | "edit" | "detail"
@@ -4209,11 +4213,14 @@ export default function App() {
       {toast && (
         <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", background:toast.color, color:"white", padding:"12px 14px 12px 24px", borderRadius:100, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontWeight:700, fontSize:14, zIndex:2000, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", whiteSpace:"nowrap", animation:"fadeUp 0.2s ease", display:"flex", alignItems:"center", gap:8 }}>
           <Icon name="check" size={15} color="white"/> {toast.msg}
-          {toast.onUndo && (
+          {toast.onUndo && (<>
             <button onClick={()=>{ toast.onUndo(); setToast(null); }} style={{ background:"rgba(255,255,255,0.22)", border:"none", borderRadius:100, padding:"6px 14px", color:"white", fontWeight:800, fontSize:13, cursor:"pointer", marginLeft:2, fontFamily:"inherit" }}>
               {t("undoBtn")}
             </button>
-          )}
+            <button onClick={()=>setToast(null)} aria-label="dismiss" style={{ background:"none", border:"none", padding:6, cursor:"pointer", display:"flex", flexShrink:0 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </>)}
         </div>
       )}
 
