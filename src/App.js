@@ -204,7 +204,7 @@ const TRANS = {
     unitsLabel:"Units",
     stonesLabel:"Stones to set", stoneTypePh:"e.g. Diamond", stoneSizePh:"Size", addStoneBtn:"Add stone",
     stoneTypeCol:"Stone", stoneSizeCol:"Size", stoneQtyCol:"Qty", stonePriceCol:"Price / stone",
-    stonesInvoiceHint:"Enter how many you set \u2014 price is pre-filled, adjust if needed", noStonesYet:"No stones yet \u2014 add the stones you'll set into this piece",
+    stonesInvoiceHint:"Enter how many you set \u2014 price is pre-filled, adjust if needed", stonesSetLabel:"Stones set", fixedPriceInstead:"Use a fixed price instead", countStonesInstead:"Count stones instead", noStonesYet:"No stones yet \u2014 add the stones you'll set into this piece",
     pieceDescLabel:"Piece", pieceCountLabel:"Identical pieces", photoOptional:"Add photo (optional)", duplicateBtn:"Duplicate",
     descPiecePlaceholder:"Describe the work to be done\u2026",
     itemsForInvoice:"Items for invoice",
@@ -365,7 +365,7 @@ const TRANS = {
     unitsLabel:"Einheiten",
     stonesLabel:"Zu fassende Steine", stoneTypePh:"z.B. Brillant", stoneSizePh:"Gr\u00f6sse", addStoneBtn:"Stein hinzuf\u00fcgen",
     stoneTypeCol:"Stein", stoneSizeCol:"Grösse", stoneQtyCol:"Anz.", stonePriceCol:"Preis / Stein",
-    stonesInvoiceHint:"Anzahl eingeben \u2014 Preis ist vorausgef\u00fcllt, bei Bedarf anpassen", noStonesYet:"Noch keine Steine \u2014 f\u00fcge die Steine hinzu, die du in dieses St\u00fcck fasst",
+    stonesInvoiceHint:"Anzahl eingeben \u2014 Preis ist vorausgef\u00fcllt, bei Bedarf anpassen", stonesSetLabel:"Gefasste Steine", fixedPriceInstead:"Stattdessen Festpreis", countStonesInstead:"Stattdessen Steine z\u00e4hlen", noStonesYet:"Noch keine Steine \u2014 f\u00fcge die Steine hinzu, die du in dieses St\u00fcck fasst",
     pieceDescLabel:"St\u00fcck", pieceCountLabel:"Gleiche St\u00fccke", photoOptional:"Foto hinzuf\u00fcgen (optional)", duplicateBtn:"Duplizieren",
     descPiecePlaceholder:"Zu erledigende Arbeit beschreiben\u2026",
     itemsForInvoice:"Artikel f\u00fcr Rechnung",
@@ -422,6 +422,23 @@ const newOrder     = () => ({ id: String(Date.now()).slice(-4), client:"", clien
 const newClient    = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
 const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", count:"1", qty:"1", unitPrice:"", price:"", stones:[] });
 const newStone     = () => ({ id: Date.now()+Math.random(), type:"", size:"", qty:"", price:"" });
+// Invoice stones: David doesn't list each stone — he just counts how many he
+// set per Preisliste tier (bis 2.0 mm / über 2.0 mm) at a fixed per-stone rate.
+// Stored as two `bucket` stones so lineTotal, the printout and the tally work as-is.
+const STONE_BUCKETS = [
+  { bucket:"le2", mm:"2.0", size:"\u2264 2.0 mm", de:"Steine bis 2.0 mm",  en:"Stones up to 2.0 mm" },
+  { bucket:"gt2", mm:"2.5", size:"> 2.0 mm",       de:"Steine \u00fcber 2.0 mm", en:"Stones over 2.0 mm" },
+];
+const bucketMeta      = (s) => STONE_BUCKETS.find(b => b.bucket === s.bucket);
+const bucketRate      = (b, client) => stoneRate("diamant", b.mm, client);
+const newBucketStones = (client) => STONE_BUCKETS.map(b => ({ id: Date.now()+Math.random(), bucket:b.bucket, type:"", size:b.size, qty:"", price:String(bucketRate(b, client)), autoPrice:true }));
+const isBucketItem    = (it) => (it.stones || []).some(s => s.bucket);
+const newInvItem      = (client) => ({ ...newItem(), stones: newBucketStones(client) });
+// Order line → invoice item. Stone counts start blank; David fills them in.
+const orderLineToInvItem = (li, o) => {
+  const legacyPrice = !(li.stones||[]).length && li.unitPrice;
+  return { id:Date.now()+Math.random(), desc:li.desc||"", count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones: legacyPrice ? [] : newBucketStones(o.client) };
+};
 const cloneStones  = (arr) => (arr||[]).map(s => ({ ...s, id: Date.now()+Math.random() }));
 // Default price to set one stone of a given type (CHF), pre-filled on invoices.
 const parseMM      = (s) => { const m = String(s || "").match(/(\d+(?:[.,]\d+)?)\s*mm|(\d+(?:[.,]\d+)?)/i); const v = m && (m[1] || m[2]); return v ? parseFloat(v.replace(",", ".")) : null; };
@@ -453,14 +470,15 @@ const stoneGroups = (stones) => {
     const qty = parseFloat(s.qty) || 0, u = parseFloat(s.price) || 0;
     const mm  = parseMM(s.size) ?? parseMM(s.type);
     const type = (s.type || "").trim();
-    let hit = g.find(x => x.u === u);
-    if (!hit) { hit = { u, qty: 0, mm: [], types: new Set() }; g.push(hit); }
+    let hit = g.find(x => s.bucket ? x.bucket === s.bucket : (!x.bucket && x.u === u));
+    if (!hit) { hit = { u, qty: 0, mm: [], types: new Set(), bucket: s.bucket }; g.push(hit); }
     hit.qty += qty;
     if (mm != null) hit.mm.push(mm);
     if (type) hit.types.add(type);
   });
   return g
     .map(x => {
+      if (x.bucket) { const b = bucketMeta(x); return { label: b.de, u: x.u, qty: x.qty, sort: x.bucket === "le2" ? 2 : 2.01 }; }
       const mn = x.mm.length ? Math.min(...x.mm) : null;
       const mx = x.mm.length ? Math.max(...x.mm) : null;
       let range = "";
@@ -649,6 +667,43 @@ const SectionTitle = ({ children }) => (
 // after the first digit so the user doesn't have to reach for the "." key.
 // Only fires while typing forward (never fights a backspace/delete).
 const autoDotSize = (prev, raw) => (raw.length > (prev||"").length && /^\d$/.test(raw)) ? raw + "." : raw;
+
+// Invoice phase: just two tiers — how many stones ≤2.0 mm and >2.0 mm, each
+// at its pre-set per-stone price (editable). What the stones are goes in the
+// item description, written by David himself.
+const BucketStonesEditor = ({ stones = [], onChange, t, lang, currency }) => {
+  const upd = (id, patch) => onChange(stones.map(s => s.id === id ? { ...s, ...patch } : s));
+  const inp = { padding:"10px 8px", border:"1.5px solid #E8E4DC", borderRadius:11, fontSize:15, color:"#1B3F45", outline:"none", background:"#fff", width:"100%", minWidth:0, boxSizing:"border-box", fontFamily:"inherit", textAlign:"center" };
+  const miniLbl = { fontSize:10, fontWeight:800, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:5, display:"block" };
+  return (
+    <div>
+      <div style={{ fontSize:12, fontWeight:800, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:8 }}>{t("stonesSetLabel")}</div>
+      {stones.filter(s => s.bucket).map(s => {
+        const b = bucketMeta(s);
+        const line = (parseFloat(s.qty)||0) * (parseFloat(s.price)||0);
+        return (
+          <div key={s.id} style={{ background:"#fff", border:"1px solid #E8E4DC", borderRadius:14, padding:"11px 12px 12px", marginBottom:9 }}>
+            <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", marginBottom:9 }}>{lang === "de" ? b.de : b.en}</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:10, alignItems:"end" }}>
+              <div>
+                <span style={miniLbl}>{t("stoneQtyCol")}</span>
+                <input value={s.qty} onChange={e=>upd(s.id,{qty:e.target.value})} type="number" inputMode="numeric" placeholder="0" style={{ ...inp, fontWeight:800 }}/>
+              </div>
+              <div>
+                <span style={miniLbl}>{t("stonePriceCol")} ({currency})</span>
+                <input value={s.price} onChange={e=>upd(s.id,{price:e.target.value, autoPrice:false})} type="number" inputMode="decimal" placeholder="—" style={inp}/>
+              </div>
+              <div style={{ textAlign:"right", paddingBottom:10, minWidth:72 }}>
+                <span style={{ ...miniLbl, marginBottom:3 }}>{t("totalLabel")}</span>
+                <span style={{ fontSize:15, fontWeight:900, color: line>0 ? "#1B3F45" : "#C8C4BC" }}>{line>0 ? line.toFixed(2) : "—"}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList = [], priceFor }) => {
   const upd = (id, patch) => onChange(stones.map(s => s.id === id ? { ...s, ...patch } : s));
@@ -956,8 +1011,13 @@ export default function App() {
   const [view, setView]         = useState("list");
   const [selectedId, setSelectedId] = useState(null);
   const [draft, setDraft]       = useState(newOrder());
-  const [items, setItems]       = useState([newItem()]);
+  const [items, setItems]       = useState([newInvItem()]);
   const [invClient, setInvClient] = useState("");
+  // Pre-set stone prices depend on the client (e.g. Lohri AG +1) — refresh the
+  // ones David hasn't typed over whenever the client changes.
+  useEffect(() => {
+    setItems(prev => prev.map(it => !isBucketItem(it) ? it : { ...it, stones: it.stones.map(st => st.bucket && st.autoPrice ? { ...st, price: String(bucketRate(bucketMeta(st), invClient)) } : st) }));
+  }, [invClient]);
   const [invDate, setInvDate]   = useState(new Date().toISOString().split("T")[0]);
   const [invView, setInvView]   = useState("list");
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
@@ -1321,7 +1381,7 @@ export default function App() {
     setInvDate(new Date().toISOString().split("T")[0]);
     setInvPorto("");
     const invoiceItems = (o.lineItems||[]).length > 0
-      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc||"", count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:String(stoneRate(st.type, st.size, o.client)) })) }))
+      ? (o.lineItems).map(li=>orderLineToInvItem(li, o))
       : [{ id:Date.now()+Math.random(), desc: o.description||`Order #${o.id}`, qty:"1", unitPrice:String(o.amount||""), price:String(o.amount||""), orderRef:o.id }];
     setItems(invoiceItems);
     setInvNumber(genClientInvNumber(invoices, o.client));
@@ -1337,13 +1397,14 @@ export default function App() {
     const mwst   = sub * C.taxRate;
     const total  = roundCHF(sub + porto + mwst);
     const esc = s => String(s||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const escBr = s => esc(s).replace(/\n/g, "<br>");
     // Every item ALWAYS produces at least one row. A piece with priced stones is
     // ONE row: piece name + a small breakdown grouped by Preisliste tier
     // (e.g. "3× Brillant bis 2 mm à CHF 14,00 = CHF 42,00"). ANZ. = number of
     // identical pieces, STÜCKPREIS = price of one piece, BETRAG = ANZ × STÜCKPREIS.
     const rowsHtml = inv.items.map(it => {
       const cnt = parseFloat(it.count) || 1;
-      const priced = (it.stones || []).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
+      const priced = (it.stones || []).filter(s => (parseFloat(s.qty)||0) > 0 || (!s.bucket && (parseFloat(s.price)||0) > 0));
       if (priced.length) {
         const pieceUnit = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0) * (parseFloat(s.price)||0), 0);
         const betrag = pieceUnit * cnt;
@@ -1351,16 +1412,17 @@ export default function App() {
           const line = `${g.qty}× ${esc(g.label)}`;
           return g.u ? `${line} à ${fmtCHF(g.u)} = ${fmtCHF(g.qty * g.u)}` : line;
         }).join("<br>");
-        return `<tbody class="piece-group"><tr class="piece"><td>${esc(it.desc) || "—"}<div class="stone-line">${breakdown}</div></td><td class="right">${cnt}</td><td class="right">${pieceUnit ? fmtCHF(pieceUnit) : ""}</td><td class="right">${betrag ? fmtCHF(betrag) : ""}</td></tr></tbody>`;
+        return `<tbody class="piece-group"><tr class="piece"><td>${escBr(it.desc) || "—"}<div class="stone-line">${breakdown}</div></td><td class="right">${cnt}</td><td class="right">${pieceUnit ? fmtCHF(pieceUnit) : ""}</td><td class="right">${betrag ? fmtCHF(betrag) : ""}</td></tr></tbody>`;
       }
       // no priced stones — fall back to one row for the item itself
       const qty  = parseFloat(it.qty) || 1;
       const unit = parseFloat(it.unitPrice) || parseFloat(it.price) || 0;
       const tot  = lineTotal(it);
-      const label = (it.stones || []).length
-        ? [it.desc, (it.stones || []).map(s => [s.type, s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
+      const named = (it.stones || []).filter(s => !s.bucket);
+      const label = named.length
+        ? [it.desc, named.map(s => [s.type, s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
         : (it.desc || "—");
-      return `<tbody><tr><td>${esc(label)}</td><td class="right">${qty}</td><td class="right">${unit ? fmtCHF(unit) : "—"}</td><td class="right">${tot ? fmtCHF(tot) : "—"}</td></tr></tbody>`;
+      return `<tbody><tr><td>${escBr(label)}</td><td class="right">${qty}</td><td class="right">${unit ? fmtCHF(unit) : "—"}</td><td class="right">${tot ? fmtCHF(tot) : "—"}</td></tr></tbody>`;
     }).join("");
 
     // Build recipient block — avoid repeating client name if address already starts with it
@@ -3213,7 +3275,7 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                    <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
+                    <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newInvItem()]); setInvNumber(""); setInvView("new"); }}
                       style={{ display:"flex", alignItems:"center", gap:5, background:"#C9933A", color:"white", border:"none", borderRadius:100, padding:"9px 15px", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", flexShrink:0 }}>
                       <Icon name="plus" size={14} color="white"/> {t("newInvoiceBtn")}
                     </button>
@@ -3357,7 +3419,7 @@ export default function App() {
             };
 
             const saveInvoice = (print) => {
-              const validItems = items.filter(it=>it.desc||it.unitPrice||it.price||(it.stones||[]).length).map(it=>({...it, price: String(lineTotal(it))}));
+              const validItems = items.filter(it=>it.desc||it.unitPrice||lineTotal(it)>0||(it.stones||[]).some(st=>!st.bucket||parseFloat(st.qty)>0)).map(it=>({...it, price: String(lineTotal(it)), stones:(it.stones||[]).map(({autoPrice,...st})=>st)}));
               const inv = {
                 id: Date.now(),
                 number: invNumber || genClientInvNumber(invoices, invClient),
@@ -3469,11 +3531,16 @@ export default function App() {
                       </div>
                       <Field label="Description">
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/>
+                          <div style={{ flex:1, minWidth:0 }}><Textarea rows={2} placeholder="e.g. Pavé setting – ring, 12 Brillanten" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></div>
                           {(parseFloat(it.count)||1) > 1 && <span style={{ flexShrink:0, background:"#1B3F45", color:"white", borderRadius:100, padding:"5px 11px", fontSize:12, fontWeight:800 }}>× {it.count}</span>}
                         </div>
                       </Field>
-                      {(it.stones||[]).length > 0 ? (
+                      {isBucketItem(it) ? (
+                        <>
+                          <BucketStonesEditor stones={it.stones} onChange={s=>setItems(items.map(i=>i.id===it.id?{...i,stones:s}:i))} t={t} lang={lang} currency={C.currency}/>
+                          <button onClick={()=>setItems(items.map(i=>i.id===it.id?{...i,stones:[]}:i))} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, color:"#9DB5B9", padding:"2px 0" }}>{t("fixedPriceInstead")}</button>
+                        </>
+                      ) : (it.stones||[]).length > 0 ? (
                         <>
                           <StonesEditor stones={it.stones} onChange={s=>setItems(items.map(i=>i.id===it.id?{...i,stones:s}:i))} showPrice t={t} currency={C.currency} typeList={C.itemCategories} priceFor={(ty,sz)=>stoneRate(ty,sz,invClient)}/>
                           <div style={{ fontSize:11, color:"#9DB5B9", marginTop:6 }}>{t("stonesInvoiceHint")}{(parseFloat(it.count)||1) > 1 ? ` · × ${it.count}` : ""}</div>
@@ -3484,14 +3551,14 @@ export default function App() {
                             <Field label="Qty"><Input type="number" placeholder="1" value={it.qty||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,qty:e.target.value}:i))}/></Field>
                             <Field label={`Unit price (${C.currency})`}><Input type="number" placeholder="0.00" value={it.unitPrice||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,unitPrice:e.target.value}:i))}/></Field>
                           </div>
-                          <button onClick={()=>setItems(items.map(i=>i.id===it.id?{...i,stones:[newStone()]}:i))} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, color:"#C9933A", padding:"2px 0", marginTop:2 }}>+ {t("stonesLabel")}</button>
+                          <button onClick={()=>setItems(items.map(i=>i.id===it.id?{...i,stones:newBucketStones(invClient)}:i))} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, color:"#C9933A", padding:"2px 0", marginTop:2 }}>+ {t("countStonesInstead")}</button>
                         </>
                       )}
                       {lineTotal(it) > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:8 }}>Total: <strong style={{color:"#1B3F45"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
                     </Card>
                   );})}
 
-                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E8E4DC", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:600, color:"#5A7A80", cursor:"pointer", marginBottom:10 }}>{t("addItemBtn")}</button>
+                  <button onClick={()=>setItems([...items,newInvItem(invClient)])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E8E4DC", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:600, color:"#5A7A80", cursor:"pointer", marginBottom:10 }}>{t("addItemBtn")}</button>
 
                   {/* Add items from another order of the same client */}
                   {(() => {
@@ -3508,7 +3575,7 @@ export default function App() {
                         <Select value="" onChange={e=>{
                           const o = orders.find(x=>x.id===e.target.value);
                           if(!o) return;
-                          const newItems = (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:String(stoneRate(st.type, st.size, o.client)) })) }));
+                          const newItems = (o.lineItems||[]).map(li=>orderLineToInvItem(li, o));
                           setItems([...items, ...newItems]);
                         }}>
                           <option value="">{t("addFromOrder")}</option>
@@ -3615,7 +3682,7 @@ export default function App() {
                       <tbody>
                         {inv.items.flatMap((it,i)=>{
                           const cnt = parseFloat(it.count)||1;
-                          const priced = (it.stones||[]).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
+                          const priced = (it.stones||[]).filter(s => (parseFloat(s.qty)||0) > 0 || (!s.bucket && (parseFloat(s.price)||0) > 0));
                           if (priced.length) {
                             const pieceUnit = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0) * (parseFloat(s.price)||0), 0);
                             const betrag = pieceUnit * cnt;
@@ -3625,7 +3692,7 @@ export default function App() {
                             return [(
                               <tr key={i} style={{ borderBottom:"1px solid #E8E4DC" }}>
                                 <td style={{ padding:"8px 4px 8px 0", verticalAlign:"top" }}>
-                                  <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{it.desc||"—"}</div>
+                                  <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4, whiteSpace:"pre-wrap" }}>{it.desc||"—"}</div>
                                   <div style={{ fontSize:11, color:"#41595E", marginTop:3, lineHeight:1.55, wordBreak:"break-word" }}>{stoneLines.map((l,k)=><div key={k}>{l}</div>)}</div>
                                 </td>
                                 <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{cnt}</td>
@@ -3637,13 +3704,14 @@ export default function App() {
                           const qty = parseFloat(it.qty)||1;
                           const unit = parseFloat(it.unitPrice)||parseFloat(it.price)||0;
                           const tot = lineTotal(it);
-                          const label = (it.stones||[]).length
-                            ? [it.desc, (it.stones||[]).map(s=>[s.type,s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
+                          const named = (it.stones||[]).filter(s=>!s.bucket);
+                          const label = named.length
+                            ? [it.desc, named.map(s=>[s.type,s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
                             : (it.desc||"—");
                           return [(
                             <tr key={i} style={{ borderBottom:"1px solid #E8E4DC" }}>
                               <td style={{ padding:"8px 4px 8px 0", verticalAlign:"top" }}>
-                                <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{label}</div>
+                                <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4, whiteSpace:"pre-wrap" }}>{label}</div>
                               </td>
                               <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{qty}</td>
                               <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{unit ? `${C.currency} ${fmt(unit)}` : "—"}</td>
@@ -3986,7 +4054,7 @@ export default function App() {
             (it.stones||[]).forEach(s => {
               const qty = (parseFloat(s.qty)||0) * cnt;
               if (!qty) return;
-              const type = (s.type||"").trim() || (lang==="de"?"Unbekannt":"Unknown");
+              const type = (s.type||"").trim() || (s.bucket ? (lang==="de"?"Steine":"Stones") : (lang==="de"?"Unbekannt":"Unknown"));
               if (stoneTallyType!=="all" && type.toLowerCase()!==stoneTallyType.toLowerCase()) return;
               const size = (s.size||"").trim();
               const key = `${type.toLowerCase()}|${size}`;
