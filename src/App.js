@@ -1658,8 +1658,9 @@ ${["<","script>(function(){",
     downloadFile(file);
   };
 
-  // Builds the one-page A4 PDF for an invoice and returns it as a File.
-  const buildInvoicePdfFile = async (inv) => {
+  // Renders a full HTML page in a hidden A4-wide iframe and turns the element
+  // `selector` into a one-page A4 PDF File.
+  const htmlToPdfFile = async (html, selector, name, title) => {
     let iframe;
     try {
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
@@ -1667,41 +1668,109 @@ ${["<","script>(function(){",
       iframe.setAttribute("aria-hidden", "true");
       iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;visibility:hidden;";
       document.body.appendChild(iframe);
-      await new Promise(res => { iframe.onload = res; iframe.srcdoc = buildInvoiceHtml(inv, false, true); });
+      await new Promise(res => { iframe.onload = res; iframe.srcdoc = html; });
       const doc = iframe.contentDocument;
       await Promise.all([...doc.images].map(img => img.complete ? null : new Promise(r => { img.onload = img.onerror = r; })));
       if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
-      const page = doc.querySelector(".page");
-      const canvas = await html2canvas(page, { scale: 3, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: 794 });
+      const el = doc.querySelector(selector) || doc.body;
+      const canvas = await html2canvas(el, { scale: 3, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: 794 });
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
-      // Always one A4 page: full width, shrunk only if the invoice is very long.
+      // Always one A4 page: full width, shrunk only if the content is very long.
       let w = 210, h = canvas.height * 210 / canvas.width;
       if (h > 297) { w = w * 297 / h; h = 297; }
       pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", (210 - w) / 2, 0, w, h);
-      pdf.setProperties({ title: `Rechnung ${inv.number}`, author: C.businessName });
-      const safe = s => String(s || "").trim().replace(/[^\w\-äöüÄÖÜß]+/g, "_").replace(/^_+|_+$/g, "");
-      const name = ["Rechnung", safe(inv.number), safe(inv.client)].filter(Boolean).join("_") + ".pdf";
+      pdf.setProperties({ title, author: C.businessName });
       return new File([pdf.output("blob")], name, { type: "application/pdf" });
     } finally {
       if (iframe) iframe.remove();
     }
   };
+  const safeName = s => String(s || "").trim().replace(/[^\w\-äöüÄÖÜß]+/g, "_").replace(/^_+|_+$/g, "");
+
+  // Builds the one-page A4 PDF for an invoice and returns it as a File.
+  const buildInvoicePdfFile = (inv) =>
+    htmlToPdfFile(buildInvoiceHtml(inv, false, true), ".page",
+      ["Rechnung", safeName(inv.number), safeName(inv.client)].filter(Boolean).join("_") + ".pdf",
+      `Rechnung ${inv.number}`);
+
+  // ── PDF CACHE ──
+  // A PDF takes a moment to build. We build it ahead of time (when an invoice
+  // or work order is opened) and keep it, so tapping Print/Share uses the
+  // finished file right away, while the tap still counts (iOS only opens the
+  // share sheet from a fresh tap).
+  const pdfCache = useRef(new Map()); // key → { promise, file }
+  const cachedPdf = (key, make) => {
+    let e = pdfCache.current.get(key);
+    if (!e) {
+      e = { promise: null, file: null };
+      e.promise = make().then(f => { e.file = f; return f; });
+      e.promise.catch(err => { console.error("[PDF]", err); if (pdfCache.current.get(key) === e) pdfCache.current.delete(key); });
+      pdfCache.current.set(key, e);
+      if (pdfCache.current.size > 30) pdfCache.current.delete(pdfCache.current.keys().next().value);
+    }
+    return e;
+  };
+  const invoicePdfKey = inv => { const { printed, ...rest } = inv; return "inv:" + JSON.stringify(rest); };
+  const invoicePdf = inv => cachedPdf(invoicePdfKey(inv), () => buildInvoicePdfFile(inv));
 
   const downloadInvoicePdf = async (inv) => {
+    const e = invoicePdf(inv);
+    if (e.file) { await deliverPdf(e.file); return; }
     showToast(lang === "de" ? "PDF wird erstellt…" : "Creating PDF…", "#1B3F45");
     try {
-      const file = await buildInvoicePdfFile(inv);
+      const file = await e.promise;
       setToast(null);
       await deliverPdf(file);
     } catch (err) {
-      console.error("[PDF]", err);
       showToast(lang === "de" ? "PDF konnte nicht erstellt werden" : "Could not create PDF", "#da1e28");
     }
   };
 
-  // Quick print (as before). If the phone blocks the print window, fall back
-  // to the PDF so the invoice is never lost — it can be printed elsewhere.
+  // iPhone/iPad home-screen app: the browser print dialog opens but finds no
+  // printer. Printing works from the system share sheet ("Drucken"), so there
+  // the invoice opens in an in-app preview whose Print button hands the
+  // ready-made PDF to the share sheet.
+  const isIOSInstalledApp = () => {
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const standalone = window.navigator.standalone === true ||
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+    return ios && standalone;
+  };
+
+  // Share sheet (with Print) when the file is ready; otherwise wait for it and
+  // fall back to the "PDF is ready" tap (deliverPdf) or a download.
+  const shareOrDownload = async (entry, mode /* "share" | "download" */) => {
+    const go = async (file) => {
+      if (mode === "download") { setPdfReady(null); downloadFile(file); return; }
+      if (isTouchDevice() && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: file.name }); setPdfReady(null); }
+        catch (err) { if (!err || err.name !== "AbortError") setPdfReady(file); }
+        return;
+      }
+      downloadFile(file);
+    };
+    if (entry.file) return go(entry.file);
+    showToast(lang === "de" ? "PDF wird vorbereitet…" : "Preparing PDF…", "#1B3F45");
+    try { const f = await entry.promise; setToast(null); await go(f); }
+    catch (err) { showToast(lang === "de" ? "PDF konnte nicht erstellt werden" : "Could not create PDF", "#da1e28"); }
+  };
+
+  const [invPreview, setInvPreview] = useState(null); // invoice shown in the in-app preview
+  const [invPreviewMenu, setInvPreviewMenu] = useState(false);
+  const [, setPdfTick] = useState(0); // re-render when a PDF finishes
+  useEffect(() => {
+    if (!invPreview) return;
+    const e = invoicePdf(invPreview);
+    if (!e.file) e.promise.then(() => setPdfTick(n => n + 1), () => setPdfTick(n => n + 1));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invPreview]);
+
+  // Quick print on computers and Android: a print-ready window whose print
+  // dialog opens at once. If the window is blocked, fall back to the PDF so the
+  // invoice is never lost.
   const printInvoiceDoc = (inv, autoprint = true) => {
+    if (isIOSInstalledApp()) { setInvPreviewMenu(false); setInvPreview(inv); return; }
     let w = null;
     try { w = window.open("", "_blank"); } catch (e) { w = null; }
     if (!w) { downloadInvoicePdf(inv); return; }
@@ -1710,11 +1779,7 @@ ${["<","script>(function(){",
     // Backup PDF for the preview's top bar (Download / Share). Built a moment
     // after the print dialog opens so it never delays it; built at once if the
     // user asks for it sooner.
-    let pdfPromise = null;
-    const getPdf = () => {
-      if (!pdfPromise) { pdfPromise = buildInvoicePdfFile(inv); pdfPromise.catch(err => console.error("[PDF]", err)); }
-      return pdfPromise;
-    };
+    const getPdf = () => invoicePdf(inv).promise;
     try { w.__getPdf = getPdf; } catch (e) {}
     setTimeout(() => { getPdf().then(() => { try { w.__pdfReady = true; } catch (e) {} }, () => {}); }, 1500);
   };
@@ -1780,7 +1845,7 @@ ${["<","script>(function(){",
   };
 
   // ── PRINT WORK ORDER (Arbeitsauftrag) — no client info ──
-  const printWorkOrder = (order) => {
+  const buildWorkOrderHtml = (order, autoprint = true) => {
     const fmtDate = d => d ? new Date(d+"T12:00:00").toLocaleDateString("de-CH") : "";
     const GOLD = "#B8960C";
     const escW = s => String(s||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -1860,11 +1925,34 @@ ${["<","script>(function(){",
     ${C.address.replace(/\n/g," ◆ ")} ◆ ${C.phone} ◆ info@stoneartprecision.com
   </div>
 
-  ${["<script>window.onload=()=>{ window.print(); }</","script>"].join("")}
+  ${autoprint ? ["<script>window.onload=()=>{ window.print(); }</","script>"].join("") : ""}
 </body></html>`;
-    const w = window.open("", "_blank");
-    if(w){ w.document.write(html); w.document.close(); }
+    return html;
   };
+  const workOrderPdf = order => cachedPdf("wo:" + JSON.stringify(order), () =>
+    htmlToPdfFile(buildWorkOrderHtml(order, false), "body", `Arbeitsauftrag_${safeName(String(order.id))}.pdf`, `Arbeitsauftrag #${order.id}`));
+  // Same rule as invoices: on the iPhone/iPad app the ready-made PDF goes to
+  // the share sheet (Drucken); elsewhere a print window opens, or the PDF if
+  // the window is blocked.
+  const printWorkOrder = (order) => {
+    if (isIOSInstalledApp()) { shareOrDownload(workOrderPdf(order), "share"); return; }
+    let w = null;
+    try { w = window.open("", "_blank"); } catch (e) { w = null; }
+    if (!w) { shareOrDownload(workOrderPdf(order), "share"); return; }
+    w.document.write(buildWorkOrderHtml(order, true));
+    w.document.close();
+  };
+
+  // On the iPhone/iPad app, build the PDF as soon as an invoice or work order
+  // is opened, so Print is instant.
+  useEffect(() => {
+    if (!isIOSInstalledApp()) return;
+    try {
+      if (selectedInvoice) invoicePdf(selectedInvoice);
+      if (workOrderPreview) workOrderPdf(workOrderPreview);
+    } catch (e) {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedInvoice, workOrderPreview]);
 
   // ── DETAIL ORDER ──
   const selectedOrder = orders.find(o=>o.id===selectedId);
@@ -4818,6 +4906,54 @@ ${["<","script>(function(){",
           </>)}
         </div>
       )}
+
+      {/* ── INVOICE PREVIEW (iPhone/iPad app): print via the share sheet ── */}
+      {invPreview && (() => {
+        const inv = invPreview;
+        const entry = invoicePdf(inv);
+        const ready = !!entry.file;
+        const de = lang === "de";
+        const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+        const close = () => { setInvPreviewMenu(false); setInvPreview(null); };
+        const act = (mode) => { setInvPreviewMenu(false); shareOrDownload(entry, mode); };
+        const vw = typeof window !== "undefined" ? window.innerWidth : 794;
+        const z = Math.min(1, (Math.min(vw, 900) - 24) / 794);
+        const shareIco = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15V3"/><polyline points="7 8 12 3 17 8"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>;
+        const mBtn = { width:"100%", background:"none", border:"none", borderRadius:10, padding:12, minHeight:44, fontSize:15, fontWeight:600, color:"#1B3F45", textAlign:"left", display:"flex", alignItems:"center", gap:10, cursor:"pointer", fontFamily:FONT };
+        const sq = { width:44, height:44, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:"#F0F6F7", border:"none", borderRadius:12, cursor:"pointer" };
+        return (
+          <div role="dialog" aria-modal="true" aria-label={`${de?"Rechnung":"Invoice"} ${inv.number}`} style={{ position:"fixed", inset:0, background:"#F7F5F0", zIndex:1500, display:"flex", flexDirection:"column", fontFamily:FONT }}>
+            <div style={{ background:"white", borderBottom:"1px solid #E8E4DC", padding:"calc(10px + env(safe-area-inset-top, 0px)) 12px 10px", display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+              <button type="button" onClick={close} aria-label={de?"Zurück":"Back"} style={sq}><Icon name="back" size={18} color="#1B3F45"/></button>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:700, fontSize:15, color:"#1B3F45", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{inv.number}</div>
+                {inv.client && <div style={{ fontSize:12, color:"#5A7A80", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{inv.client}</div>}
+              </div>
+              <button type="button" onClick={()=>act("share")} style={{ height:44, padding:"0 16px", background:"#1B3F45", color:"white", border:"none", borderRadius:12, fontWeight:700, fontSize:15, display:"flex", alignItems:"center", gap:8, cursor:"pointer", fontFamily:FONT, opacity: ready ? 1 : 0.75 }}>
+                <Icon name="print" size={18} color="white"/> {ready ? (de?"Drucken":"Print") : (de?"Einen Moment…":"One moment…")}
+              </button>
+              <button type="button" onClick={()=>setInvPreviewMenu(m=>!m)} aria-haspopup="menu" aria-expanded={invPreviewMenu} aria-label={de?"Mehr":"More"} style={sq}><Icon name="dots" size={18} color="#1B3F45"/></button>
+            </div>
+            {invPreviewMenu && (<>
+              <div onClick={()=>setInvPreviewMenu(false)} style={{ position:"fixed", inset:0, zIndex:1 }}/>
+              <div role="menu" style={{ position:"fixed", top:"calc(66px + env(safe-area-inset-top, 0px))", right:12, zIndex:2, background:"white", borderRadius:14, boxShadow:"0 8px 30px rgba(0,0,0,0.18)", padding:6, minWidth:230 }}>
+                <button type="button" role="menuitem" style={mBtn} onClick={()=>act("download")}><Icon name="download" size={18} color="#1B3F45"/>{de?"PDF herunterladen":"Download PDF"}</button>
+                <button type="button" role="menuitem" style={mBtn} onClick={()=>act("share")}>{shareIco}{de?"PDF teilen":"Share PDF"}</button>
+                <hr style={{ border:"none", borderTop:"1px solid #E8E4DC", margin:"4px 6px" }}/>
+                <button type="button" role="menuitem" style={mBtn} onClick={()=>act("share")}><Icon name="print" size={18} color="#1B3F45"/>{de?"Drucken":"Print"}</button>
+                <button type="button" role="menuitem" style={mBtn} onClick={close}><Icon name="back" size={18} color="#1B3F45"/>{de?"Zurück":"Back"}</button>
+              </div>
+            </>)}
+            <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", padding:"12px 12px calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+              <div style={{ width:794*z, margin:"0 auto", background:"white", boxShadow:"0 2px 12px rgba(0,0,0,0.08)", borderRadius:4, overflow:"hidden" }}>
+                <iframe title={`${de?"Rechnung":"Invoice"} ${inv.number}`} srcDoc={buildInvoiceHtml(inv, false, true)}
+                  onLoad={e=>{ try { const h = e.target.contentDocument.documentElement.scrollHeight; e.target.style.height = h+"px"; e.target.parentNode.style.height = (h*z)+"px"; } catch(err){} }}
+                  style={{ width:794, height:1123, border:0, display:"block", transform:`scale(${z})`, transformOrigin:"top left", pointerEvents:"none" }}/>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── PDF READY (one more tap needed to open the share sheet) ── */}
       {pdfReady && (
