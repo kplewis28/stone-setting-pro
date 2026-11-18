@@ -1461,6 +1461,8 @@ ${forPdf ? "" : '<meta name="viewport" content="width=device-width, initial-scal
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   a { color:inherit !important; text-decoration:none !important; pointer-events:none !important; }
+  /* iPhone enlarges some text blocks on its own when the sheet is scaled to fit; keep sizes exactly as printed */
+  html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; }
   .page { width: 100%; max-width: 176mm; margin: 0 auto; padding: 0; }
   .logo { margin-bottom: 14px; }
@@ -1794,6 +1796,7 @@ ${["<","script>(function(){",
 <title>Arbeitsauftrag #${order.id}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #1a1a1a; padding: 32px 44px; max-width: 820px; margin: 0 auto; }
   .header { display:flex; align-items:flex-start; justify-content:space-between; padding-bottom:16px; border-bottom:1.5px solid #ccc; margin-bottom:24px; }
   .title-block { text-align:right; }
