@@ -105,7 +105,7 @@ const TRANS = {
     viewAllLink:"View all", viewThisMonthLink:"This month only",
     fromDateLabel:"From", toDateLabel:"To",
     overdueLabel:"Overdue", todayLabel:"Today", tomorrowLabel:"Tomorrow", dueLabel:"Due", noDueDateLabel:"No due date",
-    workOrderBtn:"Work order", createInvoiceBtn:"Create invoice", printInvoiceBtn:"Print invoice",
+    workOrderBtn:"Work order", createInvoiceBtn:"Create invoice", printInvoiceBtn:"Print invoice", pdfBtn:"PDF", pdfBtnTitle:"Save or share PDF",
     swipeHint:"\u2190 Swipe to mark done \u00a0\u00b7\u00a0 Swipe to delete \u2192",
     selectBtn:"Select", cancelBtn:"Cancel", selectMultiple:"Select multiple", selectAllBtn:"Select all", selectedCount:"selected",
     newOrderTitle:"New order", editOrderTitle:"Edit order",
@@ -204,7 +204,7 @@ const TRANS = {
     unitsLabel:"Units",
     stonesLabel:"Stones to set", stoneTypePh:"e.g. Diamond", stoneSizePh:"Size", addStoneBtn:"Add stone",
     stoneTypeCol:"Stone", stoneSizeCol:"Size", stoneQtyCol:"Qty", stonePriceCol:"Price / stone",
-    stonesInvoiceHint:"Enter how many you set \u2014 price is pre-filled, adjust if needed", noStonesYet:"No stones yet \u2014 add the stones you'll set into this piece",
+    stonesInvoiceHint:"Enter how many you set \u2014 price is pre-filled, adjust if needed", stonesSetLabel:"Stones set", fixedPriceInstead:"Use a fixed price instead", countStonesInstead:"Count stones instead", noStonesYet:"No stones yet \u2014 add the stones you'll set into this piece",
     pieceDescLabel:"Piece", pieceCountLabel:"Identical pieces", photoOptional:"Add photo (optional)", duplicateBtn:"Duplicate",
     descPiecePlaceholder:"Describe the work to be done\u2026",
     itemsForInvoice:"Items for invoice",
@@ -266,7 +266,7 @@ const TRANS = {
     viewAllLink:"Alle anzeigen", viewThisMonthLink:"Nur diesen Monat",
     fromDateLabel:"Von", toDateLabel:"Bis",
     overdueLabel:"\u00dcberf\u00e4llig", todayLabel:"Heute", tomorrowLabel:"Morgen", dueLabel:"F\u00e4llig", noDueDateLabel:"Kein Datum",
-    workOrderBtn:"Arbeitsauftrag", createInvoiceBtn:"Rechnung erstellen", printInvoiceBtn:"Rechnung drucken",
+    workOrderBtn:"Arbeitsauftrag", createInvoiceBtn:"Rechnung erstellen", printInvoiceBtn:"Rechnung drucken", pdfBtn:"PDF", pdfBtnTitle:"PDF speichern oder teilen",
     swipeHint:"\u2190 Wischen = Fertig \u00a0\u00b7\u00a0 \u2192 Wischen = L\u00f6schen",
     selectBtn:"Ausw\u00e4hlen", cancelBtn:"Abbrechen", selectMultiple:"Mehrere ausw\u00e4hlen", selectAllBtn:"Alle ausw\u00e4hlen", selectedCount:"ausgew\u00e4hlt",
     newOrderTitle:"Neuer Auftrag", editOrderTitle:"Auftrag bearbeiten",
@@ -365,7 +365,7 @@ const TRANS = {
     unitsLabel:"Einheiten",
     stonesLabel:"Zu fassende Steine", stoneTypePh:"z.B. Brillant", stoneSizePh:"Gr\u00f6sse", addStoneBtn:"Stein hinzuf\u00fcgen",
     stoneTypeCol:"Stein", stoneSizeCol:"Grösse", stoneQtyCol:"Anz.", stonePriceCol:"Preis / Stein",
-    stonesInvoiceHint:"Anzahl eingeben \u2014 Preis ist vorausgef\u00fcllt, bei Bedarf anpassen", noStonesYet:"Noch keine Steine \u2014 f\u00fcge die Steine hinzu, die du in dieses St\u00fcck fasst",
+    stonesInvoiceHint:"Anzahl eingeben \u2014 Preis ist vorausgef\u00fcllt, bei Bedarf anpassen", stonesSetLabel:"Gefasste Steine", fixedPriceInstead:"Stattdessen Festpreis", countStonesInstead:"Stattdessen Steine z\u00e4hlen", noStonesYet:"Noch keine Steine \u2014 f\u00fcge die Steine hinzu, die du in dieses St\u00fcck fasst",
     pieceDescLabel:"St\u00fcck", pieceCountLabel:"Gleiche St\u00fccke", photoOptional:"Foto hinzuf\u00fcgen (optional)", duplicateBtn:"Duplizieren",
     descPiecePlaceholder:"Zu erledigende Arbeit beschreiben\u2026",
     itemsForInvoice:"Artikel f\u00fcr Rechnung",
@@ -422,6 +422,23 @@ const newOrder     = () => ({ id: String(Date.now()).slice(-4), client:"", clien
 const newClient    = () => ({ id: String(Date.now()), name:"", company:"", address:"", phone:"", email:"" });
 const newItem      = () => ({ id: Date.now()+Math.random(), desc:"", count:"1", qty:"1", unitPrice:"", price:"", stones:[] });
 const newStone     = () => ({ id: Date.now()+Math.random(), type:"", size:"", qty:"", price:"" });
+// Invoice stones: David doesn't list each stone — he just counts how many he
+// set per Preisliste tier (bis 2.0 mm / über 2.0 mm) at a fixed per-stone rate.
+// Stored as two `bucket` stones so lineTotal, the printout and the tally work as-is.
+const STONE_BUCKETS = [
+  { bucket:"le2", mm:"2.0", size:"\u2264 2.0 mm", de:"Steine bis 2.0 mm",  en:"Stones up to 2.0 mm" },
+  { bucket:"gt2", mm:"2.5", size:"> 2.0 mm",       de:"Steine \u00fcber 2.0 mm", en:"Stones over 2.0 mm" },
+];
+const bucketMeta      = (s) => STONE_BUCKETS.find(b => b.bucket === s.bucket);
+const bucketRate      = (b, client) => stoneRate("diamant", b.mm, client);
+const newBucketStones = (client) => STONE_BUCKETS.map(b => ({ id: Date.now()+Math.random(), bucket:b.bucket, type:"", size:b.size, qty:"", price:String(bucketRate(b, client)), autoPrice:true }));
+const isBucketItem    = (it) => (it.stones || []).some(s => s.bucket);
+const newInvItem      = (client) => ({ ...newItem(), stones: newBucketStones(client) });
+// Order line → invoice item. Stone counts start blank; David fills them in.
+const orderLineToInvItem = (li, o) => {
+  const legacyPrice = !(li.stones||[]).length && li.unitPrice;
+  return { id:Date.now()+Math.random(), desc:li.desc||"", count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones: legacyPrice ? [] : newBucketStones(o.client) };
+};
 const cloneStones  = (arr) => (arr||[]).map(s => ({ ...s, id: Date.now()+Math.random() }));
 // Default price to set one stone of a given type (CHF), pre-filled on invoices.
 const parseMM      = (s) => { const m = String(s || "").match(/(\d+(?:[.,]\d+)?)\s*mm|(\d+(?:[.,]\d+)?)/i); const v = m && (m[1] || m[2]); return v ? parseFloat(v.replace(",", ".")) : null; };
@@ -453,14 +470,15 @@ const stoneGroups = (stones) => {
     const qty = parseFloat(s.qty) || 0, u = parseFloat(s.price) || 0;
     const mm  = parseMM(s.size) ?? parseMM(s.type);
     const type = (s.type || "").trim();
-    let hit = g.find(x => x.u === u);
-    if (!hit) { hit = { u, qty: 0, mm: [], types: new Set() }; g.push(hit); }
+    let hit = g.find(x => s.bucket ? x.bucket === s.bucket : (!x.bucket && x.u === u));
+    if (!hit) { hit = { u, qty: 0, mm: [], types: new Set(), bucket: s.bucket }; g.push(hit); }
     hit.qty += qty;
     if (mm != null) hit.mm.push(mm);
     if (type) hit.types.add(type);
   });
   return g
     .map(x => {
+      if (x.bucket) { const b = bucketMeta(x); return { label: b.de, u: x.u, qty: x.qty, sort: x.bucket === "le2" ? 2 : 2.01 }; }
       const mn = x.mm.length ? Math.min(...x.mm) : null;
       const mx = x.mm.length ? Math.max(...x.mm) : null;
       let range = "";
@@ -533,6 +551,7 @@ const Icon = ({ name, size=22, color="#1B3F45" }) => {
     users:       <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
     receipt:     <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 2 2 2-2 2 2 2-2 2 2 1-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>,
     checkCircle: <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>,
+    download:    <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>,
     print:       <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>,
     arrowUp:     <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>,
     arrowDown:   <svg style={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>,
@@ -649,6 +668,43 @@ const SectionTitle = ({ children }) => (
 // after the first digit so the user doesn't have to reach for the "." key.
 // Only fires while typing forward (never fights a backspace/delete).
 const autoDotSize = (prev, raw) => (raw.length > (prev||"").length && /^\d$/.test(raw)) ? raw + "." : raw;
+
+// Invoice phase: just two tiers — how many stones ≤2.0 mm and >2.0 mm, each
+// at its pre-set per-stone price (editable). What the stones are goes in the
+// item description, written by David himself.
+const BucketStonesEditor = ({ stones = [], onChange, t, lang, currency }) => {
+  const upd = (id, patch) => onChange(stones.map(s => s.id === id ? { ...s, ...patch } : s));
+  const inp = { padding:"10px 8px", border:"1.5px solid #E8E4DC", borderRadius:11, fontSize:15, color:"#1B3F45", outline:"none", background:"#fff", width:"100%", minWidth:0, boxSizing:"border-box", fontFamily:"inherit", textAlign:"center" };
+  const miniLbl = { fontSize:10, fontWeight:800, color:"#9DB5B9", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:5, display:"block" };
+  return (
+    <div>
+      <div style={{ fontSize:12, fontWeight:800, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:8 }}>{t("stonesSetLabel")}</div>
+      {stones.filter(s => s.bucket).map(s => {
+        const b = bucketMeta(s);
+        const line = (parseFloat(s.qty)||0) * (parseFloat(s.price)||0);
+        return (
+          <div key={s.id} style={{ background:"#fff", border:"1px solid #E8E4DC", borderRadius:14, padding:"11px 12px 12px", marginBottom:9 }}>
+            <div style={{ fontSize:14, fontWeight:700, color:"#1B3F45", marginBottom:9 }}>{lang === "de" ? b.de : b.en}</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:10, alignItems:"end" }}>
+              <div>
+                <span style={miniLbl}>{t("stoneQtyCol")}</span>
+                <input value={s.qty} onChange={e=>upd(s.id,{qty:e.target.value})} type="number" inputMode="numeric" placeholder="0" style={{ ...inp, fontWeight:800 }}/>
+              </div>
+              <div>
+                <span style={miniLbl}>{t("stonePriceCol")} ({currency})</span>
+                <input value={s.price} onChange={e=>upd(s.id,{price:e.target.value, autoPrice:false})} type="number" inputMode="decimal" placeholder="—" style={inp}/>
+              </div>
+              <div style={{ textAlign:"right", paddingBottom:10, minWidth:72 }}>
+                <span style={{ ...miniLbl, marginBottom:3 }}>{t("totalLabel")}</span>
+                <span style={{ fontSize:15, fontWeight:900, color: line>0 ? "#1B3F45" : "#C8C4BC" }}>{line>0 ? line.toFixed(2) : "—"}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const StonesEditor = ({ stones = [], onChange, showPrice, t, currency, typeList = [], priceFor }) => {
   const upd = (id, patch) => onChange(stones.map(s => s.id === id ? { ...s, ...patch } : s));
@@ -945,7 +1001,7 @@ const MonthSheet = ({ open, value, onSelect, onClose, maxW, lang }) => {
 // ─── MAIN APP ────────────────────────────────────────────
 export default function App() {
   const [tab, setTab]           = useState("home");
-  const [homePrio, setHomePrio] = useState("urgent"); // Home priority tab
+  const [homePrio, setHomePrio] = useState("all"); // Home priority tab — always opens on "All"
   const [filterPrio, setFilterPrio] = useState("all"); // Orders tab: filter by urgency
   // Defaults to the current month (same starting point as before) — cleared
   // means "all dates", set via the DateRangeSheet's Clear button.
@@ -956,8 +1012,13 @@ export default function App() {
   const [view, setView]         = useState("list");
   const [selectedId, setSelectedId] = useState(null);
   const [draft, setDraft]       = useState(newOrder());
-  const [items, setItems]       = useState([newItem()]);
+  const [items, setItems]       = useState([newInvItem()]);
   const [invClient, setInvClient] = useState("");
+  // Pre-set stone prices depend on the client (e.g. Lohri AG +1) — refresh the
+  // ones David hasn't typed over whenever the client changes.
+  useEffect(() => {
+    setItems(prev => prev.map(it => !isBucketItem(it) ? it : { ...it, stones: it.stones.map(st => st.bucket && st.autoPrice ? { ...st, price: String(bucketRate(bucketMeta(st), invClient)) } : st) }));
+  }, [invClient]);
   const [invDate, setInvDate]   = useState(new Date().toISOString().split("T")[0]);
   const [invView, setInvView]   = useState("list");
   const [invoices, setInvoices] = useState(() => { try { const s = localStorage.getItem("ssp_invoices"); return s ? JSON.parse(s) : []; } catch { return []; } });
@@ -1181,6 +1242,10 @@ export default function App() {
   //    exactly where you left off instead of jumping to the top. Detail
   //    screens are keyed by the specific record so a long order doesn't
   //    leave a short one scrolled past its own content.
+  // Home always shows ALL pending orders when you arrive there; the urgency
+  // pills are only a temporary filter while you stay on Home.
+  useEffect(() => { if (tab === "home") setHomePrio("all"); }, [tab]);
+
   const scrollMemory = useRef({});
   const screenKey =
     tab==="orders"  ? `orders:${view}${view==="detail"&&selectedId ? ":"+selectedId : ""}` :
@@ -1321,7 +1386,7 @@ export default function App() {
     setInvDate(new Date().toISOString().split("T")[0]);
     setInvPorto("");
     const invoiceItems = (o.lineItems||[]).length > 0
-      ? (o.lineItems).map(li=>({ id:Date.now()+Math.random(), desc:li.desc||"", count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:String(stoneRate(st.type, st.size, o.client)) })) }))
+      ? (o.lineItems).map(li=>orderLineToInvItem(li, o))
       : [{ id:Date.now()+Math.random(), desc: o.description||`Order #${o.id}`, qty:"1", unitPrice:String(o.amount||""), price:String(o.amount||""), orderRef:o.id }];
     setItems(invoiceItems);
     setInvNumber(genClientInvNumber(invoices, o.client));
@@ -1329,21 +1394,39 @@ export default function App() {
     setInvView("new");
   };
 
+  // Logo + QR are loaded once as data URLs and embedded in the print page,
+  // so the print dialog can open at once instead of waiting for images.
+  const printImgs = useRef({});
+  useEffect(() => {
+    ["/logo-dark.png", "/qr.png"].forEach(path => {
+      fetch(path).then(r => r.ok ? r.blob() : null).then(b => {
+        if (!b) return;
+        const fr = new FileReader();
+        fr.onload = () => { printImgs.current[path] = fr.result; };
+        fr.readAsDataURL(b);
+      }).catch(() => {});
+    });
+  }, []);
+  const printImg = path => printImgs.current[path] || `${window.location.origin}${path}`;
+
   // ── BUILD INVOICE HTML (reused by print and Drive upload) ──
-  const buildInvoiceHtml = (inv, withPrintScript = false) => {
+  // forPdf: lays the page out exactly as printed (A4, print padding), with no
+  // back button and no script — this is what gets rendered into the PDF.
+  const buildInvoiceHtml = (inv, withPrintScript = false, forPdf = false) => {
     const fmtCHF = n => `CHF ${Number(n).toFixed(2).replace(".", ",")}`;
     const sub    = inv.items.reduce((s,it) => s + lineTotal(it), 0);
     const porto  = parseFloat(inv.porto) || 0;
     const mwst   = sub * C.taxRate;
     const total  = roundCHF(sub + porto + mwst);
     const esc = s => String(s||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const escBr = s => esc(s).replace(/\n/g, "<br>");
     // Every item ALWAYS produces at least one row. A piece with priced stones is
     // ONE row: piece name + a small breakdown grouped by Preisliste tier
     // (e.g. "3× Brillant bis 2 mm à CHF 14,00 = CHF 42,00"). ANZ. = number of
     // identical pieces, STÜCKPREIS = price of one piece, BETRAG = ANZ × STÜCKPREIS.
     const rowsHtml = inv.items.map(it => {
       const cnt = parseFloat(it.count) || 1;
-      const priced = (it.stones || []).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
+      const priced = (it.stones || []).filter(s => (parseFloat(s.qty)||0) > 0 || (!s.bucket && (parseFloat(s.price)||0) > 0));
       if (priced.length) {
         const pieceUnit = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0) * (parseFloat(s.price)||0), 0);
         const betrag = pieceUnit * cnt;
@@ -1351,16 +1434,17 @@ export default function App() {
           const line = `${g.qty}× ${esc(g.label)}`;
           return g.u ? `${line} à ${fmtCHF(g.u)} = ${fmtCHF(g.qty * g.u)}` : line;
         }).join("<br>");
-        return `<tbody class="piece-group"><tr class="piece"><td>${esc(it.desc) || "—"}<div class="stone-line">${breakdown}</div></td><td class="right">${cnt}</td><td class="right">${pieceUnit ? fmtCHF(pieceUnit) : ""}</td><td class="right">${betrag ? fmtCHF(betrag) : ""}</td></tr></tbody>`;
+        return `<tbody class="piece-group"><tr class="piece"><td>${escBr(it.desc) || "—"}<div class="stone-line">${breakdown}</div></td><td class="right">${cnt}</td><td class="right">${pieceUnit ? fmtCHF(pieceUnit) : ""}</td><td class="right">${betrag ? fmtCHF(betrag) : ""}</td></tr></tbody>`;
       }
       // no priced stones — fall back to one row for the item itself
       const qty  = parseFloat(it.qty) || 1;
       const unit = parseFloat(it.unitPrice) || parseFloat(it.price) || 0;
       const tot  = lineTotal(it);
-      const label = (it.stones || []).length
-        ? [it.desc, (it.stones || []).map(s => [s.type, s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
+      const named = (it.stones || []).filter(s => !s.bucket);
+      const label = named.length
+        ? [it.desc, named.map(s => [s.type, s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
         : (it.desc || "—");
-      return `<tbody><tr><td>${esc(label)}</td><td class="right">${qty}</td><td class="right">${unit ? fmtCHF(unit) : "—"}</td><td class="right">${tot ? fmtCHF(tot) : "—"}</td></tr></tbody>`;
+      return `<tbody><tr><td>${escBr(label)}</td><td class="right">${qty}</td><td class="right">${unit ? fmtCHF(unit) : "—"}</td><td class="right">${tot ? fmtCHF(tot) : "—"}</td></tr></tbody>`;
     }).join("");
 
     // Build recipient block — avoid repeating client name if address already starts with it
@@ -1402,6 +1486,23 @@ export default function App() {
   .footer strong { color:#111; }
   .thanks { margin-top:14px; font-size:9pt; }
   .back-btn { position:fixed; top:14px; right:14px; z-index:9999; }
+  /* ── preview top bar (screen only) — same look as the app's screen headers ── */
+  .tb { position:fixed; top:0; left:0; right:0; z-index:9999; background:#F7F5F0; border-bottom:1px solid #E8E4DC; display:flex; align-items:center; gap:12px; padding:calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .tb button { font:inherit; cursor:pointer; border:none; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .tb-sq { width:36px; height:36px; border-radius:11px; background:#F0F6F7; flex-shrink:0; }
+  .tb-title { flex:1; min-width:0; }
+  .tb-num { font-size:18px; font-weight:900; color:#1B3F45; letter-spacing:-0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tb-client { font-size:13px; color:#5A7A80; font-weight:500; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tb-menu { position:fixed; right:16px; top:calc(66px + env(safe-area-inset-top, 0px)); z-index:10000; background:#fff; border:1.5px solid #E8E4DC; border-radius:16px; box-shadow:0 2px 12px rgba(0,0,0,0.07); min-width:230px; padding:6px; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .tb button:focus, .tb-menu button:focus { outline:none; }
+  .tb button:focus-visible, .tb-menu button:focus-visible { outline:2px solid #C9933A; outline-offset:2px; }
+  .tb-menu[hidden] { display:none; }
+  .tb-menu button { width:100%; background:none; border:none; border-radius:10px; padding:12px; min-height:44px; font:inherit; font-size:15px; font-weight:600; color:#1B3F45; text-align:left; display:flex; align-items:center; gap:10px; cursor:pointer; }
+  .tb-menu button:hover { background:#F7F5F0; }
+  .tb-menu hr { border:none; border-top:1px solid #E8E4DC; margin:4px 6px; }
+  .tb-toast { position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:#198038; color:#fff; padding:12px 24px; border-radius:100px; font:700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; z-index:10001; box-shadow:0 4px 20px rgba(0,0,0,0.2); white-space:nowrap; }
+  .tb-toast.err { background:#da1e28; } .tb-toast.info { background:#1B3F45; }
+  @media screen { body.has-tb { padding-top:calc(84px + env(safe-area-inset-top, 0px)); background:#F7F5F0; } body.has-tb .page { background:#fff; padding:14mm; border:1.5px solid #E8E4DC; border-radius:4px; box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-bottom:24px; width:210mm; max-width:none; zoom:var(--pvz,1); } }
   .back-btn button { background:#1B3F45; color:white; border:none; border-radius:10px; padding:10px 18px; font-size:13pt; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; }
   @media print {
     /* margin:0 so the browser prints no URL/date header or footer;
@@ -1409,15 +1510,63 @@ export default function App() {
     @page { size: A4 portrait; margin: 0; }
     html, body { margin:0; padding:0; }
     .page { max-width:100%; padding:14mm 14mm 12mm; }
-    .back-btn { display:none; }
+    .back-btn, .tb, .tb-menu, .tb-toast { display:none !important; }
+    body.has-tb { padding-top:0 !important; background:#fff !important; }
+    body.has-tb .page { box-shadow:none !important; margin-bottom:0 !important; }
     tr, td, tbody, table, .bank-section, .thanks, .totals, tbody.piece-group { page-break-inside: avoid; }
   }
+  ${forPdf ? `html, body { margin:0; padding:0; background:#fff; width:210mm; }
+  .page { max-width:none; width:210mm; padding:14mm 14mm 12mm; }` : ""}
 </style></head>
 <body>
-<div class="back-btn"><button onclick="window.close()">← Back to app</button></div>
+${forPdf ? "" : withPrintScript ? (() => {
+  const L = lang === "de" ? {back:"Zurück",print:"Drucken",download:"PDF herunterladen",share:"PDF teilen",preparing:"PDF wird vorbereitet…",downloaded:"PDF heruntergeladen",failed:"PDF konnte nicht erstellt werden"} : {back:"Back",print:"Print",download:"Download PDF",share:"Share PDF",preparing:"Preparing PDF…",downloaded:"PDF downloaded",failed:"Could not create PDF"};
+  const ico = {
+    back: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>',
+    print: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3F45" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+    more: '<svg width="18" height="18" viewBox="0 0 24 24" fill="#1B3F45"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+    dl: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>',
+    share: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><polyline points="7 8 12 3 17 8"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>',
+  };
+  return `<div class="tb" role="toolbar">
+  <button class="tb-sq" id="tb-back" type="button" aria-label="${L.back}">${ico.back}</button>
+  <div class="tb-title"><div class="tb-num">${esc(inv.number)}</div>${inv.client ? `<div class="tb-client">${esc(inv.client)}</div>` : ""}</div>
+  <button class="tb-sq" id="tb-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More">${ico.more}</button>
+</div>
+<div class="tb-menu" id="tb-menu" role="menu" hidden>
+  <button type="button" role="menuitem" id="tb-dl">${ico.dl}${L.download}</button>
+  <button type="button" role="menuitem" id="tb-share" hidden>${ico.share}${L.share}</button>
+  <hr>
+  <button type="button" role="menuitem" id="tb-print2">${ico.print}${L.print}</button>
+  <button type="button" role="menuitem" id="tb-back2">${ico.back}${L.back}</button>
+</div>
+${["<","script>(function(){",
+"var L=" + JSON.stringify(L) + ";",
+"document.body.classList.add('has-tb');",
+"var $=function(id){return document.getElementById(id);};",
+"var menu=$('tb-menu'),more=$('tb-more');",
+"function closeMenu(){menu.hidden=true;more.setAttribute('aria-expanded','false');}",
+"more.onclick=function(e){e.stopPropagation();menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden));};",
+"document.addEventListener('click',function(e){if(!menu.contains(e.target))closeMenu();});",
+"document.addEventListener('keydown',function(e){if(e.key==='Escape')closeMenu();});",
+"var tt;function toast(m,k){var t=document.querySelector('.tb-toast');if(!t){t=document.createElement('div');document.body.appendChild(t);}t.className='tb-toast'+(k?' '+k:'');t.textContent=m;clearTimeout(tt);tt=setTimeout(function(){t.remove();},2200);}",
+"function back(){closeMenu();try{window.close();}catch(e){}setTimeout(function(){if(!window.closed){if(history.length>1)history.back();else if(window.opener)window.opener.focus();}},200);}",
+"function getPdf(){if(!window.__getPdf)return Promise.reject(new Error('no pdf'));return window.__getPdf();}",
+"function fail(e){console.error(e);toast(L.failed,'err');}",
+"function download(){closeMenu();if(!window.__pdfReady)toast(L.preparing,'info');getPdf().then(function(f){var u=URL.createObjectURL(f);var a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},60000);toast(L.downloaded);}).catch(fail);}",
+"function share(){closeMenu();if(!window.__pdfReady)toast(L.preparing,'info');getPdf().then(function(f){if(navigator.canShare&&navigator.canShare({files:[f]}))return navigator.share({files:[f],title:f.name}).catch(function(e){if(e&&e.name!=='AbortError')download();});download();}).catch(fail);}",
+"function doPrint(){closeMenu();window.print();}",
+"function pz(){var vw=document.documentElement.clientWidth;var z=Math.min(1,(vw-16)/794);document.documentElement.style.setProperty('--pvz',String(z));}",
+"window.addEventListener('load',function(){setTimeout(pz,150);});window.addEventListener('resize',pz);",
+"$('tb-back').onclick=back;$('tb-back2').onclick=back;",
+"$('tb-print2').onclick=doPrint;",
+"$('tb-dl').onclick=download;$('tb-share').onclick=share;",
+"if(navigator.share&&navigator.canShare){$('tb-share').hidden=false;}",
+"})();</","script>"].join("")}`;
+})() : `<div class="back-btn"><button onclick="window.close()">← Back to app</button></div>`}
 <div id="fit"><div class="page">
   <div class="logo">
-    <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:70px;object-fit:contain;">
+    <img src="${printImg("/logo-dark.png")}" alt="${C.businessName}" style="height:70px;object-fit:contain;">
   </div>
   <div class="address">${C.address.replace(/\n/g,"<br>")}<br>Telefon ${C.phone}</div>
   <div class="clearfix">
@@ -1443,7 +1592,7 @@ export default function App() {
     </tbody>
   </table>
   <div class="bank-section">
-    <img src="${window.location.origin}/qr.png" alt="QR Zahlung" style="width:90px;height:90px;object-fit:contain;flex-shrink:0;">
+    <img src="${printImg("/qr.png")}" alt="QR Zahlung" style="width:90px;height:90px;object-fit:contain;flex-shrink:0;">
     <div class="footer">
       Zahlungsempfänger: <strong>${C.businessName}</strong><br>
       <span style="font-family:monospace;font-size:8.5pt;">${C.bankDetails}</span><br>
@@ -1458,18 +1607,110 @@ export default function App() {
   </div>
 </div>
 </div>
-  ${["<","script>(function(){function fit(){try{var p=document.querySelector('.page');if(!p)return;var dpi=96;var availH=297/25.4*dpi;var availW=210/25.4*dpi;var s=Math.min(1, availH/p.scrollHeight, availW/p.scrollWidth);var f=document.getElementById('fit');if(s<1){p.style.transformOrigin='top center';p.style.transform='scale('+s+')';f.style.height=(p.scrollHeight*s)+'px';f.style.overflow='hidden';}else{p.style.transform='';f.style.height='';}}catch(e){}}",
-     (withPrintScript ? "window.onload=function(){fit();setTimeout(function(){window.print();},60);};" : "window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);"),
+  ${forPdf ? "" : ["<","script>(function(){function fit(){try{var p=document.querySelector('.page');if(!p)return;var dpi=96;var availH=297/25.4*dpi;var availW=210/25.4*dpi;var s=Math.min(1, availH/p.scrollHeight, availW/p.scrollWidth);var f=document.getElementById('fit');if(s<1){p.style.transformOrigin='top center';p.style.transform='scale('+s+')';f.style.height=(p.scrollHeight*s)+'px';f.style.overflow='hidden';}else{p.style.transform='';f.style.height='';}}catch(e){}}",
+     (withPrintScript ? "var printed=0;function go(){if(printed)return;printed=1;fit();window.print();}function ready(){var im=document.images;for(var i=0;i<im.length;i++){if(!im[i].complete)return false;}return true;}(function poll(n){if(ready()||n>=60){go();return;}setTimeout(function(){poll(n+1);},25);})(0);window.addEventListener('load',go);" : "window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);"),
      "})();</","script>"].join("")}
 </body></html>`;
     return html;
   };
 
+  // ── INVOICE → PDF ──
+  // Printing used to open a blank window and call window.print(). In the
+  // installed app (standalone PWA) on phones that window is blocked or opens
+  // with no way back, so the invoice couldn't be printed. Now we render the
+  // same invoice HTML into a hidden iframe, turn it into a one-page A4 PDF
+  // and hand it over: share sheet on phones/tablets (Save to Files, Print,
+  // WhatsApp, Mail…), a normal download on desktop.
+  const [pdfReady, setPdfReady] = useState(null); // File waiting for a tap
+  const isTouchDevice = () =>
+    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  const downloadFile = (file) => {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url; a.download = file.name; a.rel = "noopener";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    showToast(lang === "de" ? "PDF heruntergeladen" : "PDF downloaded", "#198038");
+  };
+
+  // Must be called from a tap when possible (iOS requires a fresh user gesture to share).
+  const deliverPdf = async (file) => {
+    if (isTouchDevice() && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: file.name });
+        setPdfReady(null);
+      } catch (err) {
+        if (err && err.name === "AbortError") { setPdfReady(null); return; }
+        // Gesture expired while the PDF was being built → ask for one more tap.
+        setPdfReady(file);
+      }
+      return;
+    }
+    setPdfReady(null);
+    downloadFile(file);
+  };
+
+  // Builds the one-page A4 PDF for an invoice and returns it as a File.
+  const buildInvoicePdfFile = async (inv) => {
+    let iframe;
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
+      iframe = document.createElement("iframe");
+      iframe.setAttribute("aria-hidden", "true");
+      iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;visibility:hidden;";
+      document.body.appendChild(iframe);
+      await new Promise(res => { iframe.onload = res; iframe.srcdoc = buildInvoiceHtml(inv, false, true); });
+      const doc = iframe.contentDocument;
+      await Promise.all([...doc.images].map(img => img.complete ? null : new Promise(r => { img.onload = img.onerror = r; })));
+      if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
+      const page = doc.querySelector(".page");
+      const canvas = await html2canvas(page, { scale: 3, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: 794 });
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+      // Always one A4 page: full width, shrunk only if the invoice is very long.
+      let w = 210, h = canvas.height * 210 / canvas.width;
+      if (h > 297) { w = w * 297 / h; h = 297; }
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", (210 - w) / 2, 0, w, h);
+      pdf.setProperties({ title: `Rechnung ${inv.number}`, author: C.businessName });
+      const safe = s => String(s || "").trim().replace(/[^\w\-äöüÄÖÜß]+/g, "_").replace(/^_+|_+$/g, "");
+      const name = ["Rechnung", safe(inv.number), safe(inv.client)].filter(Boolean).join("_") + ".pdf";
+      return new File([pdf.output("blob")], name, { type: "application/pdf" });
+    } finally {
+      if (iframe) iframe.remove();
+    }
+  };
+
+  const downloadInvoicePdf = async (inv) => {
+    showToast(lang === "de" ? "PDF wird erstellt…" : "Creating PDF…", "#1B3F45");
+    try {
+      const file = await buildInvoicePdfFile(inv);
+      setToast(null);
+      await deliverPdf(file);
+    } catch (err) {
+      console.error("[PDF]", err);
+      showToast(lang === "de" ? "PDF konnte nicht erstellt werden" : "Could not create PDF", "#da1e28");
+    }
+  };
+
+  // Quick print (as before). If the phone blocks the print window, fall back
+  // to the PDF so the invoice is never lost — it can be printed elsewhere.
   const printInvoiceDoc = (inv, autoprint = true) => {
-    const html = buildInvoiceHtml(inv, autoprint);
-    const w = window.open("", "_blank");
-    w.document.write(html);
+    let w = null;
+    try { w = window.open("", "_blank"); } catch (e) { w = null; }
+    if (!w) { downloadInvoicePdf(inv); return; }
+    w.document.write(buildInvoiceHtml(inv, autoprint));
     w.document.close();
+    // Backup PDF for the preview's top bar (Download / Share). Built a moment
+    // after the print dialog opens so it never delays it; built at once if the
+    // user asks for it sooner.
+    let pdfPromise = null;
+    const getPdf = () => {
+      if (!pdfPromise) { pdfPromise = buildInvoicePdfFile(inv); pdfPromise.catch(err => console.error("[PDF]", err)); }
+      return pdfPromise;
+    };
+    try { w.__getPdf = getPdf; } catch (e) {}
+    setTimeout(() => { getPdf().then(() => { try { w.__pdfReady = true; } catch (e) {} }, () => {}); }, 1500);
   };
 
   const uploadInvoiceToDrive = async (inv) => {
@@ -1570,7 +1811,7 @@ export default function App() {
 </style></head>
 <body>
   <div class="header">
-    <img src="${window.location.origin}/logo.png" alt="${C.businessName}" style="height:70px;object-fit:contain;">
+    <img src="${printImg("/logo-dark.png")}" alt="${C.businessName}" style="height:70px;object-fit:contain;">
     <div class="title-block">
       <div class="title">ARBEITSAUFTRAG</div>
       <div class="subtitle">Wir setzen keine Steine. Wir setzen Maßstäbe.</div>
@@ -1666,7 +1907,7 @@ export default function App() {
     <div style={{ fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", minHeight:"100vh", background:"#1B3F45", display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
       <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
       <div style={{ width:"100%", maxWidth:360, background:"white", borderRadius:24, padding:"36px 28px", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
-        <img src="/logo.png" alt={C.businessName} style={{ height:96, maxWidth:"100%", objectFit:"contain", display:"block", margin:"4px 0 18px" }} onError={e=>e.target.style.display="none"}/>
+        <img src="/logo-dark.png" alt={C.businessName} style={{ height:96, maxWidth:"100%", objectFit:"contain", display:"block", margin:"4px 0 18px" }} onError={e=>e.target.style.display="none"}/>
         <div style={{ fontSize:14, fontWeight:600, color:"#5A7A80", marginBottom:26 }}>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.signInTo ?? TRANS.en.signInTo}</div>
         <div style={{ marginBottom:14 }}>
           <div style={{ fontSize:12, fontWeight:700, color:"#5A7A80", textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:6 }}>{TRANS[localStorage.getItem("ssp_lang")||"en"]?.emailLabel ?? TRANS.en.emailLabel}</div>
@@ -1774,28 +2015,43 @@ export default function App() {
 
       {/* ── DESKTOP SIDEBAR ── */}
       {isDesktop && (
-        <div style={{ width:240, minHeight:"100vh", background:"#1B3F45", borderRight:"none", position:"fixed", top:0, left:0, display:"flex", flexDirection:"column", paddingTop:32, zIndex:50 }}>
-          <div style={{ padding:"0 24px 28px", borderBottom:"1px solid rgba(255,255,255,0.1)", marginBottom:8 }}>
-            <img src="/logo.png" alt="Stone Art Precision GmbH" style={{ height:48, objectFit:"contain", display:"block" }} onError={e=>{ e.target.style.display="none"; e.target.nextSibling.style.display="block"; }}/>
+        <nav aria-label="Main" style={{ width:240, height:"100vh", background:"#1B3F45", position:"fixed", top:0, left:0, display:"flex", flexDirection:"column", zIndex:50, boxSizing:"border-box", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+          <style>{`
+            .ssp-side-item { transition: background 0.15s ease, color 0.15s ease; }
+            .ssp-side-item:hover { background: rgba(255,255,255,0.06) !important; }
+            .ssp-side-item:focus-visible { outline: 2px solid #C9933A; outline-offset: -2px; }
+          `}</style>
+          {/* Logo — white-text version so it reads on the dark green */}
+          <div style={{ padding:"30px 24px 26px" }}>
+            <img src="/logo-white.png" alt="Stone Art Precision GmbH" style={{ width:"100%", maxWidth:176, height:"auto", display:"block" }}
+              onError={e=>{ e.target.style.display="none"; e.target.nextSibling.style.display="block"; }}/>
             <div style={{ display:"none" }}>
-              <div style={{ fontSize:"1.1rem", fontWeight:700, color:"#ffffff", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>Stone Art</div>
-              <div style={{ fontSize:"0.7rem", color:"rgba(255,255,255,0.5)", fontWeight:400, marginTop:2, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>Precision GmbH</div>
+              <div style={{ fontSize:"1.1rem", fontWeight:700, color:"#ffffff" }}>Stone Art</div>
+              <div style={{ fontSize:"0.75rem", color:"rgba(255,255,255,0.6)", marginTop:2 }}>Precision GmbH</div>
             </div>
           </div>
-          {[
-            { key:"home",    icon:"orders",  label:t("tabHome")    },
-            { key:"scan",    icon:"chart",   label:t("tabScan")    },
-            { key:"orders",  icon:"gem",     label:t("tabOrders")  },
-            { key:"clients", icon:"person",  label:t("tabClients") },
-            { key:"invoice", icon:"invoice", label:t("tabInvoice") },
-          ].map(({ key, icon, label }) => (
-            <button key={key} onClick={()=>guardedNav(()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); if(key==="clients")setClientView("list"); })}
-              style={{ width:"100%", background: tab===key ? "rgba(201,147,58,0.18)" : "none", borderLeft: tab===key ? `3px solid #C9933A` : "3px solid transparent", borderTop:"none", borderRight:"none", borderBottom:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:12, padding:"14px 20px", transition:"all 0.1s" }}>
-              <Icon name={icon} size={20} color={tab===key ? "#C9933A" : "rgba(255,255,255,0.55)"}/>
-              <span style={{ fontSize:"0.875rem", fontWeight: tab===key ? 600 : 400, color: tab===key ? "#ffffff" : "rgba(255,255,255,0.55)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>{label}</span>
-            </button>
-          ))}
-        </div>
+          <div style={{ height:1, background:"rgba(255,255,255,0.08)", margin:"0 24px 14px" }}/>
+          <div style={{ display:"flex", flexDirection:"column", gap:4, padding:"0 12px" }}>
+            {[
+              { key:"home",    icon:"orders",  label:t("tabHome")    },
+              { key:"scan",    icon:"chart",   label:t("tabScan")    },
+              { key:"orders",  icon:"gem",     label:t("tabOrders")  },
+              { key:"clients", icon:"person",  label:t("tabClients") },
+              { key:"invoice", icon:"invoice", label:t("tabInvoice") },
+            ].map(({ key, icon, label }) => {
+              const on = tab===key;
+              return (
+                <button key={key} className="ssp-side-item" aria-current={on ? "page" : undefined}
+                  onClick={()=>guardedNav(()=>{ setTab(key); if(key==="scan")resetPhoto(); if(key==="orders")setView("list"); if(key==="invoice")setInvView("list"); if(key==="clients")setClientView("list"); })}
+                  style={{ position:"relative", width:"100%", boxSizing:"border-box", background: on ? "rgba(255,255,255,0.10)" : "transparent", border:"none", borderRadius:10, cursor:"pointer", display:"flex", alignItems:"center", gap:12, padding:"11px 14px", textAlign:"left", fontFamily:"inherit" }}>
+                  {on && <span style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:3, height:20, borderRadius:"0 3px 3px 0", background:"#C9933A" }}/>}
+                  <Icon name={icon} size={20} color={on ? "#C9933A" : "rgba(255,255,255,0.65)"}/>
+                  <span style={{ fontSize:15, fontWeight: on ? 600 : 500, color: on ? "#ffffff" : "rgba(255,255,255,0.72)" }}>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       )}
 
       {/* ── CONTENT WRAPPER ── */}
@@ -1961,11 +2217,10 @@ export default function App() {
                       <div style={{ fontSize:12, color:"#9DB5B9" }}>{t("noOrdersDesc")}</div>
                     </div>
                   ) : shownItems.map((o, idx) => {
-                    const borderColor = PRIORITY_META[orderPriority(o)].color;
                     const s = orderSummary(o);
                     return (
                       <button className="ssp-sq" key={o.id} onClick={()=>{ setSelectedId(o.id); setView("detail"); setTab("orders"); }}
-                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", borderLeft:`5px solid ${borderColor}`, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:13 }}>
+                        style={{ width:"100%", background:"white", border:"none", borderTop: idx>0 ? "0.5px solid #E8E4DC" : "none", padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:13 }}>
                         {/* Contador de piezas */}
                         <div style={{ minWidth:46, height:46, borderRadius:12, background:"#F2EDE4", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flexShrink:0, padding:"0 6px" }}>
                           <span style={{ fontSize:17, fontWeight:900, color:"#1B3F45", lineHeight:1 }}>{s.pieces || "—"}</span>
@@ -2591,7 +2846,6 @@ export default function App() {
                         }}
                         style={{ position:"relative", transform:`translateX(${swipeDx}px)`, transition: isMoving?"none":"transform 0.3s ease",
                           background: isChecked?"#FFF3F0":"white", border: isChecked?"2px solid #da1e2840":"1.5px solid #F0EDE8",
-                          borderLeft: `5px solid ${pm.color}`,
                           borderRadius:20, padding:"18px 16px", display:"flex", alignItems:"stretch", gap:14,
                           cursor:"pointer", textAlign:"left", boxShadow:"0 2px 12px rgba(0,0,0,0.07)", userSelect:"none" }}>
 
@@ -2638,12 +2892,17 @@ export default function App() {
                               </button>
                               {o.status==="invoiced" ? (()=>{
                                 const linkedInv = invoices.find(inv=>inv.items&&inv.items.some(it=>it.orderRef===o.id));
-                                return (
+                                return (<>
                                   <button onClick={()=>{ if(linkedInv){ printInvoiceDoc(linkedInv); setInvoices(invoices.map(i=>i.id===linkedInv.id?{...i,printed:true}:i)); } else showToast(t("invoiceNotFound"),"#da1e28"); }}
                                     style={{ flex:1, padding:"9px 6px", background:"#1B3F45", border:"none", borderRadius:10, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12, fontWeight:700, color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                                     <Icon name="invoice" size={13} color="#C9933A"/> {t("printInvoiceBtn")}
                                   </button>
-                                );
+                                  <button onClick={()=>{ if(linkedInv) downloadInvoicePdf(linkedInv); else showToast(t("invoiceNotFound"),"#da1e28"); }}
+                                    title={t("pdfBtnTitle")} aria-label={t("pdfBtnTitle")}
+                                    style={{ flex:"0 0 auto", padding:"9px 10px", background:"white", border:"1.5px solid #1B3F45", borderRadius:10, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12, fontWeight:700, color:"#1B3F45", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                                    <Icon name="download" size={13} color="#1B3F45"/> {t("pdfBtn")}
+                                  </button>
+                                </>);
                               })() : (
                                 <button onClick={()=>setConfirmSheet({ type:"invoice", order:o })}
                                   style={{ flex:1, padding:"9px 6px", background:"#C9933A", border:"none", borderRadius:10, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:12, fontWeight:700, color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
@@ -3172,6 +3431,11 @@ export default function App() {
                             style={{ flex:1, padding:"15px 8px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                             <Icon name="invoice" size={16} color="#C9933A"/> {t("printInvoiceBtn")}
                           </button>
+                          <button onClick={()=>{ if(linkedInv) downloadInvoicePdf(linkedInv); else showToast(t("invoiceNotFound"),"#da1e28"); }}
+                            title={t("pdfBtnTitle")} aria-label={t("pdfBtnTitle")}
+                            style={{ flex:"0 0 auto", padding:"15px 14px", background:"white", color:"#1B3F45", border:"1.5px solid #1B3F45", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                            <Icon name="download" size={16} color="#1B3F45"/> {t("pdfBtn")}
+                          </button>
                         </div>
                       );
                     })()}
@@ -3213,7 +3477,7 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                    <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newItem()]); setInvNumber(""); setInvView("new"); }}
+                    <button onClick={()=>{ setInvClient(""); setInvClientAddress(""); setInvDate(new Date().toISOString().split("T")[0]); setInvPorto(""); setItems([newInvItem()]); setInvNumber(""); setInvView("new"); }}
                       style={{ display:"flex", alignItems:"center", gap:5, background:"#C9933A", color:"white", border:"none", borderRadius:100, padding:"9px 15px", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", whiteSpace:"nowrap", flexShrink:0 }}>
                       <Icon name="plus" size={14} color="white"/> {t("newInvoiceBtn")}
                     </button>
@@ -3357,7 +3621,7 @@ export default function App() {
             };
 
             const saveInvoice = (print) => {
-              const validItems = items.filter(it=>it.desc||it.unitPrice||it.price||(it.stones||[]).length).map(it=>({...it, price: String(lineTotal(it))}));
+              const validItems = items.filter(it=>it.desc||it.unitPrice||lineTotal(it)>0||(it.stones||[]).some(st=>!st.bucket||parseFloat(st.qty)>0)).map(it=>({...it, price: String(lineTotal(it)), stones:(it.stones||[]).map(({autoPrice,...st})=>st)}));
               const inv = {
                 id: Date.now(),
                 number: invNumber || genClientInvNumber(invoices, invClient),
@@ -3469,11 +3733,16 @@ export default function App() {
                       </div>
                       <Field label="Description">
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <Input placeholder="e.g. Pavé setting – ring" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/>
+                          <div style={{ flex:1, minWidth:0 }}><Textarea rows={2} placeholder="e.g. Pavé setting – ring, 12 Brillanten" value={it.desc} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,desc:e.target.value}:i))}/></div>
                           {(parseFloat(it.count)||1) > 1 && <span style={{ flexShrink:0, background:"#1B3F45", color:"white", borderRadius:100, padding:"5px 11px", fontSize:12, fontWeight:800 }}>× {it.count}</span>}
                         </div>
                       </Field>
-                      {(it.stones||[]).length > 0 ? (
+                      {isBucketItem(it) ? (
+                        <>
+                          <BucketStonesEditor stones={it.stones} onChange={s=>setItems(items.map(i=>i.id===it.id?{...i,stones:s}:i))} t={t} lang={lang} currency={C.currency}/>
+                          <button onClick={()=>setItems(items.map(i=>i.id===it.id?{...i,stones:[]}:i))} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, color:"#9DB5B9", padding:"2px 0" }}>{t("fixedPriceInstead")}</button>
+                        </>
+                      ) : (it.stones||[]).length > 0 ? (
                         <>
                           <StonesEditor stones={it.stones} onChange={s=>setItems(items.map(i=>i.id===it.id?{...i,stones:s}:i))} showPrice t={t} currency={C.currency} typeList={C.itemCategories} priceFor={(ty,sz)=>stoneRate(ty,sz,invClient)}/>
                           <div style={{ fontSize:11, color:"#9DB5B9", marginTop:6 }}>{t("stonesInvoiceHint")}{(parseFloat(it.count)||1) > 1 ? ` · × ${it.count}` : ""}</div>
@@ -3484,14 +3753,14 @@ export default function App() {
                             <Field label="Qty"><Input type="number" placeholder="1" value={it.qty||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,qty:e.target.value}:i))}/></Field>
                             <Field label={`Unit price (${C.currency})`}><Input type="number" placeholder="0.00" value={it.unitPrice||""} onChange={e=>setItems(items.map(i=>i.id===it.id?{...i,unitPrice:e.target.value}:i))}/></Field>
                           </div>
-                          <button onClick={()=>setItems(items.map(i=>i.id===it.id?{...i,stones:[newStone()]}:i))} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, color:"#C9933A", padding:"2px 0", marginTop:2 }}>+ {t("stonesLabel")}</button>
+                          <button onClick={()=>setItems(items.map(i=>i.id===it.id?{...i,stones:newBucketStones(invClient)}:i))} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, color:"#C9933A", padding:"2px 0", marginTop:2 }}>+ {t("countStonesInstead")}</button>
                         </>
                       )}
                       {lineTotal(it) > 0 && <div style={{ fontSize:13, color:"#5A7A80", marginTop:8 }}>Total: <strong style={{color:"#1B3F45"}}>{C.currency} {fmt(lineTotal(it))}</strong></div>}
                     </Card>
                   );})}
 
-                  <button onClick={()=>setItems([...items,newItem()])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E8E4DC", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:600, color:"#5A7A80", cursor:"pointer", marginBottom:10 }}>{t("addItemBtn")}</button>
+                  <button onClick={()=>setItems([...items,newInvItem(invClient)])} style={{ width:"100%", padding:"13px", background:"white", border:"2px dashed #E8E4DC", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:14, fontWeight:600, color:"#5A7A80", cursor:"pointer", marginBottom:10 }}>{t("addItemBtn")}</button>
 
                   {/* Add items from another order of the same client */}
                   {(() => {
@@ -3508,7 +3777,7 @@ export default function App() {
                         <Select value="" onChange={e=>{
                           const o = orders.find(x=>x.id===e.target.value);
                           if(!o) return;
-                          const newItems = (o.lineItems||[]).map(li=>({ id:Date.now()+Math.random(), desc:li.desc, count:li.count||"1", qty:li.qty||"1", unitPrice:li.unitPrice||"", price:String(lineTotal(li)), orderRef:o.id, stones:(li.stones||[]).map(st=>({ id:Date.now()+Math.random(), type:st.type||"", size:st.size||"", qty:st.qty||"", price:String(stoneRate(st.type, st.size, o.client)) })) }));
+                          const newItems = (o.lineItems||[]).map(li=>orderLineToInvItem(li, o));
                           setItems([...items, ...newItems]);
                         }}>
                           <option value="">{t("addFromOrder")}</option>
@@ -3580,7 +3849,7 @@ export default function App() {
                   <div style={{ background:"white", border:"1.5px solid #E8E4DC", borderRadius:16, padding:"28px 24px", marginBottom:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
                     {/* Header */}
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
-                      <img src="/logo.png" alt={C.businessName} style={{ height:52, objectFit:"contain" }}/>
+                      <img src="/logo-dark.png" alt={C.businessName} style={{ height:52, objectFit:"contain" }}/>
                       <div style={{ textAlign:"right" }}>
                         <div style={{ fontSize:10, color:"#E8E4DC", textTransform:"uppercase", letterSpacing:"0.08em", fontWeight:700 }}>Rechnung</div>
                         <div style={{ fontSize:13, fontFamily:"monospace", fontWeight:700, color:"#1B3F45", marginTop:2 }}>{inv.number}</div>
@@ -3615,7 +3884,7 @@ export default function App() {
                       <tbody>
                         {inv.items.flatMap((it,i)=>{
                           const cnt = parseFloat(it.count)||1;
-                          const priced = (it.stones||[]).filter(s => (parseFloat(s.qty)||0) > 0 || (parseFloat(s.price)||0) > 0);
+                          const priced = (it.stones||[]).filter(s => (parseFloat(s.qty)||0) > 0 || (!s.bucket && (parseFloat(s.price)||0) > 0));
                           if (priced.length) {
                             const pieceUnit = priced.reduce((a,s)=> a + (parseFloat(s.qty)||0) * (parseFloat(s.price)||0), 0);
                             const betrag = pieceUnit * cnt;
@@ -3625,7 +3894,7 @@ export default function App() {
                             return [(
                               <tr key={i} style={{ borderBottom:"1px solid #E8E4DC" }}>
                                 <td style={{ padding:"8px 4px 8px 0", verticalAlign:"top" }}>
-                                  <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{it.desc||"—"}</div>
+                                  <div style={{ fontSize:13, fontWeight:700, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4, whiteSpace:"pre-wrap" }}>{it.desc||"—"}</div>
                                   <div style={{ fontSize:11, color:"#41595E", marginTop:3, lineHeight:1.55, wordBreak:"break-word" }}>{stoneLines.map((l,k)=><div key={k}>{l}</div>)}</div>
                                 </td>
                                 <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{cnt}</td>
@@ -3637,13 +3906,14 @@ export default function App() {
                           const qty = parseFloat(it.qty)||1;
                           const unit = parseFloat(it.unitPrice)||parseFloat(it.price)||0;
                           const tot = lineTotal(it);
-                          const label = (it.stones||[]).length
-                            ? [it.desc, (it.stones||[]).map(s=>[s.type,s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
+                          const named = (it.stones||[]).filter(s=>!s.bucket);
+                          const label = named.length
+                            ? [it.desc, named.map(s=>[s.type,s.size].filter(Boolean).join(" ")).filter(Boolean).join(", ")].filter(Boolean).join(" — ")
                             : (it.desc||"—");
                           return [(
                             <tr key={i} style={{ borderBottom:"1px solid #E8E4DC" }}>
                               <td style={{ padding:"8px 4px 8px 0", verticalAlign:"top" }}>
-                                <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4 }}>{label}</div>
+                                <div style={{ fontSize:13, fontWeight:600, color:"#1B3F45", wordBreak:"break-word", lineHeight:1.4, whiteSpace:"pre-wrap" }}>{label}</div>
                               </td>
                               <td style={{ padding:"8px 0", textAlign:"right", fontSize:13, color:"#5A7A80", verticalAlign:"top" }}>{qty}</td>
                               <td className="hide-xs" style={{ padding:"8px 0", textAlign:"right", fontSize:12, color:"#5A7A80", verticalAlign:"top" }}>{unit ? `${C.currency} ${fmt(unit)}` : "—"}</td>
@@ -3672,10 +3942,15 @@ export default function App() {
                   </div>
 
                   {/* Botón fijo al fondo */}
-                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"#F2EDE4", padding:"12px 20px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150 }}>
+                  <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"#F2EDE4", padding:"12px 20px max(20px, env(safe-area-inset-bottom, 20px))", zIndex:150, display:"flex", gap:10, boxSizing:"border-box" }}>
                     <button onClick={()=>{ printInvoiceDoc(inv); setInvoices(invoices.map(i=>i.id===inv.id?{...i,printed:true}:i)); setSelectedInvoice({...inv,printed:true}); }}
-                      style={{ width:"100%", padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      style={{ flex:1, padding:"16px", background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                       <Icon name="print" size={18} color="#C9933A"/> {t("printInvoiceBtn")}
+                    </button>
+                    <button onClick={()=>downloadInvoicePdf(inv)}
+                      title={t("pdfBtnTitle")} aria-label={t("pdfBtnTitle")}
+                      style={{ flex:"0 0 auto", padding:"16px 18px", background:"white", color:"#1B3F45", border:"1.5px solid #1B3F45", borderRadius:14, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontSize:16, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      <Icon name="download" size={18} color="#1B3F45"/> {t("pdfBtn")}
                     </button>
                   </div>
                 </div>
@@ -3986,7 +4261,7 @@ export default function App() {
             (it.stones||[]).forEach(s => {
               const qty = (parseFloat(s.qty)||0) * cnt;
               if (!qty) return;
-              const type = (s.type||"").trim() || (lang==="de"?"Unbekannt":"Unknown");
+              const type = (s.type||"").trim() || (s.bucket ? (lang==="de"?"Steine":"Stones") : (lang==="de"?"Unbekannt":"Unknown"));
               if (stoneTallyType!=="all" && type.toLowerCase()!==stoneTallyType.toLowerCase()) return;
               const size = (s.size||"").trim();
               const key = `${type.toLowerCase()}|${size}`;
@@ -4122,7 +4397,7 @@ export default function App() {
 
                 {/* Header */}
                 <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", paddingBottom:14, borderBottom:`1.5px solid #ccc`, marginBottom:22 }}>
-                  <img src={`${window.location.origin}/logo.png`} alt={C.businessName} style={{ height:60, objectFit:"contain" }}/>
+                  <img src={`${window.location.origin}/logo-dark.png`} alt={C.businessName} style={{ height:60, objectFit:"contain" }}/>
                   <div style={{ textAlign:"right" }}>
                     <div style={{ fontSize:22, fontWeight:900, letterSpacing:3, color:"#1a1a1a", lineHeight:1 }}>ARBEITSAUFTRAG</div>
                     <div style={{ fontSize:9, fontStyle:"italic", color:"#666", marginTop:4 }}>Wir setzen keine Steine. Wir setzen Maßstäbe.</div>
@@ -4537,6 +4812,23 @@ export default function App() {
         </div>
       )}
 
+      {/* ── PDF READY (one more tap needed to open the share sheet) ── */}
+      {pdfReady && (
+        <>
+          <div onClick={()=>setPdfReady(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:3000 }}/>
+          <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:SHEET_MAX, background:"white", borderRadius:"24px 24px 0 0", padding:"24px 20px max(28px, env(safe-area-inset-bottom, 28px))", zIndex:3001, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", boxSizing:"border-box" }}>
+            <div style={{ fontSize:18, fontWeight:700, color:"#1B3F45", marginBottom:6 }}>{lang==="de" ? "PDF ist bereit" : "PDF is ready"}</div>
+            <div style={{ fontSize:14, color:"#525252", marginBottom:18, wordBreak:"break-all" }}>{pdfReady.name}</div>
+            <button onClick={()=>deliverPdf(pdfReady)} style={{ width:"100%", padding:16, background:"#1B3F45", color:"white", border:"none", borderRadius:14, fontSize:16, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginBottom:10 }}>
+              {lang==="de" ? "Speichern / Drucken / Teilen" : "Save / Print / Share"}
+            </button>
+            <button onClick={()=>{ const f = pdfReady; setPdfReady(null); downloadFile(f); }} style={{ width:"100%", padding:14, background:"white", color:"#1B3F45", border:"1.5px solid #1B3F45", borderRadius:14, fontSize:15, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+              {lang==="de" ? "Herunterladen" : "Download"}
+            </button>
+          </div>
+        </>
+      )}
+
       {/* ── CHANGE PASSWORD SHEET ── */}
       {changePwOpen && (
         <>
@@ -4637,7 +4929,7 @@ export default function App() {
 
                 {/* LOGO */}
                 <div style={{ marginBottom:28 }}>
-                  <img src="/logo.png" alt={C.businessName} style={{ height:90, objectFit:"contain" }} />
+                  <img src="/logo-dark.png" alt={C.businessName} style={{ height:90, objectFit:"contain" }} />
                 </div>
 
                 {/* ADDRESS */}
