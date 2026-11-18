@@ -1456,6 +1456,7 @@ export default function App() {
 
     const html = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
 <meta name="format-detection" content="telephone=no,address=no,email=no">
+${forPdf ? "" : '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'}
 <title>Rechnung ${inv.number}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -1487,22 +1488,24 @@ export default function App() {
   .thanks { margin-top:14px; font-size:9pt; }
   .back-btn { position:fixed; top:14px; right:14px; z-index:9999; }
   /* ── preview top bar (screen only) — same look as the app's screen headers ── */
-  .tb { position:fixed; top:0; left:0; right:0; z-index:9999; background:#F7F5F0; border-bottom:1px solid #E8E4DC; display:flex; align-items:center; gap:12px; padding:calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .tb { position:fixed; top:0; left:0; right:0; z-index:9999; background:#F7F5F0; border-bottom:1px solid #E8E4DC; display:flex; align-items:center; gap:12px; padding:max(16px, env(safe-area-inset-top, 16px)) 22px 18px; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
   .tb button { font:inherit; cursor:pointer; border:none; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
   .tb-sq { width:36px; height:36px; border-radius:11px; background:#F0F6F7; flex-shrink:0; }
   .tb-title { flex:1; min-width:0; }
-  .tb-num { font-size:18px; font-weight:900; color:#1B3F45; letter-spacing:-0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .tb-client { font-size:13px; color:#5A7A80; font-weight:500; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .tb-menu { position:fixed; right:16px; top:calc(66px + env(safe-area-inset-top, 0px)); z-index:10000; background:#fff; border:1.5px solid #E8E4DC; border-radius:16px; box-shadow:0 2px 12px rgba(0,0,0,0.07); min-width:230px; padding:6px; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .tb-num { font-size:22px; font-weight:900; color:#1B3F45; letter-spacing:-0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tb-client { font-size:13px; color:#5A7A80; font-weight:500; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tb-menu { position:fixed; right:22px; top:var(--tbh, 80px); z-index:10000; background:#fff; border:1.5px solid #E8E4DC; border-radius:16px; box-shadow:0 2px 12px rgba(0,0,0,0.07); min-width:230px; padding:6px; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
   .tb button:focus, .tb-menu button:focus { outline:none; }
   .tb button:focus-visible, .tb-menu button:focus-visible { outline:2px solid #C9933A; outline-offset:2px; }
+  @media screen and (min-width:768px) { .tb { padding:max(18px, env(safe-area-inset-top, 18px)) 32px 20px; } .tb-menu { right:32px; } }
+  @media screen and (min-width:1024px) { .tb { padding:26px 40px 20px; } .tb-menu { right:40px; } }
   .tb-menu[hidden] { display:none; }
   .tb-menu button { width:100%; background:none; border:none; border-radius:10px; padding:12px; min-height:44px; font:inherit; font-size:15px; font-weight:600; color:#1B3F45; text-align:left; display:flex; align-items:center; gap:10px; cursor:pointer; }
   .tb-menu button:hover { background:#F7F5F0; }
   .tb-menu hr { border:none; border-top:1px solid #E8E4DC; margin:4px 6px; }
   .tb-toast { position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:#198038; color:#fff; padding:12px 24px; border-radius:100px; font:700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; z-index:10001; box-shadow:0 4px 20px rgba(0,0,0,0.2); white-space:nowrap; }
   .tb-toast.err { background:#da1e28; } .tb-toast.info { background:#1B3F45; }
-  @media screen { body.has-tb { padding-top:calc(84px + env(safe-area-inset-top, 0px)); background:#F7F5F0; } body.has-tb .page { background:#fff; padding:14mm; border:1.5px solid #E8E4DC; border-radius:4px; box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-bottom:24px; width:210mm; max-width:none; zoom:var(--pvz,1); } }
+  @media screen { body.has-tb { padding-top:calc(var(--tbh, 80px) + 20px); background:#F7F5F0; } body.has-tb .page { background:#fff; padding:14mm; border:1.5px solid #E8E4DC; border-radius:4px; box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-bottom:24px; width:210mm; max-width:none; zoom:var(--pvz,1); } }
   .back-btn button { background:#1B3F45; color:white; border:none; border-radius:10px; padding:10px 18px; font-size:13pt; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; }
   @media print {
     /* margin:0 so the browser prints no URL/date header or footer;
@@ -1543,6 +1546,7 @@ ${forPdf ? "" : withPrintScript ? (() => {
 ${["<","script>(function(){",
 "var L=" + JSON.stringify(L) + ";",
 "document.body.classList.add('has-tb');",
+"function tbh(){var b=document.querySelector('.tb');if(b)document.documentElement.style.setProperty('--tbh',b.offsetHeight+'px');}tbh();window.addEventListener('resize',tbh);window.addEventListener('load',tbh);",
 "var $=function(id){return document.getElementById(id);};",
 "var menu=$('tb-menu'),more=$('tb-more');",
 "function closeMenu(){menu.hidden=true;more.setAttribute('aria-expanded','false');}",
